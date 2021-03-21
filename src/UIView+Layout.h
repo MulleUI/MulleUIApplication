@@ -43,6 +43,11 @@ typedef enum
 - (void) _setNeedsLayout; 
 
 
+- (CGSize) sizeThatFits:(CGSize) size
+                context:(CGContext *) context;
+
+// calls sizeThatFits:context: with context nil. If your view contains
+// text, this may not work, since the size of the text can not be computed
 - (CGSize) sizeThatFits:(CGSize) size;
 
 //

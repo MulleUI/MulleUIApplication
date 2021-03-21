@@ -5,7 +5,6 @@
 - (id) _firstResponder;
 
 + (void) sendEmptyEvent;
-- (void) waitForEvents:(double) hz;
 - (void) setupQuadtree;
 
 // Use -[UIView addTrackingAreaWithRect:toWindow:userInfo:]. It will call 
@@ -13,15 +12,22 @@
 - (void) addTrackingView:(UIView *) view;
 - (void) removeTrackingView:(UIView *) view;
 
-@end
+- (void) discardPendingEvents;
+
+// hardcore event handling
+- (void) queueRetainedEvent:(UIEvent *) event;
+- (void) queueEvent:(UIEvent *) event;
+
+- (NSUInteger) waitForEvents:(CARelativeTime) timeout
+                         now:(CAAbsoluteTime) now
+                returnsEarly:(BOOL) returnsEarly;
+- (NSUInteger) waitForEventsHz:(double) hz;
+- (NSUInteger) waitForEvents:(CARelativeTime) timeout;
 
 
-@interface UIWindow( OSEvents)
-
-+ (void) os_sendEmptyEvent;
-- (void) os_initEvents;
-- (void) os_pollEvents;
-- (void) os_waitEventsTimeout:(CGFloat) seconds;
+- (BOOL) willDiscardEvent:(UIEvent *) event;
+- (BOOL) willDiscardOverflowEvent:(UIEvent *) event;
+- (BOOL) willDiscardPendingEvent:(UIEvent *) event;
 
 @end
 
@@ -34,7 +40,7 @@
                action:(int) action
             modifiers:(int) mods;  
 
-- (void) _mouseMoveCallback:(CGPoint) pos;
+- (void) _mouseMotionCallback:(CGPoint) pos;
 - (void) _mouseButtonCallback:(int) button
                        action:(int) action
                     modifiers:(int) mods;            

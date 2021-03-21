@@ -71,7 +71,7 @@ void  mulle_pointerarray_remove_at_index( struct mulle_pointerarray *array,
    count = mulle_pointerarray_get_count( array);
    if( i == count - 1)
    {
-      _mulle_pointerarray_remove_last( array);
+      _mulle_pointerarray_pop( array);
       return;
    }
 

@@ -63,21 +63,21 @@ enum UILayoutStrategy
 
 @interface UIView : NSObject < Yoga>
 {
-   UIView                      *_superview;
-   CALayer                     *_mainLayer;
+   UIView                                *_superview;
+   CALayer                               *_mainLayer;
 
-   struct mulle_pointerarray   *_layers;     // todo why no inline ?
-   struct mulle_pointerarray   *_subviews;
+   struct mulle_pointerarray             *_layers;     // todo why no inline ?
+   struct mulle_pointerarray             *_subviews;
 
    // ivars for Yoga
-   id <NSArray,NSFastEnumeration>   _subviewsArrayProxy;
-   YGLayout                         *_yoga;
+   id <NSArray,NSFastEnumeration>         _subviewsArrayProxy;
+   YGLayout                              *_yoga;
 
-   struct MulleTrackingAreaArray    _trackingAreas;
+   struct MulleTrackingAreaArray         _trackingAreas;
 
-   MulleImageLayer                  *_cacheLayer;
+   MulleImageLayer                       *_cacheLayer;
 
-   struct MulleClickDragDifferentiator  _clickOrDrag;
+   struct MulleClickDragDifferentiator   _clickOrDrag;
 }
 
 @property( getter=isHidden)                 BOOL   hidden;                  // default: NO
@@ -86,7 +86,9 @@ enum UILayoutStrategy
 @property BOOL   clipsSubviews;  // default: YES
 @property BOOL   needsLayout;   // use setNeedsLayout for marking
 @property BOOL   needsCaching;
-@property BOOL   needsDisplay;  // a NOP for compatiblity
+
+// On UIView this does nothing
+//@property BOOL   needsDisplay;  // used by UIWindow only currently
 
 @property CGFloat              alpha;
 @property UIViewAutoresizing   autoresizingMask;

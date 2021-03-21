@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #import "UIWindow+UIEvent.h"
 
 #import "import-private.h"
@@ -12,42 +14,117 @@
 #include "mulle-quadtree.h"
 #include "mulle-timespec.h"
 
+
+//#define CALLBACK_DEBUG
+//#define MOUSE_MOTION_CALLBACK_DEBUG
+//#define MOUSE_BUTTON_CALLBACK_DEBUG
+#define RESIZE_CALLBACK_DEBUG
+
+
 @implementation UIWindow( UIEvent)
 
-- (void) waitForEvents:(double) hz
+
+//
+// callbacks from window events (via GLFW). It is NOT known if the event coming
+// in is a direct callback from the host OS or if it has been queued by glfw
+// and released during "waitForEvents" or "pollEvents." (See glfw3 events dox)
+//
+// What is unknown is, if the executing thread of a callback is always the
+// mainThread. It is assumed here, though.
+//
+- (void) _windowResizeCallback:(CGSize) size
 {
-   if( hz == 0.0)
-      [self os_pollEvents];
-   else
-      [self os_waitEventsTimeout:1.0 / hz];
+   UIEvent   *event;
+
+#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
+   fprintf( stderr, "%s %s w=%.1f h=%.1f\n",
+                     __PRETTY_FUNCTION__,
+                     [self cStringDescription],
+                     size.width,
+                     size.height);
+#endif
+   event = [[UIWindowResizeEvent alloc] initWithWindow:self
+                                          mouseLocation:self->_mouseLocation
+                                              modifiers:self->_modifiers
+                                                   size:size];
+   [self queueRetainedEvent:event];
 }
 
 
-- (void) discardPendingEvents
+- (void) _framebufferResizeCallback:(CGSize) size
 {
-   BOOL   old;
+   UIEvent   *event;
 
-   old = _discardEvents;
-   _discardEvents = ~0;  // discard all
-   {
-      [self os_pollEvents];
-   }
-   _discardEvents = old;
+#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
+   fprintf( stderr, "%s %s w=%.1f h=%.1f\n",
+                     __PRETTY_FUNCTION__,
+                     [self cStringDescription],
+                     size.width,
+                     size.height);
+#endif
+
+   event = [[UIWindowFramebufferResizeEvent alloc] initWithWindow:self
+                                                    mouseLocation:self->_mouseLocation
+                                                        modifiers:self->_modifiers
+                                                             size:size];
+   [self queueRetainedEvent:event];
 }
 
 
-+ (void) sendEmptyEvent
+- (void) _windowCloseCallback
 {
-   [self os_sendEmptyEvent];
+   UIEvent   *event;
+
+#ifdef CALLBACK_DEBUG
+   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
+#endif
+
+   event = [[UIWindowCloseEvent alloc] initWithWindow:self
+                                        mouseLocation:self->_mouseLocation
+                                            modifiers:self->_modifiers];
+   [self queueRetainedEvent:event];
+}
+
+
+- (void) _windowRefreshCallback
+{
+   UIEvent   *event;
+
+#ifdef CALLBACK_DEBUG
+   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
+#endif
+
+   event = [[UIWindowRefreshEvent alloc] initWithWindow:self
+                                          mouseLocation:self->_mouseLocation
+                                              modifiers:self->_modifiers];
+   [self queueRetainedEvent:event];
+}
+
+
+- (void) _windowMoveCallback:(CGPoint) position
+{
+   UIEvent   *event;
+
+#ifdef CALLBACK_DEBUG
+   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
+#endif
+
+//   fprintf( stderr, "%p moved: x=%d y=%d\n", self, xpos, ypos);
+
+   event = [[UIWindowMoveEvent alloc] initWithWindow:self
+                                       mouseLocation:self->_mouseLocation
+                                           modifiers:self->_modifiers
+                                              origin:position];
+   [self queueRetainedEvent:event];
 }
 
 
 - (void) _keyCallback:(int) key
              scancode:(int) scancode
                action:(int) action
-            modifiers:(int) mods                          
+            modifiers:(int) mods
 {
-   UIEvent    *event;
+   UIEvent   *event;
 
 #ifdef CALLBACK_DEBUG
    fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
@@ -66,7 +143,7 @@
    if( self->_keyEventCallback)
       event = (*self->_keyEventCallback)( self, event);
    if( event)
-      [self handleEvent:event];
+      [self queueEvent:event];
 }
 
 
@@ -85,8 +162,7 @@
                                     mouseLocation:self->_mouseLocation
                                         modifiers:self->_modifiers
                                         character:codepoint];
-   [self handleEvent:event];
-   [event release];
+   [self queueRetainedEvent:event];
 }
 
 
@@ -101,7 +177,7 @@
    fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
 #endif
 
-   bit = 1 << button;
+   bit = 1LL << button;
    self->_mouseButtonStates &= ~bit;
    if( action == GLFW_PRESS)
       self->_mouseButtonStates |= bit;
@@ -115,14 +191,13 @@
                                             modifiers:mods
                                                button:button
                                                action:action];
-   [self handleEvent:event];
-   [event release];
+   [self queueRetainedEvent:event];
 
    // [self dump];
 }
 
 
-- (void) _mouseMoveCallback:(CGPoint) pos
+- (void) _mouseMotionCallback:(CGPoint) pos
 {
    UIEvent    *event;
    CGRect     frame;
@@ -130,15 +205,6 @@
 #if defined( CALLBACK_DEBUG) || defined( MOUSE_MOTION_CALLBACK_DEBUG)
    fprintf( stderr, "%s %s (%.1f, %.1f)\n", __PRETTY_FUNCTION__, [self cStringDescription], pos.x, pos.y);
 #endif
-
-   //
-   // Coordinates are window relative! So for screen coordinates we'd need
-   // to add the window frame.x/y.
-   //
-   // we get not events for the window title bar
-   // TODO: we might need to scale the values for DPI or ?
-	self->_mouseLocation.x = pos.x;
-	self->_mouseLocation.y = pos.y;
 
    //
    // Observed behaviour on linux: Depending on mouse sensitivity, it may
@@ -150,6 +216,15 @@
    if( self->_discardEvents & UIEventTypeMotion)
       return;
 
+   //
+   // Coordinates are window relative! So for screen coordinates we'd need
+   // to add the window frame.x/y.
+   //
+   // we get not events for the window title bar
+   // TODO: we might need to scale the values for DPI or ?
+	self->_mouseLocation.x = pos.x;
+	self->_mouseLocation.y = pos.y;
+
    // TODO: wrap in autorelease pool ?
    //       + event don't leak if someone throws
    //       - latency
@@ -157,8 +232,7 @@
                                         mouseLocation:self->_mouseLocation
                                             modifiers:self->_modifiers
                                          buttonStates:self->_mouseButtonStates];
-   [self handleEvent:event];
-   [event release];
+   [self queueRetainedEvent:event];
 }
 
 
@@ -192,8 +266,7 @@
                                         mouseLocation:self->_mouseLocation
                                             modifiers:self->_modifiers
                                          scrollOffset:scrollOffset];
-   [self handleEvent:event];
-   [event release];
+   [self queueRetainedEvent:event];
 }
 
 
@@ -306,6 +379,141 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 }
 
 
+- (UIEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) event
+{
+   CGRect                                rect;
+   CGPoint                               point;
+   struct mulle_pointerarray             views;
+   struct mulle_pointerarray             remaining;
+   struct mulle_pointerarrayenumerator   rover;
+   UIView                                *view;
+   unsigned int                          n;
+   BOOL                                  isDrag;
+
+   _mulle_pointerarray_init( &views, 16, NULL);
+
+   point = [event locationInWindow];
+
+   //
+   // this could be a dragging event though, which needs to be handled
+   // without tracking areas (...). But we only handle these events if
+   // a button is pressed. We don't send mouseMoved: then though (useful ?)
+   //
+   isDrag = [(UIMouseMotionEvent *) event buttonStates] != 0;
+   n      = mulle_quadtree_find_point( _quadtree,
+                                       point,
+                                       collect_hit_views,
+                                       &views);
+   //
+   // if we have no entered views and nothing is hit, then there is nothing
+   // to do
+   //
+   if( n || mulle_pointerarray_get_count( &_enteredViews))
+   {
+      // first remove all views from enteredViews which are not in views
+      // and send them a MouseExited event
+      // send MouseMoved: events to all remaining enteredViews
+
+      _mulle_pointerarray_init( &remaining, 16, _mulle_pointerarray_get_allocator( &_enteredViews));
+
+      rover = mulle_pointerarray_enumerate( &_enteredViews);
+       while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+      {
+         if( _mulle_pointerarray_find( &views, view) == mulle_not_found_e)
+         {
+            [view mouseExited:event];
+         }
+         else
+         {
+            // will be sent later by regular event handling code anyway
+            if( ! isDrag)
+               [view mouseMoved:event];
+            _mulle_pointerarray_add( &remaining, view);
+         }
+      }
+      mulle_pointerarrayenumerator_done( &rover);
+
+      // remaining are now the remaining active enteredViews
+
+      rover = mulle_pointerarray_enumerate( &views);
+      while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+      {
+         if( _mulle_pointerarray_find( &remaining, view) == mulle_not_found_e)
+         {
+            [view mouseEntered:event];
+            _mulle_pointerarray_add( &remaining, view);
+         }
+      }
+      mulle_pointerarrayenumerator_done( &rover);
+
+      // now move remaining to _enteredViews and switch to remaining
+      mulle_pointerarray_done( &_enteredViews);
+      memcpy( &_enteredViews, &remaining, sizeof( struct mulle_pointerarray));
+   }
+   mulle_pointerarray_done( &views);
+
+   if( ! isDrag)
+      return( nil);
+
+   return( event);
+}
+
+/*
+ * Window events
+ */
+- (UIEvent *) handleWindowEvent:(UIWindowEvent *) event
+{
+   CGRect  frame;
+
+   switch( [event windowEventType])
+   {
+   case UIWindowEventTypeClose :
+      _shouldClose = YES;
+      return( nil);
+
+   case UIWindowEventTypeMove :
+      frame        = [self frame];
+      frame.origin = [(UIWindowMoveEvent *) event origin];;
+      [self setFrame:frame];
+      return( nil);
+
+   case UIWindowEventTypeFramebufferResize :
+      // ignore size, polled during next redraw anyway
+      // and we are getting a refresh anyway next
+#ifdef RESIZE_CALLBACK_DEBUG
+   fprintf( stderr, "%s %s handled UIWindowEventTypeFramebufferResize\n",
+                     __PRETTY_FUNCTION__,
+                     [self cStringDescription]);
+#endif
+      return( nil);
+
+   case UIWindowEventTypeResize :
+      frame       = [self frame];
+      frame.size  = [(UIWindowFramebufferResizeEvent *) event size];
+      [self setFrame:frame];
+      [self setNeedsLayout:YES];
+      self->_resizing = YES;
+      self->_lastResizeEventTimestamp = [event timestamp];
+#ifdef RESIZE_CALLBACK_DEBUG
+   fprintf( stderr, "%s %s handled UIWindowEventTypeResize\n",
+                     __PRETTY_FUNCTION__,
+                     [self cStringDescription]);
+#endif
+      return( nil);
+
+   // on linux we always get refresh event, so it's not necessary to
+   // call this all the time for the other events (which could lead
+   // to duplicate redraws)
+   case UIWindowEventTypeRefresh :
+      [self setNeedsDisplay];
+      return( nil);
+   }
+
+   return( event);
+}
+
+
+
 - (UIEvent *) handleEvent:(UIEvent *) event
 {
    CGRect                                rect;
@@ -317,94 +525,225 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    unsigned int                          n;
    BOOL                                  isDrag;
 
-#if DEBUG
-   if( [event eventType] == UIEventTypePresses)
+   switch( [event eventType])
    {
-      UIKeyboardEvent   *keyEvent;
-
-      keyEvent = (UIKeyboardEvent *) event;
-
-      // F12 key: 301
-      if( [keyEvent key] == 301)
+   case UIEventTypePresses :
+#ifdef DEBUG
+      if( [event eventType] == UIEventTypePresses)
       {
-         [self dump];
-         return( nil);
+         UIKeyboardEvent   *keyEvent;
+
+         keyEvent = (UIKeyboardEvent *) event;
+
+         // F12 key: 301
+         if( [keyEvent key] == 301)
+         {
+            [self dump];
+            return( nil);
+         }
       }
-   }
 #endif
+      break;
 
-   if( [event eventType] == UIEventTypeMotion)
-   {
-      _mulle_pointerarray_init( &views, 16, NULL);
+   case UIEventTypeMotion :
+      event = [self handleMouseMotionEvent:(UIMouseMotionEvent *) event];
+      break;
 
-      point = [event locationInWindow];
-
-      //
-      // this could be a dragging event though, which needs to be handled
-      // without tracking areas (...). But we only handle these events if
-      // a button is pressed. We don't send mouseMoved: then though (useful ?)
-      //
-      isDrag = [(UIMouseMotionEvent *) event buttonStates] != 0;
-      n      = mulle_quadtree_find_point( _quadtree,
-                                          point,
-                                          collect_hit_views,
-                                          &views);
-      //
-      // if we have no entered views and nothing is hit, then there is nothing
-      // to do
-      //
-      if( n || mulle_pointerarray_get_count( &_enteredViews))
-      {
-         // first remove all views from enteredViews which are not in views
-         // and send them a MouseExited event
-         // send MouseMoved: events to all remaining enteredViews
-
-         _mulle_pointerarray_init( &remaining, 16, _mulle_pointerarray_get_allocator( &_enteredViews));
-
-         rover = mulle_pointerarray_enumerate( &_enteredViews);
-          while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
-         {
-            if( _mulle_pointerarray_find( &views, view) == mulle_not_found_e)
-            {
-               [view mouseExited:event];
-            }
-            else
-            {
-               // will be sent later by regular event handling code anyway
-               if( ! isDrag)
-                  [view mouseMoved:event];
-               _mulle_pointerarray_add( &remaining, view);
-            }
-         }
-         mulle_pointerarrayenumerator_done( &rover);
-
-         // remaining are now the remaining active enteredViews
-
-         rover = mulle_pointerarray_enumerate( &views);
-         while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
-         {
-            if( _mulle_pointerarray_find( &remaining, view) == mulle_not_found_e)
-            {
-               [view mouseEntered:event];
-               _mulle_pointerarray_add( &remaining, view);
-            }
-         }
-         mulle_pointerarrayenumerator_done( &rover);
-
-         // now move remaining to _enteredViews and switch to remaining
-         mulle_pointerarray_done( &_enteredViews);
-         memcpy( &_enteredViews, &remaining, sizeof( struct mulle_pointerarray));
-      }
-      mulle_pointerarray_done( &views);
-
-      if( ! isDrag)
-         return( nil);
+   case UIEventTypeWindow :
+      event = [self handleWindowEvent:(UIWindowEvent *) event];
+      break;
    }
 
+
+   if( ! event)
+      return( event);
 
 //   if( [event isKindOfClass:[UIMouseScrollEvent class]])
 //      [self dump];
    return( [super handleEvent:event]);
+}
+
+
+/*
+ * Event handling of the window. Events undergo the following cycle
+ * ----- [main thread]
+ * glfw ->
+ *    UIWindow C callback ->
+ *       UIEvent alloc/reuse ->
+ *          UIWindow queueEvent: ->
+ * ----- [window thread]
+ *             UIWindow pollEvents ->
+ *                UIWindow handleEvent: ->
+ *                   UIEvent release ->
+ *                       UIEvent reuse/dealloc
+ * -----
+ */
+
+- (BOOL) willDiscardEvent:(UIEvent *) event
+{
+   return( YES);
+}
+
+- (BOOL) willDiscardOverflowEvent:(UIEvent *) event
+{
+   fprintf( stderr, "*** windows %p (%p) discards event due to queue overflow\n", self, self->_thread);
+   return( [self willDiscardEvent:event]);
+}
+
+
+- (BOOL) willDiscardPendingEvent:(UIEvent *) event
+{
+   return( [self willDiscardEvent:event]);
+}
+
+
+- (void) queueRetainedEvent:(UIEvent *) event
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   //
+   // events that can not be queued will have to be discarded
+   //
+   if( _mulle__pointerfifo4_write( &_eventQueue, event))
+   {
+      if( [self willDiscardOverflowEvent:event]) // window can figure out something
+      {                                          // for super important events
+         [event autorelease];
+      }
+   }
+}
+
+- (void) queueEvent:(UIEvent *) event
+{
+   [self queueRetainedEvent:[event retain]];
+}
+
+
+//
+// Discard events queue for the window. This has to be called by the window
+// thread.
+//
+- (void) discardPendingEvents
+{
+   NSUInteger   old;
+
+   assert( [self isWindowThread]);
+
+   old = _discardEvents;
+   _discardEvents = ~0;  // discard all
+   {
+      UIEvent   *event;
+
+      @autoreleasepool
+      {
+         for(;;)
+         {
+            event = _mulle__pointerfifo4_read_barrier( &_eventQueue);
+            if( ! event)
+               break;
+
+            if( [self willDiscardPendingEvent:event]) // window can figure out something
+               [event autorelease];
+         }
+      }
+   }
+   _discardEvents = old;
+}
+
+
+//
+// Execute all events in the queue until empty. This has to be called by the
+// Windows thread
+//
+- (NSUInteger) pollEvents
+{
+   UIEvent   *event;
+   BOOL      mask;
+
+   assert( [self isWindowThread]);
+
+   mask = 0;
+   if( [NSThread mulleIsMainThread])
+      [UIEvent os_pollEvents];
+
+   for(;;)
+   {
+      event = _mulle__pointerfifo4_read_barrier( &_eventQueue);
+      if( ! event)
+         break;
+
+      @autoreleasepool
+      {
+         // could time event time spent and then complain if it's too long
+         [self handleEvent:event];
+         mask |= [event eventType];
+      }
+      [event release];
+   }
+   return( mask);
+}
+
+
+// in terms of rendering, we are hopefully say in the middle of the frame
+// the frame as rendered and now we do the events. We want to do also events
+// coming in in the second half of the frame, but we do not want to busy wait
+// nor do we want to sleep long, because of latency.
+//
+#ifdef ns
+# undef ns
+#endif
+#ifdef us
+# undef us
+#endif
+
+#define us( x)    (long) ((x) * 1000)
+#define ms( x)    (long) (us(x) * 1000)
+
+
+- (NSUInteger) waitForEvents:(CARelativeTime) timeout
+                         now:(CAAbsoluteTime) now
+                returnsEarly:(BOOL) returnsEarly
+{
+   struct timespec   delay;
+   CAAbsoluteTime    now;
+   CAAbsoluteTime    then;
+   NSUInteger        mask;
+
+   now  = CAAbsoluteTimeNow();
+   then = now + timeout;
+   mask = 0;
+
+   for(;;)
+   {
+      mask |= [self pollEvents];
+      if( mask && returnsEarly)
+         break;
+
+      // could also check here, if events took too much time
+      if( CAAbsoluteTimeNow() >= then)
+         break;
+
+      delay.tv_sec  = 0;
+      delay.tv_nsec = ms( 0.5);
+      nanosleep( &delay, NULL);
+   }
+   return( mask);
+}
+
+
+- (NSUInteger) waitForEventsHz:(double) hz
+{
+   return( [self waitForEvents:1.0/hz
+                           now:CAAbsoluteTimeNow()
+                  returnsEarly:YES]);
+}
+
+
+- (NSUInteger) waitForEvents:(CARelativeTime) timeout
+{
+   return( [self waitForEvents:timeout
+                           now:CAAbsoluteTimeNow()
+                  returnsEarly:YES]);
 }
 
 @end

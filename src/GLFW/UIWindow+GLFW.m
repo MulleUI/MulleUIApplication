@@ -12,6 +12,7 @@
 #import "UIWindow+UIEvent.h"
 
 
+// Due to the way GLFW is setup,
 @implementation UIWindow ( GLFW)
 
 static void   keyCallback( GLFWwindow* window,
@@ -21,6 +22,8 @@ static void   keyCallback( GLFWwindow* window,
                            int mods)
 {
    UIWindow   *self;
+
+   assert( [NSThread mulleIsMainThread]);
 
    self = glfwGetWindowUserPointer( window);
    [self _keyCallback:key
@@ -34,6 +37,8 @@ void   charCallback(GLFWwindow* window, unsigned int codepoint)
 {
    UIWindow   *self;
 
+   assert( [NSThread mulleIsMainThread]);
+
    self = glfwGetWindowUserPointer( window);
    [self _charCallback:codepoint];
 }
@@ -46,21 +51,25 @@ static void   mouseButtonCallback( GLFWwindow* window,
 {
    UIWindow   *self;
 
+   assert( [NSThread mulleIsMainThread]);
+
    self  = glfwGetWindowUserPointer( window);
-   [self _mouseButtonCallback:button 
-                       action:action           
+   [self _mouseButtonCallback:button
+                       action:action
                     modifiers:mods];
 }
 
 
-static void   mouseMoveCallback( GLFWwindow* window,
+static void   mouseMotionCallback( GLFWwindow* window,
                                  double xpos,
                                  double ypos)
 {
    UIWindow   *self;
 
+   assert( [NSThread mulleIsMainThread]);
+
    self = glfwGetWindowUserPointer( window);
-   [self _mouseMoveCallback:CGPointMake( xpos, ypos)];
+   [self _mouseMotionCallback:CGPointMake( xpos, ypos)];
 }
 
 
@@ -69,6 +78,8 @@ static void   mouseScrollCallback( GLFWwindow *window,
                                    double yoffset)
 {
    UIWindow   *self;
+
+   assert( [NSThread mulleIsMainThread]);
 
    self  = glfwGetWindowUserPointer( window);
    [self _mouseScrollCallback:CGPointMake( xoffset, yoffset)];
@@ -79,6 +90,8 @@ static void   windowMoveCallback( GLFWwindow* window, int xpos, int ypos)
 {
    UIWindow   *self;
 
+   assert( [NSThread mulleIsMainThread]);
+
    self = glfwGetWindowUserPointer( window);
    [self _windowMoveCallback:CGPointMake( xpos, ypos)];
 }
@@ -88,15 +101,29 @@ static void   windowRefreshCallback( GLFWwindow* window)
 {
    UIWindow   *self;
 
+   assert( [NSThread mulleIsMainThread]);
+
    self = glfwGetWindowUserPointer( window);
    [self _windowRefreshCallback];
 }
 
 
+static void   windowCloseCallback( GLFWwindow* window)
+{
+   UIWindow   *self;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   self = glfwGetWindowUserPointer( window);
+   [self _windowCloseCallback];
+}
+
 // framebufferResize is more interesting though
 static void   windowResizeCallback( GLFWwindow* window, int width, int height)
 {
    UIWindow   *self;
+
+   assert( [NSThread mulleIsMainThread]);
 
    self = glfwGetWindowUserPointer( window);
    [self _windowResizeCallback:CGSizeMake( width, height)];
@@ -108,6 +135,8 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    UIWindow   *self;
    CGRect     frame;
 
+   assert( [NSThread mulleIsMainThread]);
+
    self = glfwGetWindowUserPointer( window);
    [self _framebufferResizeCallback:CGSizeMake( width, height)];
 }
@@ -117,9 +146,11 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
 {
    assert( _window);
 
+   assert( [NSThread mulleIsMainThread]);
+
    // input device events
    glfwSetMouseButtonCallback( _window, mouseButtonCallback);
-   glfwSetCursorPosCallback( _window, mouseMoveCallback);
+   glfwSetCursorPosCallback( _window, mouseMotionCallback);
    glfwSetKeyCallback( _window, keyCallback);
    glfwSetCharCallback( _window, charCallback);
    glfwSetScrollCallback( _window, mouseScrollCallback);
@@ -128,27 +159,9 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    glfwSetWindowSizeCallback( _window, windowResizeCallback);
    glfwSetWindowPosCallback( _window, windowMoveCallback);
    glfwSetFramebufferSizeCallback( _window, framebufferResizeCallback);
-   glfwSetWindowRefreshCallback( _window, windowRefreshCallback);   
+   glfwSetWindowRefreshCallback( _window, windowRefreshCallback);
+   glfwSetWindowCloseCallback( _window, windowCloseCallback);
 }
-
-
-static void   error_callback(int code, const char* description)
-{
-   fprintf( stderr, "GLFW Error #%d: \"%s\"\n", code, description);
-}
-
-
-+ (void) os_initialize
-{
-   if( ! glfwInit())
-   {
-      fprintf( stderr, "Couldn't get GLFW initialized\n");
-      abort();
-   }
-   // calling glSwapInterval here is too early
-   glfwSetErrorCallback( error_callback);
-}
-
 
 + (CGFloat) os_primaryMonitorPPI
 {
@@ -156,6 +169,8 @@ static void   error_callback(int code, const char* description)
    GLFWvidmode      *mode;
    int              h;
    CGFloat          ppi;
+
+   assert( [NSThread mulleIsMainThread]);
 
    //
    monitor = glfwGetPrimaryMonitor();
@@ -183,7 +198,10 @@ static void   error_callback(int code, const char* description)
    int   ypos;
    int   width;
    int   height;
-   
+
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
+
    glfwGetWindowPos( _window, &xpos, &ypos);
    glfwGetWindowSize( _window, &width, &height);  // just to be sure...
 
@@ -197,6 +215,8 @@ static void   error_callback(int code, const char* description)
                           styleMask:(NSUInteger) styleMask
 {
    void   *window;
+
+   assert( [NSThread mulleIsMainThread]);
 
 #if MULLE_UI_GLVERSION == MULLE_GLES2
    glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 2);
@@ -222,6 +242,10 @@ static void   error_callback(int code, const char* description)
    // calls. alas, we are doing OpenGLES 2.0 minimum, so I don't know
    // if this is useful.
 
+   // TODO: create windows invisible always, but make visible after first
+   //       render call. pro: window won't show up empty for an unknown 
+   //       amount of time. con: window won't show up at all for an unknown 
+   //       amount of time.
    window = glfwCreateWindow( (int) frame.size.width,
                               (int) frame.size.height,
                               title ? title : "",
@@ -238,14 +262,22 @@ static void   error_callback(int code, const char* description)
    // to draw stuff
    //
    glfwSetWindowUserPointer( window, self);
-  
+
    return( window);
+}
+
+
+- (void) os_destroyWindow
+{
+   glfwDestroyWindow( _window);
 }
 
 
 - (void) os_startRender
 {
-   // lock ?
+   // can be called from any thread
+   assert( _window);
+
    [_renderContextLock lock];
    glfwMakeContextCurrent( _window);
 }
@@ -253,6 +285,9 @@ static void   error_callback(int code, const char* description)
 
 - (void) os_endRender
 {
+   // can be called from any thread
+   assert( _window);
+
    glfwMakeContextCurrent( NULL);
    [_renderContextLock unlock];
 }
@@ -262,6 +297,9 @@ static void   error_callback(int code, const char* description)
 {
    int   winWidth;
    int   winHeight;
+
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
 
    glfwGetWindowSize( _window, &winWidth, &winHeight);
    return( CGSizeMake( winWidth, winHeight));
@@ -273,6 +311,9 @@ static void   error_callback(int code, const char* description)
    int   fbWidth;
    int   fbHeight;
 
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
+
    glfwGetFramebufferSize( _window, &fbWidth, &fbHeight);
    return( CGSizeMake( fbWidth, fbHeight));
 }
@@ -280,20 +321,25 @@ static void   error_callback(int code, const char* description)
 
 - (void) os_swapBuffers
 {
+   // can be called from any thread
+   assert( _window);
+
    glfwSwapBuffers( _window);
 }
 
 
-- (void) os_setSwapInterval:(NSUInteger) value
++ (void) os_setSwapInterval:(NSUInteger) value
 {
    glfwSwapInterval( (int) value);  // need for smooth pointer/control sync
 }
 
 
-- (CGFloat) os_primaryMonitorRefreshRate
++ (CGFloat) os_primaryMonitorRefreshRate
 {
    GLFWmonitor   *monitor;
    GLFWvidmode   *mode;
+
+   assert( [NSThread mulleIsMainThread]);
 
    monitor = glfwGetPrimaryMonitor();
    mode    = (GLFWvidmode *) glfwGetVideoMode( monitor);
@@ -304,42 +350,36 @@ static void   error_callback(int code, const char* description)
 
 - (void) os_requestClose
 {
+   // can be called from any thread
+   assert( _window);
+
    glfwSetWindowShouldClose( _window, GL_TRUE);
 }
 
 
 - (BOOL) os_windowShouldClose
 {
-   return( glfwWindowShouldClose( _window) ? YES : NO);   
-}
+   // can be called from any thread
+   assert( _window);
 
-
-- (void) os_waitEventsTimeout:(CGFloat) seconds
-{
-   glfwWaitEventsTimeout( seconds);
-}
-
-
-- (void) os_pollEvents
-{
-	glfwPollEvents();
-}
-
-
-+ (void) os_sendEmptyEvent
-{
-   glfwPostEmptyEvent();
+   return( glfwWindowShouldClose( _window) ? YES : NO);
 }
 
 
 - (void) os_show
 {
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
+
    glfwShowWindow( _window);
 }
 
 
 - (void) os_hide
 {
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
+
    glfwHideWindow( _window);
 }
 
@@ -349,12 +389,18 @@ static void   error_callback(int code, const char* description)
 // prefix with os ?
 - (char *) pasteboardCString
 {
-   return( (char *) glfwGetClipboardString( _window));	
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
+
+   return( (char *) glfwGetClipboardString( _window));
 }
 
 
 - (void) setPasteboardCString:(char *) s
 {
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
+
    glfwSetClipboardString( _window, s ? s : "");
 }
 

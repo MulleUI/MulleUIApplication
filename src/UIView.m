@@ -59,6 +59,8 @@
    _clipsSubviews          = YES;  // default
    _userInteractionEnabled = YES;  // default
    _alpha                  = 1.0;
+//   _needsDisplay           = YES;
+
    return( self);
 }
 
@@ -78,6 +80,7 @@
 
    [super dealloc];
 }
+
 
 - (CALayer *) layer
 {
@@ -312,10 +315,10 @@
 }
 
 
-- (void) setNeedsDisplay
-{
-   _needsDisplay = YES;
-}
+//- (void) setNeedsDisplay
+//{
+//   _needsDisplay = YES;
+//}
 
 
 - (void *) forward:(void *) param
@@ -713,9 +716,12 @@
    CGFloat  alpha;
    CGFloat  oldAlpha;
 
+   assert( context);
+   
 #ifdef RENDER_DEBUG_VERBOSE
    fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
 #endif
+//   _needsDisplay = NO;
 
    alpha = [self alpha];
    if( alpha < 0.01)

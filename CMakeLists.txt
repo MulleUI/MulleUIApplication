@@ -28,9 +28,13 @@ set( MAIN_SOURCES
 #src/main-buttons.m
 #src/main-calculator.m
 #src/main-collectionview.m
-#src/main-draw.m
+src/main-draw.m
+#src/main-contentmode.m
+#src/main-event-queue.m
 #src/main-fbo.m
+src/main-freetype.m
 #src/main-label.m
+src/main-layout.m
 #src/main-imageview.m
 #src/main-jspiechart.m
 #src/main-layer.m
@@ -39,16 +43,18 @@ set( MAIN_SOURCES
 #src/main-remove-from-area.m
 #src/main-render-png.m
 #src/main-rowcolumn.m
-#src/main-scrollview.m
+src/main-scrollview.m
 #src/main-slider.m
 #src/main-springs-and-struts.m
 #src/main-stackview.m
 #src/main-svg.m
+src/main-text.m
 #src/main-textfield.m
+src/main-textlayout.m
 #src/main-textstorage.m
-src/main-textview.m
+#src/main-textview.m
 #src/main-viewconversion.m
-src/main-windows.m
+#src/main-windows.m
 )
 
 foreach( MAIN_SOURCE ${MAIN_SOURCES})

@@ -6,16 +6,16 @@
 # Edits will be lost.
 #
 # Disable generation of this file with:
-#   mulle-sde environment --global \
-#                      set MULLE_SOURCETREE_TO_CMAKE_LIBRARIES_FILE DISABLE
+#
+# mulle-sde environment set MULLE_SOURCETREE_TO_CMAKE_LIBRARIES_FILE DISABLE
 #
 if( MULLE_TRACE_INCLUDE)
    message( STATUS "# Include \"${CMAKE_CURRENT_LIST_FILE}\"" )
 endif()
 
 #
-# Generated from sourcetree: GL;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-os-darwin,no-update;
-# Disable with: `mulle-sourcetree mark GL `
+# Generated from sourcetree: 4edeaf88-96fa-49de-a075-3e49d3d939b3;GL;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Disable with: `mulle-sourcetree mark 4edeaf88-96fa-49de-a075-3e49d3d939b3 `
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT GL_LIBRARY)
@@ -101,8 +101,8 @@ endif()
 
 
 #
-# Generated from sourcetree: GLU;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-os-darwin,no-update;
-# Disable with: `mulle-sourcetree mark GLU `
+# Generated from sourcetree: 9d1fb7ab-5eb3-4bc0-b08d-55a1608a9a07;GLU;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Disable with: `mulle-sourcetree mark 9d1fb7ab-5eb3-4bc0-b08d-55a1608a9a07 `
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT GLU_LIBRARY)
@@ -188,8 +188,8 @@ endif()
 
 
 #
-# Generated from sourcetree: X11;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-os-darwin,no-update;
-# Disable with: `mulle-sourcetree mark X11 `
+# Generated from sourcetree: d398f155-a76d-4ed8-ab5d-54d2dbc72c80;X11;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Disable with: `mulle-sourcetree mark d398f155-a76d-4ed8-ab5d-54d2dbc72c80 `
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT X11_LIBRARY)
@@ -275,8 +275,8 @@ endif()
 
 
 #
-# Generated from sourcetree: Xrandr;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-os-darwin,no-update;
-# Disable with: `mulle-sourcetree mark Xrandr `
+# Generated from sourcetree: 7a44004b-d9fa-449c-ab04-5487427b3848;Xrandr;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Disable with: `mulle-sourcetree mark 7a44004b-d9fa-449c-ab04-5487427b3848 `
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XRANDR_LIBRARY)
@@ -362,8 +362,8 @@ endif()
 
 
 #
-# Generated from sourcetree: Xxf86vm;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-os-darwin,no-update;
-# Disable with: `mulle-sourcetree mark Xxf86vm `
+# Generated from sourcetree: b104dcf2-8259-4930-83d2-8b85dcdb833e;Xxf86vm;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Disable with: `mulle-sourcetree mark b104dcf2-8259-4930-83d2-8b85dcdb833e `
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XXF86VM_LIBRARY)
@@ -449,8 +449,8 @@ endif()
 
 
 #
-# Generated from sourcetree: Xinerama;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-os-darwin,no-update;
-# Disable with: `mulle-sourcetree mark Xinerama `
+# Generated from sourcetree: f62b1a75-fa78-4cfd-9040-18085a4f631c;Xinerama;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Disable with: `mulle-sourcetree mark f62b1a75-fa78-4cfd-9040-18085a4f631c `
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XINERAMA_LIBRARY)
@@ -536,8 +536,8 @@ endif()
 
 
 #
-# Generated from sourcetree: Xcursor;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-os-darwin,no-update;
-# Disable with: `mulle-sourcetree mark Xcursor `
+# Generated from sourcetree: 2c53a20e-075d-4978-a7ac-f9789d580d68;Xcursor;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Disable with: `mulle-sourcetree mark 2c53a20e-075d-4978-a7ac-f9789d580d68 `
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XCURSOR_LIBRARY)
@@ -623,8 +623,8 @@ endif()
 
 
 #
-# Generated from sourcetree: dl;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
-# Disable with: `mulle-sourcetree mark dl `
+# Generated from sourcetree: e727cc11-4d6e-4cac-8e49-b4af83930cdf;dl;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
+# Disable with: `mulle-sourcetree mark e727cc11-4d6e-4cac-8e49-b4af83930cdf `
 #
 if( NOT DL_LIBRARY)
    find_library( DL_LIBRARY NAMES dl)
@@ -708,8 +708,8 @@ endif()
 
 
 #
-# Generated from sourcetree: pthread;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
-# Disable with: `mulle-sourcetree mark pthread `
+# Generated from sourcetree: c2345537-4e93-493b-bf21-9e6621303a04;pthread;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
+# Disable with: `mulle-sourcetree mark c2345537-4e93-493b-bf21-9e6621303a04 `
 #
 if( NOT PTHREAD_LIBRARY)
    find_library( PTHREAD_LIBRARY NAMES pthread)
@@ -793,8 +793,8 @@ endif()
 
 
 #
-# Generated from sourcetree: m;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
-# Disable with: `mulle-sourcetree mark m `
+# Generated from sourcetree: 4f8c9930-b601-4bed-9ef6-59002def0b11;m;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
+# Disable with: `mulle-sourcetree mark 4f8c9930-b601-4bed-9ef6-59002def0b11 `
 #
 if( NOT M_LIBRARY)
    find_library( M_LIBRARY NAMES m)
@@ -878,8 +878,8 @@ endif()
 
 
 #
-# Generated from sourcetree: z;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
-# Disable with: `mulle-sourcetree mark z `
+# Generated from sourcetree: 186860c9-0456-4544-910b-95f1e848cd75;z;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
+# Disable with: `mulle-sourcetree mark 186860c9-0456-4544-910b-95f1e848cd75 `
 #
 if( NOT Z_LIBRARY)
    find_library( Z_LIBRARY NAMES z)
@@ -906,8 +906,8 @@ endif()
 
 
 #
-# Generated from sourcetree: bz2;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
-# Disable with: `mulle-sourcetree mark bz2 `
+# Generated from sourcetree: 7624c74f-7fe1-48bb-ac0b-8757606dbaae;bz2;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
+# Disable with: `mulle-sourcetree mark 7624c74f-7fe1-48bb-ac0b-8757606dbaae `
 #
 if( NOT BZ2_LIBRARY)
    find_library( BZ2_LIBRARY NAMES bz2)
@@ -934,8 +934,8 @@ endif()
 
 
 #
-# Generated from sourcetree: png;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
-# Disable with: `mulle-sourcetree mark png `
+# Generated from sourcetree: c2429dea-a3d1-4360-8094-d5de92469565;png;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
+# Disable with: `mulle-sourcetree mark c2429dea-a3d1-4360-8094-d5de92469565 `
 #
 if( NOT PNG_LIBRARY)
    find_library( PNG_LIBRARY NAMES png)
@@ -962,8 +962,8 @@ endif()
 
 
 #
-# Generated from sourcetree: harfbuzz;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
-# Disable with: `mulle-sourcetree mark harfbuzz `
+# Generated from sourcetree: 8be56cd3-eb2f-4805-ae2a-bb7b14522a8b;harfbuzz;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
+# Disable with: `mulle-sourcetree mark 8be56cd3-eb2f-4805-ae2a-bb7b14522a8b `
 #
 if( NOT HARFBUZZ_LIBRARY)
    find_library( HARFBUZZ_LIBRARY NAMES harfbuzz)
