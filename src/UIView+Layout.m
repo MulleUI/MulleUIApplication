@@ -12,8 +12,16 @@
 
 // https://developer.apple.com/documentation/uikit/uiview/1622625-sizethatfits?language=objc
 - (CGSize) sizeThatFits:(CGSize) size
+                context:(CGContext *) context
 {
    return( [_mainLayer frame].size);
+}
+
+
+- (CGSize) sizeThatFits:(CGSize) size
+{
+   return( [self sizeThatFits:size
+                      context:nil]);
 }
 
 # pragma mark -
@@ -65,6 +73,8 @@
 }
 
 
+// TODO: use MulleLayout as this is pretty much the same thing
+
 - (void) layoutSubview:(UIView *) view
               inBounds:(CGRect) bounds
       autoresizingMask:(UIViewAutoresizing) autoresizingMask
@@ -112,7 +122,12 @@
       {
          if( autoresizingMask & MulleUIViewAutoresizingStickToTop)
          {
-            newFrame.origin.y = marginalBounds.origin.y;
+            if( autoresizingMask & MulleUIViewAutoresizingStickToBottom)
+            {
+               newFrame.origin.y = CGRectGetMidY( marginalBounds) - newFrame.size.height / 2.0;;
+            }
+            else
+               newFrame.origin.y = marginalBounds.origin.y;
          }
          else
             if( autoresizingMask & MulleUIViewAutoresizingStickToBottom)
@@ -122,7 +137,12 @@
 
          if( autoresizingMask & MulleUIViewAutoresizingStickToLeft)
          {
-            newFrame.origin.x = marginalBounds.origin.x;
+            if( autoresizingMask & MulleUIViewAutoresizingStickToRight)
+            {
+               newFrame.origin.x = CGRectGetMidX( marginalBounds) - newFrame.size.width / 2.0;
+            }
+            else
+               newFrame.origin.x = marginalBounds.origin.x;
          }
          else
             if( autoresizingMask & MulleUIViewAutoresizingStickToRight)

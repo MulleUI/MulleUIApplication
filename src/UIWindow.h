@@ -1,6 +1,7 @@
 #import "UIView.h"
 
 #import <mulle-container/mulle-container.h>
+#import <mulle-fifo/mulle-fifo.h>
 
 struct MulleFrameInfo;
 
@@ -8,7 +9,7 @@ typedef UIView   MulleWindowPlane;
 
 @class UIPasteboard;
 @class UIEvent;
-
+@class UIApplication;
 
 
 enum MulleWindowStyleMask
@@ -42,24 +43,51 @@ enum MulleWindowStyleMask
    NSUInteger         _nDividedRects;
    NSUInteger         _nTest;
    NSLock             *_renderContextLock;
+
+   //
+   // 8Khz at 60fps = 133 events, 256 should be ample
+   // The queue is single consumer/single producer thread. The producer is
+   // ALWAYS the main thread. The consumer is _thread. (can also be the
+   // main thread)
+   //
+   struct mulle__pointerfifo4   _eventQueue;
+   // need to setNeedsDisplay to get the renderer out of the lock and start
+   // the render. The _renderContextLock still needs to be observed when
+   // attempting to modify the view hierarchy ?
+
+   NSConditionLock   *_needsDisplayLock;
    BOOL               _resizing;
+   CAAbsoluteTime     _lastResizeEventTimestamp;
+   BOOL               _shouldClose;
 }
 
 @property( retain) id                   userInfo;
+// TODO: pasteboard is a global resource and is on Application ? 
 @property( retain) UIPasteboard         *pasteboard;
+@property( assign) NSThread             *thread;
 @property( assign, readonly) CGPoint    mouseLocation;
 @property( assign, readonly) uint64_t   mouseButtonStates;
 @property( assign, readonly) uint64_t   modifiers;
-@property( assign, readonly) CGFloat    primaryMonitorPPI;
 @property( assign) CGFloat              scrollWheelSensitivity;
+
+// cached values that are set via events from the main thread
+// synchronize them with the renderContextLock ?
+@property( assign, readonly) CGFloat    primaryMonitorPPI;
+@property( assign, readonly) CGFloat    primaryMonitorRefreshRate;
+@property( assign, readonly) CGSize     windowSize;
+@property( assign, readonly) CGSize     framebufferSize;
+
 
 @property( assign, getter=isScrollWheelNatural) BOOL scrollWheelNatural;
 
 // nanovg will be done here, here is good time to do plain
 // OpenGL calls, endRender won't have happened yet
 
+// Rendercallbacks. If the renderer is in its own thread, then all these 
+//                  callbacks will appear on the render thread. This thread
+//                  will possibly conflict with events from the main thread.
 //
-// these callbacks will be calles in this sequence for every frame.
+// These callbacks will be called in this sequence for every frame.
 // It should be obvious, that you don't do any system calls in these callbacks
 // and finish ASAP.
 //
@@ -87,6 +115,8 @@ enum MulleWindowStyleMask
 @property void   (*didRenderCallback)( UIWindow *window,
                                        CGContext *context,
                                        struct MulleFrameInfo *info);
+
+// TODO: hmm
 @property UIEvent  *(*keyEventCallback)( UIWindow *window,
                                          UIEvent *event);
 
@@ -106,19 +136,11 @@ enum MulleWindowStyleMask
 - (void) show;
 - (void) hide;
 
-- (void) renderLoopWithContext:(CGContext *) context;
-- (void) renderLoopWithContext:(CGContext *) context
-              maxFramesToRender:(NSUInteger) maxFrames;
-- (void) renderFrameWithContext:(CGContext *) context
-                      frameInfo:(struct MulleFrameInfo *) info;
-
-- (void) requestClose;
-
-- (void) getFrameInfo:(struct MulleFrameInfo *) info;
-
 + (CGFloat) primaryMonitorPPI;
 
-- (CGContext *) createContext;
+- (BOOL) isWindowThread;
+
+- (void) runInApplication:(UIApplication *) application;
 
 @end
 
@@ -129,16 +151,17 @@ enum MulleWindowStyleMask
 
 @end
 
-@interface UIWindow( OSWindow)
+@interface UIWindow( OS)
 
-+ (void) os_initialize;
 + (CGFloat) os_primaryMonitorPPI;
 
 - (void) os_syncFrameWithWindow;
 - (void *) os_createWindowWithFrame:(CGRect) frame
                        titleCString:(char *) title
                           styleMask:(NSUInteger) styleMask;
+- (void) os_destroyWindow;
 
+- (void) os_initEvents;
 - (CGSize) os_windowSize;
 - (CGSize) os_framebufferSize;
 - (void) os_requestClose;
@@ -148,13 +171,13 @@ enum MulleWindowStyleMask
 - (void) os_startRender;
 - (void) os_endRender;
 
-- (void) os_setSwapInterval:(NSUInteger) value;
++ (void) os_setSwapInterval:(NSUInteger) value;
 - (void) os_swapBuffers;
 
 - (void) os_show;
 - (void) os_hide;
 
-- (CGFloat) os_primaryMonitorRefreshRate;
++ (CGFloat) os_primaryMonitorRefreshRate;
 
 @end
 
@@ -163,7 +186,26 @@ enum MulleWindowStyleMask
 
 - (void) _framebufferResizeCallback:(CGSize) size;
 - (void) _windowResizeCallback:(CGSize) size;
+- (void) _windowCloseCallback;
 - (void) _windowRefreshCallback;
 - (void) _windowMoveCallback:(CGPoint) position;
+
+@end
+
+
+@interface UIWindow( Render)
+
+- (void) renderLoopWithContext:(CGContext *) context;
+- (BOOL) renderLoopWithContext:(CGContext *) context
+             maxFramesToRender:(NSUInteger) maxFrames;
+- (void) renderFrameWithContext:(CGContext *) context
+                      frameInfo:(struct MulleFrameInfo *) info;
+- (BOOL) renderFrameWaitForNeedsDisplayWithContext:(CGContext *) context;
+
+- (void) requestClose;
+
+- (void) getFrameInfo:(struct MulleFrameInfo *) info;
+
+- (CGContext *) createContext;
 
 @end

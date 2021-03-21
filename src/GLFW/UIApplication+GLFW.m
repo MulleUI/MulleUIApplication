@@ -14,7 +14,27 @@
 
 @implementation UIApplication ( GLFW)
 
-- (void) os_terminate
+static void   error_callback(int code, const char* description)
+{
+   fprintf( stderr, "GLFW Error #%d: \"%s\"\n", code, description);
+}
+
+
++ (void) os_initialize
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   if( ! glfwInit())
+   {
+      fprintf( stderr, "Couldn't get GLFW initialized\n");
+      abort();
+   }
+   // calling glSwapInterval here is too early
+   glfwSetErrorCallback( error_callback);
+}
+
+
++ (void) os_terminate
 {
 	glfwTerminate();
 }

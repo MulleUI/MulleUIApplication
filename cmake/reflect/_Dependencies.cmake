@@ -5,16 +5,16 @@
 # Edits will be lost.
 #
 # Disable generation of this file with:
-#   mulle-sde environment --global \
-#                      set MULLE_SOURCETREE_TO_CMAKE_DEPENDENCIES_FILE DISABLE
+#
+# mulle-sde environment set MULLE_SOURCETREE_TO_CMAKE_DEPENDENCIES_FILE DISABLE
 #
 if( MULLE_TRACE_INCLUDE)
    message( STATUS "# Include \"${CMAKE_CURRENT_LIST_FILE}\"" )
 endif()
 
 #
-# Generated from sourcetree: freetype;no-all-load,no-header,no-import,no-inplace,only-liftheaders;freetyped,freetype
-# Disable with: `mulle-sourcetree mark freetype no-header`
+# Generated from sourcetree: e670491e-d104-45c1-a5e0-798bd854f01f;freetype;no-all-load,no-header,no-import,no-inplace,only-liftheaders;freetyped,freetype
+# Disable with: `mulle-sourcetree mark e670491e-d104-45c1-a5e0-798bd854f01f no-link`
 #
 if( NOT FREETYPED_LIBRARY)
    find_library( FREETYPED_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}freetyped${CMAKE_STATIC_LIBRARY_SUFFIX} freetyped ${CMAKE_STATIC_LIBRARY_PREFIX}freetype${CMAKE_STATIC_LIBRARY_SUFFIX} freetype NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
@@ -98,8 +98,8 @@ endif()
 
 
 #
-# Generated from sourcetree: glfw;no-all-load,no-import;glfw3
-# Disable with: `mulle-sourcetree mark glfw no-header`
+# Generated from sourcetree: 83270b01-d35c-4b2e-8b74-7b87855d7c30;glfw;no-all-load,no-import;glfw3
+# Disable with: `mulle-sourcetree mark 83270b01-d35c-4b2e-8b74-7b87855d7c30 no-link`
 #
 if( NOT GLFW3_LIBRARY)
    find_library( GLFW3_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX} glfw3 NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
@@ -183,8 +183,8 @@ endif()
 
 
 #
-# Generated from sourcetree: mulle-testallocator;no-import,no-singlephase;
-# Disable with: `mulle-sourcetree mark mulle-testallocator no-header`
+# Generated from sourcetree: 6a75997e-281d-4d5a-88d7-096548c2ab59;mulle-testallocator;no-cmakesearchpath,no-import,no-singlephase;
+# Disable with: `mulle-sourcetree mark 6a75997e-281d-4d5a-88d7-096548c2ab59 no-link`
 #
 if( NOT MULLE_TESTALLOCATOR_LIBRARY)
    find_library( MULLE_TESTALLOCATOR_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-testallocator${CMAKE_STATIC_LIBRARY_SUFFIX} mulle-testallocator NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
@@ -211,23 +211,6 @@ if( NOT MULLE_TESTALLOCATOR_LIBRARY)
       get_filename_component( _TMP_MULLE_TESTALLOCATOR_ROOT "${MULLE_TESTALLOCATOR_LIBRARY}" DIRECTORY)
       get_filename_component( _TMP_MULLE_TESTALLOCATOR_ROOT "${_TMP_MULLE_TESTALLOCATOR_ROOT}" DIRECTORY)
       #
-      #
-      # Append header directory to user search path.
-      # Disable with: `mulle-sourcetree mark mulle-testallocator no-cmakesearchpath`
-      #
-      foreach( _TMP_MULLE_TESTALLOCATOR_NAME "mulle-testallocator")
-         set( _TMP_MULLE_TESTALLOCATOR_DIR "${_TMP_MULLE_TESTALLOCATOR_ROOT}/include/${_TMP_MULLE_TESTALLOCATOR_NAME}")
-         if( IS_DIRECTORY "${_TMP_MULLE_TESTALLOCATOR_DIR}")
-            set( INHERITED_INCLUDE_DIRS
-               ${INHERITED_INCLUDE_DIRS}
-               "${_TMP_MULLE_TESTALLOCATOR_DIR}"
-               CACHE INTERNAL "need to cache this"
-            )
-            break()
-         else()
-            message( STATUS "${_TMP_MULLE_TESTALLOCATOR_DIR} not found")
-         endif()
-      endforeach()
       #
       # Search for "DependenciesAndLibraries.cmake" to include.
       # Disable with: `mulle-sourcetree mark mulle-testallocator no-cmakedependency`
@@ -285,8 +268,8 @@ endif()
 
 
 #
-# Generated from sourcetree: MulleJS;no-singlephase;
-# Disable with: `mulle-sourcetree mark MulleJS no-header`
+# Generated from sourcetree: 20d899c9-3a17-4e49-98ef-f0ebf36b5c5f;MulleJS;no-singlephase;
+# Disable with: `mulle-sourcetree mark 20d899c9-3a17-4e49-98ef-f0ebf36b5c5f no-link`
 #
 if( NOT MULLE_JS_LIBRARY)
    find_library( MULLE_JS_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}MulleJS${CMAKE_STATIC_LIBRARY_SUFFIX} MulleJS NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
@@ -387,8 +370,8 @@ endif()
 
 
 #
-# Generated from sourcetree: Foundation;no-singlephase;
-# Disable with: `mulle-sourcetree mark Foundation no-header`
+# Generated from sourcetree: 7c641bed-99fa-4942-a438-2776d47692fb;Foundation;no-singlephase;
+# Disable with: `mulle-sourcetree mark 7c641bed-99fa-4942-a438-2776d47692fb no-link`
 #
 if( NOT FOUNDATION_LIBRARY)
    find_library( FOUNDATION_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}Foundation${CMAKE_STATIC_LIBRARY_SUFFIX} Foundation NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
@@ -489,8 +472,8 @@ endif()
 
 
 #
-# Generated from sourcetree: Foundation-startup;no-cmakedependency,no-cmakeloader,no-dynamic-link,no-header,no-intermediate-link;
-# Disable with: `mulle-sourcetree mark Foundation-startup no-header`
+# Generated from sourcetree: 95aadb81-0457-482f-946a-c7c3a71daa34;Foundation-startup;no-cmakedependency,no-cmakeloader,no-dynamic-link,no-header,no-intermediate-link;
+# Disable with: `mulle-sourcetree mark 95aadb81-0457-482f-946a-c7c3a71daa34 no-link`
 #
 if( NOT FOUNDATION_STARTUP_LIBRARY)
    find_library( FOUNDATION_STARTUP_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}Foundation-startup${CMAKE_STATIC_LIBRARY_SUFFIX} Foundation-startup NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
@@ -541,8 +524,8 @@ endif()
 
 
 #
-# Generated from sourcetree: mujs;no-all-load,no-bequeath,no-cmakeloader,no-import,no-public,no-singlephase;
-# Disable with: `mulle-sourcetree mark mujs no-header`
+# Generated from sourcetree: df9c6e54-18c7-4d99-aa91-a581d19f4527;mujs;no-all-load,no-bequeath,no-cmakeloader,no-import,no-public,no-singlephase;
+# Disable with: `mulle-sourcetree mark df9c6e54-18c7-4d99-aa91-a581d19f4527 no-link`
 #
 if( NOT MUJS_LIBRARY)
    find_library( MUJS_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}mujs${CMAKE_STATIC_LIBRARY_SUFFIX} mujs NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
@@ -626,8 +609,8 @@ endif()
 
 
 #
-# Generated from sourcetree: MulleBase64;no-singlephase;
-# Disable with: `mulle-sourcetree mark MulleBase64 no-header`
+# Generated from sourcetree: 0f34d334-4d54-49d9-a8a7-e08c6d885db9;MulleBase64;no-singlephase;
+# Disable with: `mulle-sourcetree mark 0f34d334-4d54-49d9-a8a7-e08c6d885db9 no-link`
 #
 if( NOT MULLE_BASE64_LIBRARY)
    find_library( MULLE_BASE64_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}MulleBase64${CMAKE_STATIC_LIBRARY_SUFFIX} MulleBase64 NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
@@ -723,5 +706,33 @@ if( NOT MULLE_BASE64_LIBRARY)
       endif()
    else()
       message( FATAL_ERROR "MULLE_BASE64_LIBRARY was not found")
+   endif()
+endif()
+
+
+#
+# Generated from sourcetree: 554cb551-8992-4382-a794-e5e8c3242817;mulle-fifo;no-all-load,no-cmakeinherit,no-cmakesearchpath,no-import,no-singlephase;
+# Disable with: `mulle-sourcetree mark 554cb551-8992-4382-a794-e5e8c3242817 no-link`
+#
+if( NOT MULLE_FIFO_LIBRARY)
+   find_library( MULLE_FIFO_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-fifo${CMAKE_STATIC_LIBRARY_SUFFIX} mulle-fifo NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
+   message( STATUS "MULLE_FIFO_LIBRARY is ${MULLE_FIFO_LIBRARY}")
+   #
+   # The order looks ascending, but due to the way this file is read
+   # it ends up being descending, which is what we need.
+   #
+   if( MULLE_FIFO_LIBRARY)
+      #
+      # Add MULLE_FIFO_LIBRARY to DEPENDENCY_LIBRARIES list.
+      # Disable with: `mulle-sourcetree mark mulle-fifo no-cmakeadd`
+      #
+      set( DEPENDENCY_LIBRARIES
+         ${DEPENDENCY_LIBRARIES}
+         ${MULLE_FIFO_LIBRARY}
+         CACHE INTERNAL "need to cache this"
+      )
+      # intentionally left blank
+   else()
+      message( FATAL_ERROR "MULLE_FIFO_LIBRARY was not found")
    endif()
 endif()

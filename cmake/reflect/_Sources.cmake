@@ -13,12 +13,16 @@ src/main-animate-circles.m
 src/main-buttons.m
 src/main-calculator.m
 src/main-collectionview.m
+src/main-contentmode.m
 src/main-draw.m
+src/main-event-queue.m
 src/main-fbo.m
+src/main-freetype.m
 src/main-imageview.m
 src/main-jspiechart.m
 src/main-label.m
 src/main-layer.m
+src/main-layout.m
 src/main-many-rectangles.m
 src/main-path.m
 src/main-remove-from-area.m
@@ -30,6 +34,8 @@ src/main-springs-and-struts.m
 src/main-stackview.m
 src/main-svg.m
 src/main-textfield.m
+src/main-textlayout.m
+src/main-text.m
 src/main-textstorage.m
 src/main-textview.m
 src/main-viewconversion.m
@@ -58,6 +64,7 @@ src/Foundation/NSIndexPath.m
 src/Foundation/NSIndexSet.m
 src/Foundation/NSMutableIndexSet.m
 src/GLFW/UIApplication+GLFW.m
+src/GLFW/UIEvent+GLFW.m
 src/GLFW/UIWindow+GLFW.m
 src/MulleBitmapImage+PNG.m
 src/MulleBitmapImage.m
@@ -130,6 +137,7 @@ src/UIView+UIEvent.m
 src/UIView+UIResponder.m
 src/UIView.m
 src/UIWindow+CGGeometry.m
+src/UIWindow+Render.m
 src/UIWindow+UIEvent.m
 src/UIWindow+UIPasteboard.m
 src/UIWindow+UIResponder.m
@@ -145,7 +153,6 @@ src/mulle-quadtree.m
 src/nanoperf.m
 src/nanosvg.m
 src/nanovg+CString.m
-src/x.m
 src/yoga/YGEnums.c
 src/yoga/YGNodeList.c
 src/yoga/Yoga.c

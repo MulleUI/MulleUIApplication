@@ -35,6 +35,7 @@ src/mulle-js-private.h
 )
 
 set( PUBLIC_GENERATED_HEADERS
+src/reflect/_MulleUI-export.h
 src/reflect/_MulleUI-import.h
 src/reflect/_MulleUI-include.h
 )

@@ -14,15 +14,23 @@ typedef enum
    UIEventTypeUnicode = 0x02,  // Unicode char (interpreted Keyboard)
    UIEventTypeTouches = 0x04,  // Mouse click
    UIEventTypeMotion  = 0x08,  // Mouse movemeent
-   UIEventTypeScroll  = 0x10   // Mouse Scrollwheel
+   UIEventTypeScroll  = 0x10,  // Mouse Scrollwheel
+   UIEventTypeWindow  = 0x20   // Window event (close, resize, move etc)
 } UIEventType;
 
-
+//
+// As we are using glfw, the main object queue is in the main thread
+// we retrieve objects from a central growing array of possibly used
+// objects and reuse them. When we reclaim an object from a queue, we
+// need to put up a memory barrier, so the receiver does not see stale
+// data. An UIEvent is not read/inly as _translatedPoint is used for
+// storing by UIView for efficiency (temporarirly used)
+//
 @interface UIEvent : NSObject
 {
    UIWindow  *_window;   // assign  ??
    CGPoint   _translatedPoint;
-   UIView    *_translatedView; // assign!
+   UIView    *_translatedView; // NOT READONLY!!
 }
 
 @property( assign, readonly) CGPoint   locationInWindow;
@@ -35,6 +43,9 @@ typedef enum
 // current known state of modifier keys
 @property( assign, readonly) uint64_t  modifiers;
 
++ (void) waitForEvents:(double) hz;
++ (void) sendEmptyEvent;
+
 //
 // translated mouseLocation to current view bounds (ephemeral)
 // set by _handleEvent:position for
@@ -45,10 +56,10 @@ typedef enum
                      forView:(UIView *) view;
 - (CGPoint) _translatedPointForView:(UIView *) view;
 
-- (id) initWithWindow:(UIWindow *) window
-        mouseLocation:(CGPoint) pos
-            modifiers:(int) mods;
-
+- (instancetype) initWithWindow:(UIWindow *) window
+                  mouseLocation:(CGPoint) pos
+                      modifiers:(int) mods;
+          
 @end
 
 
@@ -68,12 +79,12 @@ typedef enum
 @property( assign, readonly) int   scanCode;
 @property( assign, readonly) int   action;
 
-- (id) initWithWindow:(UIWindow *) window
-        mouseLocation:(CGPoint) pos
-            modifiers:(int) mods
-                  key:(int) key
-             scanCode:(int) scanCode
-               action:(int) action;
+- (instancetype) initWithWindow:(UIWindow *) window
+                  mouseLocation:(CGPoint) pos
+                      modifiers:(int) mods
+                            key:(int) key
+                       scanCode:(int) scanCode
+                         action:(int) action;
 @end
 
 
@@ -82,11 +93,11 @@ typedef enum
 
 @property( assign, readonly) int   character;
 
-- (id) initWithWindow:(UIWindow *) window
-        mouseLocation:(CGPoint) pos
-            modifiers:(int) mods
-            character:(int) key;
-
+- (instancetype) initWithWindow:(UIWindow *) window
+                  mouseLocation:(CGPoint) pos
+                      modifiers:(int) mods
+                      character:(int) key;
+          
 @end
 
 
@@ -95,11 +106,11 @@ typedef enum
 @property( assign, readonly) int   button;
 @property( assign, readonly) int   action;
 
-- (id) initWithWindow:(UIWindow *) window
-        mouseLocation:(CGPoint) pos
-            modifiers:(int) mods
-               button:(int) button
-               action:(int) action;
+- (instancetype) initWithWindow:(UIWindow *) window
+                  mouseLocation:(CGPoint) pos
+                      modifiers:(int) mods
+                         button:(int) button
+                         action:(int) action;
                   
 
 @end
@@ -107,10 +118,10 @@ typedef enum
 
 @interface UIMouseMotionEvent : UIEvent
 
-- (id) initWithWindow:(UIWindow *) window
-        mouseLocation:(CGPoint) pos
-            modifiers:(int) mods
-         buttonStates:(uint64_t) buttonStates;
+- (instancetype) initWithWindow:(UIWindow *) window
+                  mouseLocation:(CGPoint) pos
+                      modifiers:(int) mods
+                   buttonStates:(uint64_t) buttonStates;
 
 @property( assign, readonly) int   buttonStates;
 
@@ -119,10 +130,10 @@ typedef enum
 
 @interface UIMouseScrollEvent : UIEvent
 
-- (id) initWithWindow:(UIWindow *) window
-        mouseLocation:(CGPoint) pos
-            modifiers:(int) mods
-         scrollOffset:(CGPoint) offset;
+- (instancetype) initWithWindow:(UIWindow *) window
+                  mouseLocation:(CGPoint) pos
+                      modifiers:(int) mods
+                   scrollOffset:(CGPoint) offset;
 
 @property( assign, readonly) CGPoint   scrollOffset;
 
@@ -130,6 +141,72 @@ typedef enum
 + (void) setScrollWheelAcceleration:(CGFloat) value;
 
 - (CGPoint) acceleratedScrollOffset;
+
+@end
+
+
+enum UIWindowEventType
+{
+   UIWindowEventTypeClose             = 0x01,  
+   UIWindowEventTypeRefresh           = 0x02,  
+   UIWindowEventTypeResize            = 0x04,  
+   UIWindowEventTypeMove              = 0x08,  
+   UIWindowEventTypeFramebufferResize = 0x10 
+};
+
+
+@interface UIWindowEvent : UIEvent
+@end
+
+
+@interface UIWindowEvent( Subclasses)
+
+- (enum UIWindowEventType) windowEventType;
+
+@end
+
+
+@interface UIWindowMoveEvent : UIWindowEvent
+
+- (instancetype) initWithWindow:(UIWindow *) window
+                  mouseLocation:(CGPoint) pos
+                      modifiers:(int) mods
+                         origin:(CGPoint) pos;
+
+@property( assign, readonly) CGPoint   origin;
+
+@end
+
+
+@interface UIWindowCloseEvent : UIWindowEvent
+@end
+
+
+@interface UIWindowRefreshEvent : UIWindowEvent
+@end
+
+
+@interface UIWindowResizeEvent : UIWindowEvent
+
+- (instancetype) initWithWindow:(UIWindow *) window
+                  mouseLocation:(CGPoint) pos
+                      modifiers:(int) mods
+                           size:(CGSize) size;
+
+@property( assign, readonly) CGSize   size;
+
+@end
+
+
+@interface UIWindowFramebufferResizeEvent : UIWindowResizeEvent
+@end
+
+
+@interface UIEvent( OS)
+
++ (void) os_waitEventsTimeout:(CGFloat) seconds;
++ (void) os_pollEvents;
++ (void) os_sendEmptyEvent;
 
 @end
 
