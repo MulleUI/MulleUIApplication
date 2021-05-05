@@ -5,8 +5,8 @@
 #import "CGGeometry+CString.h"
 
 
-@implementation UIEvent 
-enum 
+@implementation UIEvent
+enum
 {
    UIKeyboardEventIndex,  // Keyboard
    UIUnicodeEventIndex,  // Unicode char (interpreted Keyboard)
@@ -20,46 +20,88 @@ static struct
 {
    struct mulle__pointerqueue   _reuseEventQueues[ N_UIEventIndexMax];
    BOOL                         _reuseEvents;
-   struct mulle_allocator       *_allocator;
+   BOOL                         _initialized;
 } UIEventSelf;
 
 
-+ (void) initialize 
++ (void) enableEventsReuse
 {
-   struct mulle_allocator   *allocator;
-   unsigned int             i;
+   unsigned int   i;
 
-   UIEventSelf._allocator   = MulleObjCClassGetAllocator( self);
-   UIEventSelf._reuseEvents = YES;
+   assert( ! UIEventSelf._reuseEvents);
+
    for( i = 0; i < N_UIEventIndexMax; i++)
       _mulle__pointerqueue_init( &UIEventSelf._reuseEventQueues[ i], 32, 4);
+   UIEventSelf._reuseEvents = YES;
 }
 
 
-+ (void) deinitialize
++ (void) initialize
 {
-   struct mulle_allocator   *allocator;
-   unsigned int             i;
-
-   UIEventSelf._reuseEvents = NO;
-
-   allocator = MulleObjCClassGetAllocator( self);   
-   for( i = 0; i < N_UIEventIndexMax; i++)
-      _mulle__pointerqueue_done( &UIEventSelf._reuseEventQueues[ i], 
-                                 UIEventSelf._allocator);
+   if( ! UIEventSelf._initialized)
+   {
+      if( mulle_objc_environment_get_yes_no_default( "MULLE_UI_REUSE_EVENTS", YES))
+         [self enableEventsReuse];
+      UIEventSelf._initialized = YES;
+   }
 }
 
-/*
-static id   releaseAllEventsInQueue( struct mulle__pointerqueue *p)
+
+static void   releaseAllEventsInQueue( struct mulle__pointerqueue *p)
 {
    struct mulle__pointerqueueenumerator  rover;
    UIEvent                               *event;
 
    rover = _mulle__pointerqueue_enumerate( p);
-   while( _mulle__pointerqueueenumerator_next( &rover, (void **) event))
+   while( _mulle__pointerqueueenumerator_next( &rover, (void **) &event))
       [event release];
+   mulle__pointerqueueenumerator_done(&rover);
 }
-*/
+
+
++ (void) disableEventsReuse
+{
+   unsigned int             i;
+   struct mulle_allocator   *allocator;
+
+   assert( UIEventSelf._reuseEvents);
+   // dont't re-accumulate
+   UIEventSelf._reuseEvents = NO;
+
+   allocator = MulleObjCClassGetAllocator( self);
+   for( i = 0; i < N_UIEventIndexMax; i++)
+   {
+      releaseAllEventsInQueue( &UIEventSelf._reuseEventQueues[ i]);
+      _mulle__pointerqueue_done( &UIEventSelf._reuseEventQueues[ i],
+                                 allocator);
+   }
+}
+
+
++ (void) deinitialize
+{
+   if( UIEventSelf._reuseEvents)
+      [self disableEventsReuse];
+   UIEventSelf._initialized = NO;
+}
+
+
++ (BOOL) reuseEvents
+{
+   return( UIEventSelf._reuseEvents);
+}
+
+
++ (void) setReuseEvents:(BOOL) flag
+{
+   if( UIEventSelf._reuseEvents == flag)
+      return;
+   if( UIEventSelf._reuseEvents)
+      [self disableEventsReuse];
+   else
+      [self enableEventsReuse];
+}
+
 
 static id   allocateEventWithIndex( Class self, unsigned int index)
 {
@@ -70,7 +112,7 @@ static id   allocateEventWithIndex( Class self, unsigned int index)
    struct _mulle_objc_class         *cls;
 
    p     = &UIEventSelf._reuseEventQueues[ index];
-   reuse = _mulle__pointerqueue_pop( p, UIEventSelf._allocator);
+   reuse = _mulle__pointerqueue_pop( p, MulleObjCClassGetAllocator( self));
    if( reuse)
    {
       // since the event is going to be overwritten completely we forego
@@ -101,9 +143,9 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
       NSDeallocateObject( self);
       return;
    }
-   
+
    p = &UIEventSelf._reuseEventQueues[ index];
-   _mulle__pointerqueue_push( p, self, UIEventSelf._allocator);
+   _mulle__pointerqueue_push( p, self, MulleObjCInstanceGetAllocator( self));
 }
 
 
@@ -147,26 +189,26 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 
    if( ! view)
       return( _locationInWindow);
- 
+
    // TODO: CHECK THIS!!
-#if 0   
+#if 0
    point = [self _translatedPointForView:view];
    if ( point.x != CGFLOAT_MIN)
    {
-#if DEBUG      
+#if DEBUG
       fprintf( stderr, "shortcut");
-#endif      
+#endif
       return( point);
    }
-#endif 
+#endif
 
    translated = [view convertPoint:_locationInWindow
                           fromView:NULL];
 #ifdef DEBUG
-   fprintf( stderr, "%s -> %s\n", 
+   fprintf( stderr, "%s -> %s\n",
                CGPointCStringDescription( _locationInWindow),
                CGPointCStringDescription( translated));
-#endif               
+#endif
    return( translated);
 }
 
@@ -194,8 +236,8 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 {
    char   *s;
 
-   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f>", 
-                  self, 
+   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f>",
+                  self,
                   class_getName( object_getClass( self)),
                   _locationInWindow.x,
                   _locationInWindow.y,
@@ -206,7 +248,7 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 @end
 
 
-@implementation UIKeyboardEvent 
+@implementation UIKeyboardEvent
 
 + (id) alloc
 {
@@ -281,11 +323,11 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
    return( UIEventTypeUnicode);
 }
 
-            
+
 @end
 
 
-@implementation UIMouseMotionEvent 
+@implementation UIMouseMotionEvent
 
 
 + (id) alloc
@@ -339,7 +381,7 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
                   mouseLocation:(CGPoint) pos
                       modifiers:(int) mods
                          button:(int) button
-                         action:(int) action 
+                         action:(int) action
 {
    self = [self initWithWindow:window
                  mouseLocation:pos
@@ -361,8 +403,8 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 {
    char   *s;
 
-   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f b:%d a:%d>", 
-                  self, 
+   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f b:%d a:%d>",
+                  self,
                   class_getName( object_getClass( self)),
                   _locationInWindow.x,
                   _locationInWindow.y,
@@ -379,7 +421,7 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 
 + (id) alloc
 {
-   return(  allocateEventWithIndex( self, UIMouseScrollEventIndex));
+   return( allocateEventWithIndex( self, UIMouseScrollEventIndex));
 }
 
 
@@ -391,8 +433,8 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 static struct
 {
    CGFloat   _acceleration;
-} Self = 
-{ 
+} Self =
+{
    3.0
 };
 
@@ -400,7 +442,7 @@ static struct
 - (instancetype) initWithWindow:(UIWindow *) window
                   mouseLocation:(CGPoint) pos
                       modifiers:(int) mods
-                   scrollOffset:(CGPoint) scrollOffset 
+                   scrollOffset:(CGPoint) scrollOffset
 {
    self = [self initWithWindow:window
                  mouseLocation:pos
@@ -446,11 +488,11 @@ static struct
 //  30 FPS
 //
 // Q: how many events do we need to queue ?
-// 
+//
 // Assumption is that event handling takes no time, so an infinite amount of
 // events could be handled.
-// 
-// 1s/30 = 0.033s  
+//
+// 1s/30 = 0.033s
 // 0.033 * 0.95 = queue time = 0.030  30ms
 //
 //
@@ -462,7 +504,7 @@ static struct
 // 8000 / 60 = 133 samples
 
 
-@implementation UIWindowEvent 
+@implementation UIWindowEvent
 
 - (UIEventType) eventType
 {
@@ -483,7 +525,7 @@ static struct
 @end
 
 
-@implementation UIWindowMoveEvent 
+@implementation UIWindowMoveEvent
 
 - (instancetype) initWithWindow:(UIWindow *) window
                   mouseLocation:(CGPoint) pos
@@ -494,7 +536,7 @@ static struct
                  mouseLocation:pos
                      modifiers:mods];
    _origin = origin;
-   return( self);   
+   return( self);
 }
 
 - (enum UIWindowEventType) windowEventType
@@ -516,7 +558,7 @@ static struct
                  mouseLocation:pos
                      modifiers:mods];
    _size = size;
-   return( self);   
+   return( self);
 }
 
 - (enum UIWindowEventType) windowEventType
@@ -527,7 +569,7 @@ static struct
 @end
 
 
-@implementation UIWindowFramebufferResizeEvent 
+@implementation UIWindowFramebufferResizeEvent
 
 - (enum UIWindowEventType) windowEventType
 {

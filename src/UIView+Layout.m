@@ -6,27 +6,33 @@
 #import "UIView+CAAnimation.h"
 #import "import-private.h"
 
+#import "UIWindow.h"
+#import "CALayer.h"
+#import "CGGeometry+CString.h"
+#import "UIEdgeInsets+CString.h"
 
 
 @implementation UIView ( Layout)
 
 // https://developer.apple.com/documentation/uikit/uiview/1622625-sizethatfits?language=objc
 - (CGSize) sizeThatFits:(CGSize) size
-                context:(CGContext *) context
+                context:(CGContext *) context;
 {
-   return( [_mainLayer frame].size);
+   // TODO: should use inverse transform on size
+   return( [_mainLayer sizeThatFits:size
+                            context:context]);
 }
-
 
 - (CGSize) sizeThatFits:(CGSize) size
 {
    return( [self sizeThatFits:size
-                      context:nil]);
+                      context:[[self window] context]]);
 }
+
 
 # pragma mark -
 
-- (void) startLayoutWithFrameInfo:(struct MulleFrameInfo *) info
+- (void) beginLayoutWithFrameInfo:(struct MulleFrameInfo *) info
 {
    [UIView beginAnimations:NULL
                    context:NULL];
@@ -73,88 +79,144 @@
 }
 
 
-// TODO: use MulleLayout as this is pretty much the same thing
+//
+// by default, the mainLayer fills the contentRect of 
+// its owning UIView.
+//
+- (void) layoutLayer:(CALayer *) layer
+              inRect:(CGRect) rect
+{
+   if( layer == _mainLayer)
+   {
+      [layer setFrame:rect];
+    //  [layer setBounds:[self bounds]]; ??
+   }
+}
 
-- (void) layoutSubview:(UIView *) view
-              inBounds:(CGRect) bounds
-      autoresizingMask:(UIViewAutoresizing) autoresizingMask
+
+//
+// restore "builtin" size for layout
+// therefore multiple resizes don't accumulate FP errors
+// Method is only used if there is autoresizing enabled!
+//
+- (CGRect) originalFrame
 {
    CGRect   frame;
-   CGRect   newFrame;
-   CGRect   marginalBounds;
+
+   if( _originalFrame.size.width == 0.0)
+      _originalFrame = _frame;
+
+   frame = _originalFrame;
+   return( frame);
+}
+
+
+- (void) layoutSubview:(UIView *) view
+                inRect:(CGRect) bounds
+      autoresizingMask:(UIViewAutoresizing) autoresizingMask
+{
+   CGRect         frame;
+   CGRect         newFrame;
+   CGRect         marginalBounds;
+   NSInteger      resizeMask;
+   NSInteger      stickMask;
+   CGSize         layoutSize;
+   UIEdgeInsets   insets;
 
    if( ! autoresizingMask)
       return;
 
-   frame    = [view frame];
-   newFrame = frame;
+   frame      = [view frame];
+   newFrame   = [view originalFrame];
+   resizeMask = autoresizingMask & (UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight);
+   stickMask  = autoresizingMask & (MulleUIViewAutoresizingStickToMiddle|MulleUIViewAutoresizingStickToCenter);
 
-   marginalBounds = bounds;
-   if( ! (autoresizingMask & MulleUIViewAutoresizingIgnoreMargins))
-   {
-      marginalBounds  = UIEdgeInsetsInsetRect( bounds, [view margins]);
-      newFrame.origin = marginalBounds.origin;
-   }
+   insets         = [view margins];
+   marginalBounds = UIEdgeInsetsInsetRect( bounds, [view margins]);
 
    // if too small now, remove from drawing
    // as the drawing code does it too, what's really the point though ?
-
-   if( autoresizingMask & UIViewAutoresizingFlexibleWidth)
+   // we can cull earlier...
+   //
+   if( resizeMask)
    {
-      newFrame.size.width = marginalBounds.size.width;
-      if( newFrame.size.width < 0.9)
-        newFrame.size.width = 0.0;
-   }
-
-   if( autoresizingMask & UIViewAutoresizingFlexibleHeight)
-   {
-      newFrame.size.height = marginalBounds.size.height;
-      if( newFrame.size.height < 0.9)
-        newFrame.size.height = 0.0;
-   }
-
-   if( autoresizingMask & MulleUIViewAutoresizingStickToCenter)
-   {
-      // probably too obscure ?
-      if( (autoresizingMask & MulleUIViewAutoresizingStickToCenter) == MulleUIViewAutoresizingStickToCenter)
-         newFrame = MulleCGRectCenterInRect( newFrame, marginalBounds);
-      else
+      if( resizeMask & UIViewAutoresizingFlexibleWidth)
       {
-         if( autoresizingMask & MulleUIViewAutoresizingStickToTop)
-         {
-            if( autoresizingMask & MulleUIViewAutoresizingStickToBottom)
-            {
-               newFrame.origin.y = CGRectGetMidY( marginalBounds) - newFrame.size.height / 2.0;;
-            }
-            else
-               newFrame.origin.y = marginalBounds.origin.y;
-         }
-         else
-            if( autoresizingMask & MulleUIViewAutoresizingStickToBottom)
-            {
-               newFrame.origin.y = CGRectGetMaxY( marginalBounds) - newFrame.size.height;
-            }
+         newFrame.origin.x   = 0.0; // will be added to later
+         newFrame.size.width = marginalBounds.size.width;
+         if( newFrame.size.width < 0.5)
+            newFrame.size.width = 0.0;
+      }
 
-         if( autoresizingMask & MulleUIViewAutoresizingStickToLeft)
-         {
-            if( autoresizingMask & MulleUIViewAutoresizingStickToRight)
-            {
-               newFrame.origin.x = CGRectGetMidX( marginalBounds) - newFrame.size.width / 2.0;
-            }
-            else
-               newFrame.origin.x = marginalBounds.origin.x;
-         }
-         else
-            if( autoresizingMask & MulleUIViewAutoresizingStickToRight)
-            {
-               newFrame.origin.x = CGRectGetMaxX( marginalBounds) - newFrame.size.width;
-            }
+      if( resizeMask & UIViewAutoresizingFlexibleHeight)
+      {
+         newFrame.origin.y    = 0.0; // will be added to later
+         newFrame.size.height = marginalBounds.size.height;
+         if( newFrame.size.height < 0.5)
+            newFrame.size.height = 0.0;
       }
    }
 
-   // if view doesn't fit into bounds, we do what ? we make it invisible
-   if( ! CGRectContainsRect( bounds, newFrame))
-      newFrame.size = CGSizeZero;
+   if( stickMask & MulleUIViewAutoresizingStickToTop)
+   {
+      if( stickMask & MulleUIViewAutoresizingStickToBottom)
+      {
+         newFrame.origin.y = CGRectGetMidY( marginalBounds) - newFrame.size.height / 2.0;;
+      }
+      else
+         newFrame.origin.y = marginalBounds.origin.y;
+   }
+   else
+      if( stickMask & MulleUIViewAutoresizingStickToBottom)
+      {
+         newFrame.origin.y = CGRectGetMaxY( marginalBounds) - newFrame.size.height;
+      }
+      else
+         newFrame.origin.y += marginalBounds.origin.y;
+
+
+   if( stickMask & MulleUIViewAutoresizingStickToLeft)
+   {
+      if( stickMask & MulleUIViewAutoresizingStickToRight)
+      {
+         newFrame.origin.x = CGRectGetMidX( marginalBounds) - newFrame.size.width / 2.0;
+      }
+      else
+         newFrame.origin.x = marginalBounds.origin.x;
+   }
+   else
+      if( stickMask & MulleUIViewAutoresizingStickToRight)
+      {
+         newFrame.origin.x = CGRectGetMaxX( marginalBounds) - newFrame.size.width;
+      }
+      else
+         newFrame.origin.x += marginalBounds.origin.x;
+
+//   fprintf( stderr, "view: %s f=[%s] o=[%s] m=[%s]\n",
+//               [view debugNameCString],
+//               CGRectCStringDescription( [view frame]),
+//               CGRectCStringDescription( [view originalFrame]),
+//               UIEdgeInsetsCStringDescription( [view margins]));
+//
+//   fprintf( stderr, "resizeMask     : 0x%x\n", resizeMask);
+//   fprintf( stderr, "stickMask      : 0x%x\n", stickMask);
+//   fprintf( stderr, "marginalBounds : %s\n", CGRectCStringDescription( marginalBounds));
+//   fprintf( stderr, "newFrame       : %s\n", CGRectCStringDescription( newFrame));
+//   fprintf( stderr, "bounds         : %s\n", CGRectCStringDescription( bounds));
+
+   //
+   // if view doesn't fit into bounds, we do what ? 
+   // culling is done in the renderQueue step (if clipping is set)
+   // If clipping is not set MulleUIViewAutoresizingCullAtBounds will be useful
+   // as well
+   //
+   if( ! CGRectContainsRect( marginalBounds, newFrame))
+   {
+      if( autoresizingMask & MulleUIViewAutoresizingCullAtBounds)
+         newFrame.size = CGSizeZero;
+      if( autoresizingMask & MulleUIViewAutoresizingClipToBounds)
+         newFrame = CGRectIntersection( marginalBounds, newFrame);
+   }
 
    if( ! CGRectEqualToRect( frame, newFrame))
       [view setFrame:newFrame];
@@ -167,18 +229,38 @@
 }
 
 
+- (void) layoutLayers
+{
+   struct mulle_pointerarrayenumerator   rover;
+   CALayer                               *layer;
+   CGRect                                contentRect;
+
+   contentRect = [self contentRect]; // not layoutRect
+   [self layoutLayer:_mainLayer
+              inRect:contentRect];
+
+   rover = mulle_pointerarray_enumerate( _layers);
+   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
+      [self layoutLayer:layer
+                 inRect:contentRect];
+   mulle_pointerarrayenumerator_done( &rover);
+}
+
+
 - (void) layoutSubviews
 {
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
    CGRect                                bounds;
 
-   bounds = [self bounds];
+   bounds = [self layoutRect];
    rover = mulle_pointerarray_enumerate( _subviews);
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+   {
       [self layoutSubview:view
-                 inBounds:bounds
+                  inRect:bounds
          autoresizingMask:[view autoresizingMask]];
+   }
    mulle_pointerarrayenumerator_done( &rover);
 }
 
@@ -208,6 +290,9 @@
       return;
    }
 
+   // this is the flat possibly hardcoded code, that layouts each layer
+   [self layoutLayers];
+
    // this is the flat possibly hardcoded code, that layouts each subview
    [self layoutSubviews];
 
@@ -222,11 +307,16 @@
 }
 
 
-
 - (void) layoutIfNeeded
 {
    if( [self needsLayout])
       [self layout];
+}
+
+
+- (BOOL) isCulledByLayout
+{
+   return( _frame.size.width == 0.0);
 }
 
 @end

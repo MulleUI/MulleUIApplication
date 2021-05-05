@@ -10,8 +10,13 @@ endif()
 
 set( MAIN_SOURCES
 src/main-animate-circles.m
+src/main-animate-object.m
+src/main-animate-scrollview.m
+src/main-autoresizingmask.m
 src/main-buttons.m
 src/main-calculator.m
+src/main-canvas-bounds-frame.m
+src/main-clip.m
 src/main-collectionview.m
 src/main-contentmode.m
 src/main-draw.m
@@ -21,23 +26,32 @@ src/main-freetype.m
 src/main-imageview.m
 src/main-jspiechart.m
 src/main-label.m
+src/main-layer-bounds.m
+src/main-layer-clip.m
 src/main-layer.m
 src/main-layout.m
 src/main-many-rectangles.m
 src/main-path.m
+src/main-photoshop.m
+src/main-popupbutton.m
 src/main-remove-from-area.m
 src/main-render-png.m
+src/main-resize.m
 src/main-rowcolumn.m
 src/main-scrollview.m
 src/main-slider.m
 src/main-springs-and-struts.m
 src/main-stackview.m
+src/main-subview.m
 src/main-svg.m
 src/main-textfield.m
 src/main-textlayout.m
 src/main-text.m
 src/main-textstorage.m
 src/main-textview.m
+src/main-tiger.m
+src/main-transform.m
+src/main-translate-scale.m
 src/main-viewconversion.m
 src/main-windows.m
 )
@@ -51,9 +65,11 @@ src/CALayer+CAAnimation.m
 src/CALayer.m
 src/CAShapeLayer.m
 src/CATime.c
+src/CGAffineTransform+CString.m
 src/CGAffineTransform.c
 src/CGColor.c
 src/CGContext+CGFont.m
+src/CGContext+Render.m
 src/CGContext.m
 src/CGFont.m
 src/CGGeometry+CString.m
@@ -130,6 +146,7 @@ src/UITextView+Cursor.m
 src/UITextView+UIEvent.m
 src/UITextView.m
 src/UIView+CAAnimation.m
+src/UIView+CALayer.m
 src/UIView+CGGeometry.m
 src/UIView+Layout.m
 src/UIView+NSArray.m
@@ -137,6 +154,7 @@ src/UIView+UIEvent.m
 src/UIView+UIResponder.m
 src/UIView.m
 src/UIWindow+CGGeometry.m
+src/UIWindow+RenderQueue.m
 src/UIWindow+Render.m
 src/UIWindow+UIEvent.m
 src/UIWindow+UIPasteboard.m

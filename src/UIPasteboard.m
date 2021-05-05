@@ -5,6 +5,8 @@
 
 #import "import-private.h"
 
+#import "UIWindow+UIPasteboard.h"
+
 
 
 @implementation UIPasteboard
@@ -17,7 +19,7 @@
 
 - (char *) cString
 {
-   return( [_window pasteboardCString]);
+   return( (char *) [_window pasteboardCString]);
 }
 
 

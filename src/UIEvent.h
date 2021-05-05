@@ -23,8 +23,11 @@ typedef enum
 // we retrieve objects from a central growing array of possibly used
 // objects and reuse them. When we reclaim an object from a queue, we
 // need to put up a memory barrier, so the receiver does not see stale
-// data. An UIEvent is not read/inly as _translatedPoint is used for
-// storing by UIView for efficiency (temporarirly used)
+// data. An UIEvent is not read/only as _translatedPoint is used for
+// storing by UIView for efficiency (temporarily used)
+//
+// You can turn off reuse by setting the environment variable
+// MULLE_UI_REUSE_EVENTS to NO, which may come in handy for leak detection.
 //
 @interface UIEvent : NSObject
 {
@@ -36,15 +39,19 @@ typedef enum
 @property( assign, readonly) CGPoint   locationInWindow;
 
 // clock() vs clock_gettime() tests on linux show, that that clock
-// is 25% faster. That's IMO not enough to forego the convenience of 
+// is 25% faster. That's IMO not enough to forego the convenience of
 // CAAbsoluteTime here
 @property( assign, readonly) CAAbsoluteTime   timestamp;
 
 // current known state of modifier keys
 @property( assign, readonly) uint64_t  modifiers;
 
++ (BOOL) reuseEvents;
++ (void) setReuseEvents:(BOOL) flag;
+
 + (void) waitForEvents:(double) hz;
 + (void) sendEmptyEvent;
+
 
 //
 // translated mouseLocation to current view bounds (ephemeral)
@@ -59,7 +66,7 @@ typedef enum
 - (instancetype) initWithWindow:(UIWindow *) window
                   mouseLocation:(CGPoint) pos
                       modifiers:(int) mods;
-          
+
 @end
 
 
@@ -97,7 +104,7 @@ typedef enum
                   mouseLocation:(CGPoint) pos
                       modifiers:(int) mods
                       character:(int) key;
-          
+
 @end
 
 
@@ -111,7 +118,7 @@ typedef enum
                       modifiers:(int) mods
                          button:(int) button
                          action:(int) action;
-                  
+
 
 @end
 
@@ -147,11 +154,11 @@ typedef enum
 
 enum UIWindowEventType
 {
-   UIWindowEventTypeClose             = 0x01,  
-   UIWindowEventTypeRefresh           = 0x02,  
-   UIWindowEventTypeResize            = 0x04,  
-   UIWindowEventTypeMove              = 0x08,  
-   UIWindowEventTypeFramebufferResize = 0x10 
+   UIWindowEventTypeClose             = 0x01,
+   UIWindowEventTypeRefresh           = 0x02,
+   UIWindowEventTypeResize            = 0x04,
+   UIWindowEventTypeMove              = 0x08,
+   UIWindowEventTypeFramebufferResize = 0x10
 };
 
 

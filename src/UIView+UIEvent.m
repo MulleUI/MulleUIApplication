@@ -19,8 +19,9 @@
 @end
 
 
-#define EVENT_DEBUG
-// #define HITTEST_DEBUG
+//#define EVENT_DEBUG
+//#define EVENT_DEBUG_VERBOSE
+//#define HITTEST_DEBUG
 
 @implementation UIView ( UIEvent)
 
@@ -396,7 +397,7 @@
    if( ! [self hitTest:translated
              withEvent:event])
    {
-#ifdef EVENT_DEBUG
+#ifdef EVENT_DEBUG_VERBOSE
        fprintf( stderr, "Event does not hit view %s\n", [self cStringDescription]);
 #endif
       return( event);

@@ -19,6 +19,7 @@
 //#define MOUSE_MOTION_CALLBACK_DEBUG
 //#define MOUSE_BUTTON_CALLBACK_DEBUG
 #define RESIZE_CALLBACK_DEBUG
+#define ABORT_ON_EVENT_OVERFLOW
 
 
 @implementation UIWindow( UIEvent)
@@ -62,13 +63,15 @@
                      size.width,
                      size.height);
 #endif
-
    event = [[UIWindowFramebufferResizeEvent alloc] initWithWindow:self
                                                     mouseLocation:self->_mouseLocation
                                                         modifiers:self->_modifiers
                                                              size:size];
    [self queueRetainedEvent:event];
-}
+
+   // TODO: we should do this atomically
+   //
+   _framebufferSize = size;}
 
 
 - (void) _windowCloseCallback
@@ -260,7 +263,7 @@
    if( [self isScrollWheelNatural])
       scrollOffset = CGPointMake( offset.x, offset.y);
    else
-      scrollOffset = CGPointMake( -offset.y, -offset.y);
+      scrollOffset = CGPointMake( -offset.x, -offset.y);
 
    event = [[UIMouseScrollEvent alloc] initWithWindow:self
                                         mouseLocation:self->_mouseLocation
@@ -274,7 +277,6 @@
 {
    return( _firstResponder);
 }
-
 
 
 # pragma mark - tracking rects
@@ -472,9 +474,8 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
       return( nil);
 
    case UIWindowEventTypeMove :
-      frame        = [self frame];
-      frame.origin = [(UIWindowMoveEvent *) event origin];;
-      [self setFrame:frame];
+      _frame.origin = [(UIWindowMoveEvent *) event origin];
+      // delegate method ?
       return( nil);
 
    case UIWindowEventTypeFramebufferResize :
@@ -485,15 +486,16 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
                      __PRETTY_FUNCTION__,
                      [self cStringDescription]);
 #endif
+      _resizing = YES;
+      [self setNeedsDisplay];
       return( nil);
 
    case UIWindowEventTypeResize :
-      frame       = [self frame];
-      frame.size  = [(UIWindowFramebufferResizeEvent *) event size];
-      [self setFrame:frame];
+      _frame.size  = [(UIWindowResizeEvent *) event size];
+      _resizing = YES;
+
       [self setNeedsLayout:YES];
-      self->_resizing = YES;
-      self->_lastResizeEventTimestamp = [event timestamp];
+      [self setNeedsDisplay];
 #ifdef RESIZE_CALLBACK_DEBUG
    fprintf( stderr, "%s %s handled UIWindowEventTypeResize\n",
                      __PRETTY_FUNCTION__,
@@ -513,7 +515,6 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 }
 
 
-
 - (UIEvent *) handleEvent:(UIEvent *) event
 {
    CGRect                                rect;
@@ -529,7 +530,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    {
    case UIEventTypePresses :
 #ifdef DEBUG
-      if( [event eventType] == UIEventTypePresses)
+      if( [event eventType] == UIEventTypePresses && [event action] == GLFW_PRESS)
       {
          UIKeyboardEvent   *keyEvent;
 
@@ -539,6 +540,11 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
          if( [keyEvent key] == 301)
          {
             [self dump];
+            return( nil);
+         }
+         if( [keyEvent key] == 300)
+         {
+            [self dumpRenderQueue:&_renderQueue];
             return( nil);
          }
       }
@@ -587,6 +593,9 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 - (BOOL) willDiscardOverflowEvent:(UIEvent *) event
 {
    fprintf( stderr, "*** windows %p (%p) discards event due to queue overflow\n", self, self->_thread);
+#ifdef ABORT_ON_EVENT_OVERFLOW
+   abort();
+#endif
    return( [self willDiscardEvent:event]);
 }
 
@@ -604,7 +613,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    //
    // events that can not be queued will have to be discarded
    //
-   if( _mulle__pointerfifo4_write( &_eventQueue, event))
+   if( ui_window_pointer_fifo_write( &_eventQueue, event))
    {
       if( [self willDiscardOverflowEvent:event]) // window can figure out something
       {                                          // for super important events
@@ -638,7 +647,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
       {
          for(;;)
          {
-            event = _mulle__pointerfifo4_read_barrier( &_eventQueue);
+            event = ui_window_pointer_fifo_read_barrier( &_eventQueue);
             if( ! event)
                break;
 
@@ -668,7 +677,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
    for(;;)
    {
-      event = _mulle__pointerfifo4_read_barrier( &_eventQueue);
+      event = ui_window_pointer_fifo_read_barrier( &_eventQueue);
       if( ! event)
          break;
 
@@ -733,7 +742,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
 - (NSUInteger) waitForEventsHz:(double) hz
 {
-   return( [self waitForEvents:1.0/hz
+   return( [self waitForEvents:hz > 0.0 ? 1.0/hz : 0.0
                            now:CAAbsoluteTimeNow()
                   returnsEarly:YES]);
 }

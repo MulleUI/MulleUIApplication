@@ -12,8 +12,10 @@
 
 @implementation UIEvent ( GLFW)
 
-// don't use this, since we are using a queuing mechanism with
-// our own timeout code
+//
+// don't use this manually, since we are using a queuing mechanism with
+// our own timeout code. Use pollEvents on UIWindow usually
+//
 + (void) os_waitEventsTimeout:(CGFloat) seconds
 {
    assert( [NSThread mulleIsMainThread]);
