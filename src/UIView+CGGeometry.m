@@ -6,6 +6,31 @@
 #import "CALayer.h"  // for _NVGtransform
 
 
+#define DUMP_LAYERS
+
+
+@implementation CALayer( CGGeometry)
+
+- (void) dumpWithIndent:(NSUInteger) indent
+{
+   NSUInteger   i;
+
+   for( i = 0; i < indent; i++)
+      fputc( ' ', stderr);
+
+   fprintf( stderr, "%s: f=[%s] b=[%s] r=[%s]",
+               [self cStringDescription],
+               CGRectCStringDescription( [self frame]),
+               CGRectCStringDescription( [self bounds]),
+               CGRectCStringDescription( [self clipRect]));
+   if( [self masksToBounds])
+      fprintf ( stderr, " masks");
+   fprintf( stderr, "\n");               
+}
+
+@end
+
+
 @implementation UIView( CGGeometry)
 
 //
@@ -22,7 +47,7 @@
    frame  = [self frame];
    bounds = [self bounds];
 
-   nvgTransformTranslate( tmp, -bounds.origin.x, -bounds.origin.y);
+   nvgTransformTranslate( tmp, bounds.origin.x, bounds.origin.y);
    nvgTransformPremultiply( transform, tmp);
 
    scale.x = bounds.size.width / frame.size.width;
@@ -487,17 +512,45 @@ static CGPoint   convertBoundsPointToFramePoint( UIView *self, CGPoint point, CG
 }
 
 
+- (void) dumpLayersWithIndent:(NSUInteger) indent
+{
+   struct mulle_pointerarrayenumerator   rover;
+   CALayer                               *layer;
+
+   [_mainLayer dumpWithIndent:indent];
+   if( _layers)
+   {
+      rover = mulle_pointerarray_enumerate( _layers);
+      while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
+         [layer dumpWithIndent:indent];
+      mulle_pointerarrayenumerator_done( &rover);
+   }
+}
+
+
 - (void) dumpWithIndent:(NSUInteger) indent
 {
-   int   i;
+   NSUInteger   i;
 
    for( i = 0; i < indent; i++)
       fputc( ' ', stderr);
 
-   fprintf( stderr, "%s: frame=%s bounds=%s\n",
-               [self cStringDescription],
-               CGRectCStringDescription( [self frame]),
-               CGRectCStringDescription( [self bounds]));
+   if( [self isHidden])
+      fprintf( stderr, "%s: hidden\n",
+                  [self cStringDescription]);
+   else
+   {
+      fprintf( stderr, "%s: f=[%s] b=[%s]",
+                  [self cStringDescription],
+                  CGRectCStringDescription( [self frame]),
+                  CGRectCStringDescription( [self bounds]));
+      if( [self clipsToBounds])
+         fprintf ( stderr, " clips");
+      fprintf( stderr, "\n");
+   }
+#ifdef DUMP_LAYERS
+   [self dumpLayersWithIndent:indent + 3];
+#endif
 //   if( _yoga)
 //   {
 //      fprintf( stderr, "%s\n", [[_yoga debugDescription] cStringDescription]);

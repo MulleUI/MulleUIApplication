@@ -1,5 +1,5 @@
 #include "UIEdgeInsets.h"
-#include "MulleUIEdgeInsets+CString.h"
+#include "MulleEdgeInsets+CString.h"
 
 static inline char   *UIEdgeInsetsCStringDescription( UIEdgeInsets insets)
 {

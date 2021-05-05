@@ -16,7 +16,7 @@
 
 
 //#define RENDER_DEBUG
-// #define RENDER_DEBUG_VERBOSE
+//#define RENDER_VERBOSE_DEBUG
 //#define HAVE_RENDER_CACHE
 
 @implementation UIView
@@ -27,27 +27,20 @@
 }
 
 
-+ (instancetype) mulleViewWithFrame:(CGRect) frame;
++ (instancetype) viewWithFrame:(CGRect) frame;
 {
    return( [[[self alloc] initWithFrame:frame] autorelease]);
 }
 
 
-- (instancetype) initWithFrame:(CGRect) frame
-{
-   CALayer   *layer;
-   Class     cls;
-
-   cls   = [[self class] layerClass];
-   layer = [[[cls alloc] initWithFrame:frame] autorelease];
-   self  = [self initWithLayer:layer];
-   return( self);
-}
 
 
 // designated initializer
 - (instancetype) initWithLayer:(CALayer *) layer
+                         frame:(CGRect) frame
 {
+   CGRect     frame;
+
    assert( ! layer || [layer isKindOfClass:[CALayer class]]);
 
    if( ! layer)
@@ -55,18 +48,56 @@
       [self release];
       return( nil);
    }
+
    _mainLayer              = [layer retain];
-   _clipsSubviews          = YES;  // default
+   _clipsToBounds          = YES;  // default
    _userInteractionEnabled = YES;  // default
    _alpha                  = 1.0;
+   _bounds.size.width      = INFINITY; // once we change the bounds size
+                                       // we disconnect from frame.size
+   _frame                  = frame;
+
 //   _needsDisplay           = YES;
 
    return( self);
 }
 
 
+- (instancetype) initWithFrame:(CGRect) frame
+{
+   CALayer   *layer;
+   Class     cls;
+   CGRect    rect;
+
+   rect  = CGRectMake( 0.0f, 0.0f, frame.size.width, frame.size.height);
+   cls   = [[self class] layerClass];
+   layer = [[[cls alloc] initWithFrame:rect] autorelease];
+   self  = [self initWithLayer:layer
+                         frame:frame];
+   return( self);
+}
+
+//
+// What's the expectation here with regard to frame ?
+// Assume layer is already relative to UIView ?
+// I don't think so... Assume its in screen/windows space
+//
+- (instancetype) initWithLayer:(CALayer *) layer
+{
+   CGRect   frame;
+
+   frame = [layer frame];
+   [layer setFrame:CGRectMake( 0.0f, 0.0f, frame.size.width, frame.size.height)];
+
+   return( [self initWithLayer:layer
+                         frame:frame]);
+}
+
+
 - (void) dealloc
 {
+   MulleTrackingAreaArrayDone( &_trackingAreas);
+
    mulle_pointerarray_release_all( _subviews);
    mulle_pointerarray_destroy( _subviews);
 
@@ -87,6 +118,56 @@
    return( _mainLayer);
 }
 
+
+static inline CGRect   getBounds( UIView *self)
+{
+   CGRect  bounds;
+
+   bounds.origin = self->_bounds.origin;
+   bounds.size   = self->_bounds.size.width == INFINITY
+                     ? self->_frame.size
+                     : self->_bounds.size;
+   return( bounds);
+}
+
+//
+// for layers bounds are inherited directly, so the layer "sticks"
+// (and need to be panned by its bounds)
+//
+- (CGRect) bounds
+{
+   return( getBounds( self));
+}
+
+
+- (void) setBounds:(CGRect) bounds
+{
+   _bounds.origin = bounds.origin;
+   if( CGSizeEqualToSize( _frame.size, bounds.size))
+      _bounds.size.width = INFINITY;
+   else
+      _bounds.size = bounds.size;
+}
+
+
+- (CGRect) contentRect
+{
+   CGRect  rect;
+
+   rect.origin = CGPointMake( 0.0f, 0.0f);
+   rect.size   = getBounds( self).size;
+   return( rect);
+}
+
+
+- (CGRect) layoutRect
+{
+   CGRect   bounds;
+
+   bounds = [self contentRect];
+   bounds = UIEdgeInsetsInsetRect( bounds, _padding);
+   return( bounds);
+}
 
 //
 //
@@ -285,30 +366,6 @@
 }
 
 
-- (CGRect) bounds
-{
-   return( [_mainLayer bounds]);
-}
-
-
-- (void) setBounds:(CGRect) rect;
-{
-   [_mainLayer setBounds:rect];
-}
-
-
-- (CGRect) frame
-{
-   return( [_mainLayer frame]);
-}
-
-
-- (void) setFrame:(CGRect) rect
-{
-   [_mainLayer setFrame:rect];
-}
-
-
 - (CGRect) clipRect
 {
    return( [_mainLayer clipRect]);
@@ -442,8 +499,7 @@
    return( result);
 }
 
-- (void) _createRenderCacheIfNeededWithContext:(CGContext *) context
-                                     frameInfo:(struct MulleFrameInfo *) info
+- (void) _createRenderCacheIfNeededWithFrameInfo:(struct MulleFrameInfo *) info
 {
 #ifdef HAVE_RENDER_CACHE
    UIImage   *image;
@@ -452,7 +508,7 @@
       return;
 
    _needsCaching = NO;
-   image = [self textureImageWithContext:context
+   image = [self textureImageWithContext:[[self window] context]
                               frameInfo:info
                                  options:0];
    if( image)
@@ -463,342 +519,30 @@
 #endif
 }
 
-- (void) updateRenderCachesWithContext:(CGContext *) context
-                             frameInfo:(struct MulleFrameInfo *) info
+
+- (void) willRenderWithAbsoluteTime:(CAAbsoluteTime) time
+{
+}
+
+
+- (void) updateRenderCachesWithFrameInfo:(struct MulleFrameInfo *) info
 {
 #ifdef HAVE_RENDER_CACHE
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
 
-#ifdef RENDER_DEBUG_VERBOSE
+#ifdef RENDER_VERBOSE_DEBUG
    fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
 #endif
 
    rover = mulle_pointerarray_enumerate( _subviews);
-   while( view = mulle_pointerarrayenumerator_next( &rover))
+   while( mulle_pointerarrayenumerator_next( &rover, (void **) &view))
       [view updateRenderCachesWithContext:context
                                 frameInfo:info];
    mulle_pointerarrayenumerator_done( &rover);
 
-   [self _createRenderCacheIfNeededWithContext:context
-                                     frameInfo:info];
+   [self _createRenderCacheIfNeededWithFrameInfo:info];
 #endif
-}
-
-
-- (BOOL) renderLayersWithContext:(CGContext *) context
-{
-   struct mulle_pointerarrayenumerator   rover;
-   CALayer                               *layer;
-   _NVGtransform                         transform;
-   NVGscissor                            scissor;
-   NVGcontext                            *vg;
-   CGFloat                               oldAlpha;
-   CGFloat                               alpha;
-
-#ifdef RENDER_DEBUG_VERBOSE
-   fprintf( stderr, "%s %s (f:%s b:%s)\n",
-                        __PRETTY_FUNCTION__,
-                        [self cStringDescription],
-                        CGRectCStringDescription( [self frame]),
-                        CGRectCStringDescription( [self bounds]));
-#endif
-
-   vg = [context nvgContext];
-
-   nvgCurrentTransform( vg, transform);
-   nvgGetScissor( vg, &scissor);
-
-#ifdef HAVE_RENDER_CACHE
-   if( _cacheLayer)
-   {
-      [_cacheLayer setTransform:transform
-                        scissor:&scissor];
-      [_cacheLayer drawInContext:context];
-      return( YES);
-   }
-#endif
-
-   [_mainLayer setTransform:transform
-                    scissor:&scissor];
-   [_mainLayer drawInContext:context];
-
-   rover = mulle_pointerarray_enumerate( _layers);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
-   {
-      [layer setTransform:transform
-                  scissor:&scissor];
-      [layer drawInContext:context];
-   }
-   mulle_pointerarrayenumerator_done( &rover);
-
-   return( NO);
-}
-
-
-- (void) renderSubviewsWithContext:(CGContext *) context
-{
-   struct mulle_pointerarrayenumerator   rover;
-   UIView                                *view;
-   CGRect                                bounds;
-   CGRect                                frame;
-
-#ifdef RENDER_DEBUG_VERBOSE
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   bounds = [self bounds];
-   rover  = mulle_pointerarray_enumerate( _subviews);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
-   {
-      frame = [view frame];
-      // TODO: this intersection code doesn't work for UIScrollView,
-      // because the UIScrollContentView uses bounds.origin to shift its
-      // contents. The intersection code will mistaken ly notice for larger
-      // scrolls, that the contentView is displaying nothing and will cull it.
-      //
-      // TODO: REALLY figure out what to do with bounds and frame. Can bounds
-      //       be used in scrollview ?
-
-    //  if( CGRectIntersectsRect( bounds, frame))
-         [view renderWithContext:context];
-   }
-   mulle_pointerarrayenumerator_done( &rover);
-}
-
-- (void) _renderWithContext:(CGContext *) context
-{
-   _NVGtransform   transform;
-   NVGscissor      scissor;
-   NVGcontext      *vg;
-   CGPoint         scale;
-   CGRect          frame;
-   CGRect          bounds;
-   CGRect          contextClipRect;
-   CGRect          clipRect;
-   CGFloat         alpha;
-
-   assert( context);
-   
-   frame = [self frame];
-   if( frame.size.width <= 0.0 || frame.size.height <= 0.0)
-   {
-#ifdef RENDER_DEBUG
-      fprintf( stderr, "%s has no 2D frame\n", [self cStringDescription]);
-#endif
-      return;
-   }
-
-   bounds = [self bounds];
-   if( bounds.size.width <= 0.0 || bounds.size.height <= 0.0)
-   {
-#ifdef RENDER_DEBUG
-      fprintf( stderr, "%s has no 2D bounds\n", [self cStringDescription]);
-#endif
-      return;
-   }
-
-   vg = [context nvgContext];
-
-// DEBUG CODE JUST TO SEE SOMETHING IN RENDERDOC
-//   nvgBeginPath( vg);
-//   nvgCircle(vg, CGRectGetMidX( frame), CGRectGetMidY( frame), 10.0);
-//   nvgStrokeColor( vg, nvgRGBA(0, 32, 0, 32));
-//   nvgStroke( vg);
-//
-   // remember for later
-   nvgCurrentTransform( vg, transform);
-   nvgGetScissor( vg, &scissor);
-
-#ifdef RENDER_VERBOSE_DEBUG
-   fprintf( stderr, "%s: inherited transform %s\n",
-                        [self cStringDescription],
-                        _NVGtransformCStringDescription( transform));
-   fprintf( stderr, "%s: inherited scissorTransform %s\n",
-                        [self cStringDescription],
-                        NVGscissorCStringDescription( &scissor));
-#endif
-
-   //
-   // layers do not "suffer" from translation and scaling as these
-   // values are derived from the "masterLayer"
-   //
-   // The masterLayer also sets up the scissors for the following renders
-   //
-   // clip to our frame
-
-   if( [self renderLayersWithContext:context])
-   {
-
-#ifdef RENDER_VERBOSE
-      fprintf( stderr, "%s: renderLayersWithContext preempts subview drawing\n",
-                     [self cStringDescription]);
-#endif
-
-      return;
-   }
-
-   //
-   // transform for subview though, which are inside our bounds
-   // don't do this if we are the window top level
-   //
-   nvgResetTransform( vg);
-   nvgTransform( vg, transform[ 0], transform[ 1], transform[ 2],
-                     transform[ 3], transform[ 4], transform[ 5]);
-#ifdef RENDER_VERBOSE_DEBUG
-   fprintf( stderr, "%s: reset1 to inherited transform %s\n",
-                     [self cStringDescription],
-                     _NVGtransformCStringDescription( transform));
-#endif
-   nvgSetScissor( vg, &scissor);
-#ifdef RENDER_VERBOSE_DEBUG
-   fprintf( stderr, "%s: reset1 to inherited scissorTransform %s\n",
-                     [self cStringDescription],
-                     NVGscissorCStringDescription( &scissor));
-#endif
-
-   if( [self superview])
-   {
-      // clip to our frame
-      if( self->_clipsSubviews)
-         nvgIntersectScissor( vg, frame.origin.x, frame.origin.y, frame.size.width, frame.size.height);
-
-#ifdef RENDER_VERBOSE_DEBUG
-         fprintf( stderr, "Set transform for subviews of %s (not a window)\n", [self cStringDescription]);
-#endif
-      nvgTranslate( vg, frame.origin.x, frame.origin.y);
-#ifdef RENDER_VERBOSE_DEBUG
-      fprintf( stderr, "%s translate %.1f %.1f\n",
-                        [self cStringDescription],
-                        frame.origin.x, frame.origin.y);
-#endif
-      //
-      // now translate bounds for context
-      //
-      scale.x = frame.size.width / bounds.size.width;
-      scale.y = frame.size.height / bounds.size.height;
-
-      nvgScale( vg, scale.x, scale.y);
-#ifdef RENDER_VERBOSE_DEBUG
-      fprintf( stderr, "%s scale %.1f %.1f\n",
-                        [self cStringDescription],
-                        scale.x, scale.y);
-#endif
-      nvgTranslate( vg, bounds.origin.x, bounds.origin.y);
-#ifdef RENDER_VERBOSE_DEBUG
-      fprintf( stderr, "%s translate %.1f %.1f\n",
-                        [self cStringDescription],
-                         bounds.origin.x, bounds.origin.y);
-#endif
-   }
-
-   [self renderSubviewsWithContext:context];
-
-   nvgResetTransform( vg);
-   nvgTransform( vg, transform[ 0], transform[ 1], transform[ 2],
-                     transform[ 3], transform[ 4], transform[ 5]);
-#ifdef RENDER_VERBOSE_DEBUG
-   fprintf( stderr, "%s: reset2 to inherited transform %s\n",
-                     [self cStringDescription],
-                     _NVGtransformCStringDescription( transform));
-#endif
-   nvgSetScissor( vg, &scissor);
-#ifdef RENDER_VERBOSE_DEBUG
-   fprintf( stderr, "%s: reset2 to inherited scissorTransform %s\n",
-                    [self cStringDescription],
-                    NVGscissorCStringDescription( &scissor));
-#endif
-}
-
-
-- (void) renderWithContext:(CGContext *) context
-{
-   CGFloat  alpha;
-   CGFloat  oldAlpha;
-
-   assert( context);
-   
-#ifdef RENDER_DEBUG_VERBOSE
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-//   _needsDisplay = NO;
-
-   alpha = [self alpha];
-   if( alpha < 0.01)
-      return;
-   if( [self isHidden])
-      return;
-
-   //
-   // set alpha, if needed
-   // layers need to read this and multiply with their opacity and
-   // colors (or texture operations)
-   //
-   if( alpha != 1.0)
-   {
-      oldAlpha = [context alpha];
-      [context setAlpha:oldAlpha * alpha];
-   }
-
-   [self _renderWithContext:context];
-
-   // reset alpha, if needed
-   if( alpha != 1.0)
-      [context setAlpha:oldAlpha];
-}
-
-
-- (void) makeLayersPerformSelector:(SEL) sel
-                  withAbsoluteTime:(CAAbsoluteTime) renderTime
-{
-   struct mulle_pointerarrayenumerator   rover;
-   CALayer                               *layer;
-
-#ifdef RENDER_DEBUG_VERBOSE
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   MulleObjCObjectPerformSelectorDoubleArgument( _mainLayer, sel, renderTime);
-
-   rover = mulle_pointerarray_enumerate( _layers);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
-      MulleObjCObjectPerformSelectorDoubleArgument( layer, sel, renderTime);
-   mulle_pointerarrayenumerator_done( &rover);
-}
-
-
-- (void) makeSubviewsPerformSelector:(SEL) sel
-                    withAbsoluteTime:(CAAbsoluteTime) renderTime
-{
-   struct mulle_pointerarrayenumerator   rover;
-   UIView                                *view;
-
-#ifdef RENDER_DEBUG_VERBOSE
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   rover = mulle_pointerarray_enumerate( _subviews);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
-      MulleObjCObjectPerformSelectorDoubleArgument( view, sel, renderTime);
-   mulle_pointerarrayenumerator_done( &rover);
-}
-
-
-- (void) animateWithAbsoluteTime:(CAAbsoluteTime) renderTime
-{
-   [self makeLayersPerformSelector:_cmd
-                 withAbsoluteTime:renderTime];
-   [self makeSubviewsPerformSelector:_cmd
-                    withAbsoluteTime:renderTime];
-}
-
-
-- (void) willAnimateWithAbsoluteTime:(CAAbsoluteTime) renderTime
-{
-   [self makeLayersPerformSelector:_cmd
-                  withAbsoluteTime:renderTime];
-   [self makeSubviewsPerformSelector:_cmd
-                    withAbsoluteTime:renderTime];
 }
 
 
@@ -870,7 +614,6 @@
    frame.size   = [self frame].size;
 
    renderInfo.frame                  = frame;
-   renderInfo.windowSize             = frame.size;
    renderInfo.framebufferSize.width  = frame.size.width / info->pixelRatio;
    renderInfo.framebufferSize.height = frame.size.height / info->pixelRatio;
    renderInfo.UIScale                = info->UIScale;

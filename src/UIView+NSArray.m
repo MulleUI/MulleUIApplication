@@ -107,6 +107,35 @@ void  mulle_pointerarray_remove_at_index( struct mulle_pointerarray *array,
 }
 
 
+void  mulle_pointerarray_remove( struct mulle_pointerarray *array,
+                                 void *item)
+{
+   struct mulle_pointerarray              tmp;
+   void                                   *p;
+   unsigned int                           count;
+   struct  mulle_pointerarrayenumerator   rover;
+
+   count = mulle_pointerarray_get_count( array);
+   if( ! count)
+      return;
+
+   _mulle_pointerarray_init( &tmp,
+                             count - 1,
+                             _mulle_pointerarray_get_allocator( array));
+
+   rover = mulle_pointerarray_enumerate( array);
+   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &p))
+   {
+      if( p != item)
+         _mulle_pointerarray_add( &tmp, p);
+   }
+   mulle_pointerarrayenumerator_done( &rover);
+
+   _mulle_pointerarray_swap( array, &tmp);
+   _mulle_pointerarray_done( &tmp);
+}
+
+
 //
 // if you have 'A B C' then an insert at 1 of D will get you
 // 'A D B C'

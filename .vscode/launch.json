@@ -9,8 +9,8 @@
             "MIMode": "gdb",
             "request": "launch",
             "stopAtEntry": false,
-            "program": "${workspaceFolder}/kitchen/Debug/windows",
-            "args": [ "X", "Y", "Z"],
+            "program": "${workspaceFolder}/kitchen/Debug/photoshop",
+            "args": [ ],
             "environment": [],
             "cwd": "${workspaceFolder}",
             "additionalSOLibSearchPath": "${workspaceFolder}/dependency/Debug/lib:${workspaceFolder}/dependency/lib",
@@ -22,7 +22,7 @@
                 "miDebuggerPath": "/usr/local/bin/mulle-lldb-mi"
             },
             "linux": {
-                "miDebuggerPath": "/home/src/srcL/mulle-gdb/gdb/gdb"
+                "miDebuggerPath": "/usr/local/bin/mulle-gdb"
              },
             "preLaunchTask": "Debug"
         }

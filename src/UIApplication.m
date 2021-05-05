@@ -102,9 +102,10 @@
    while( _mulle_arrayenumerator_next( &rover, (void **) &window))
       [window mullePerformFinalize];
    mulle_arrayenumerator_done( &rover);
-   
+
    mulle_array_reset( &_windows);
-  
+
+   // this shuts down glfw, it doesn't exit
    [[self class] os_terminate];
 }
 
@@ -131,10 +132,11 @@ int  UIApplicationMain( int argc, char **argv, Class appClass, id delegate)
    assert( [NSThread mulleIsMainThread]);
 
    appClass = appClass ? appClass : [UIApplication class];
-   
+
    app = [appClass sharedInstance];
    [app setDelegate:delegate];
    [app run];
+   return( 0);
 }
 
 @end

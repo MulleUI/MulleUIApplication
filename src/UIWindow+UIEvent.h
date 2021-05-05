@@ -7,11 +7,12 @@
 + (void) sendEmptyEvent;
 - (void) setupQuadtree;
 
-// Use -[UIView addTrackingAreaWithRect:toWindow:userInfo:]. It will call 
+// Use -[UIView addTrackingAreaWithRect:toWindow:userInfo:]. It will call
 // -[UIWindow addTrackingView:] eventually
 - (void) addTrackingView:(UIView *) view;
 - (void) removeTrackingView:(UIView *) view;
 
+- (NSUInteger) pollEvents;
 - (void) discardPendingEvents;
 
 // hardcore event handling
@@ -38,12 +39,12 @@
 - (void) _keyCallback:(int) key
              scancode:(int) scancode
                action:(int) action
-            modifiers:(int) mods;  
+            modifiers:(int) mods;
 
 - (void) _mouseMotionCallback:(CGPoint) pos;
 - (void) _mouseButtonCallback:(int) button
                        action:(int) action
-                    modifiers:(int) mods;            
+                    modifiers:(int) mods;
 - (void) _mouseScrollCallback:(CGPoint) offset;
 
 @end

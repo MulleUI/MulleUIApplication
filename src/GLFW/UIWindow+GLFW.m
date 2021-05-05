@@ -273,6 +273,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
 }
 
 
+// bind GL context of the window to the current thread
 - (void) os_startRender
 {
    // can be called from any thread

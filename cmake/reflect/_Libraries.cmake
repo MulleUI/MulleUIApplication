@@ -15,7 +15,8 @@ endif()
 
 #
 # Generated from sourcetree: 4edeaf88-96fa-49de-a075-3e49d3d939b3;GL;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
-# Disable with: `mulle-sourcetree mark 4edeaf88-96fa-49de-a075-3e49d3d939b3 `
+# Disable with : `mulle-sourcetree mark GL `
+# Disable for this platform: `mulle-sourcetree mark GL no-cmake-platform-linux`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT GL_LIBRARY)
@@ -28,7 +29,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       if( GL_LIBRARY)
          #
          # Add GL_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark GL no-cmakeadd`
+         # Disable with: `mulle-sourcetree mark GL no-cmake-add`
          #
          set( OS_SPECIFIC_LIBRARIES
             ${OS_SPECIFIC_LIBRARIES}
@@ -37,15 +38,15 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          )
          #
          # Inherit ObjC loader and link dependency info.
-         # Disable with: `mulle-sourcetree mark GL no-cmakeinherit`
+         # Disable with: `mulle-sourcetree mark GL no-cmake-inherit`
          #
-         # // temporarily expand CMAKE_MODULE_PATH
+         # temporarily expand CMAKE_MODULE_PATH
          get_filename_component( _TMP_GL_ROOT "${GL_LIBRARY}" DIRECTORY)
          get_filename_component( _TMP_GL_ROOT "${_TMP_GL_ROOT}" DIRECTORY)
          #
          #
          # Append header directory to user search path.
-         # Disable with: `mulle-sourcetree mark GL no-cmakesearchpath`
+         # Disable with: `mulle-sourcetree mark GL no-cmake-searchpath`
          #
          foreach( _TMP_GL_NAME "GL")
             set( _TMP_GL_DIR "${_TMP_GL_ROOT}/include/${_TMP_GL_NAME}")
@@ -62,7 +63,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          endforeach()
          #
          # Search for "DependenciesAndLibraries.cmake" to include.
-         # Disable with: `mulle-sourcetree mark GL no-cmakedependency`
+         # Disable with: `mulle-sourcetree mark GL no-cmake-dependency`
          #
          foreach( _TMP_GL_NAME "GL")
             set( _TMP_GL_DIR "${_TMP_GL_ROOT}/include/${_TMP_GL_NAME}/cmake")
@@ -102,7 +103,8 @@ endif()
 
 #
 # Generated from sourcetree: 9d1fb7ab-5eb3-4bc0-b08d-55a1608a9a07;GLU;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
-# Disable with: `mulle-sourcetree mark 9d1fb7ab-5eb3-4bc0-b08d-55a1608a9a07 `
+# Disable with : `mulle-sourcetree mark GLU `
+# Disable for this platform: `mulle-sourcetree mark GLU no-cmake-platform-linux`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT GLU_LIBRARY)
@@ -115,7 +117,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       if( GLU_LIBRARY)
          #
          # Add GLU_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark GLU no-cmakeadd`
+         # Disable with: `mulle-sourcetree mark GLU no-cmake-add`
          #
          set( OS_SPECIFIC_LIBRARIES
             ${OS_SPECIFIC_LIBRARIES}
@@ -124,15 +126,15 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          )
          #
          # Inherit ObjC loader and link dependency info.
-         # Disable with: `mulle-sourcetree mark GLU no-cmakeinherit`
+         # Disable with: `mulle-sourcetree mark GLU no-cmake-inherit`
          #
-         # // temporarily expand CMAKE_MODULE_PATH
+         # temporarily expand CMAKE_MODULE_PATH
          get_filename_component( _TMP_GLU_ROOT "${GLU_LIBRARY}" DIRECTORY)
          get_filename_component( _TMP_GLU_ROOT "${_TMP_GLU_ROOT}" DIRECTORY)
          #
          #
          # Append header directory to user search path.
-         # Disable with: `mulle-sourcetree mark GLU no-cmakesearchpath`
+         # Disable with: `mulle-sourcetree mark GLU no-cmake-searchpath`
          #
          foreach( _TMP_GLU_NAME "GLU")
             set( _TMP_GLU_DIR "${_TMP_GLU_ROOT}/include/${_TMP_GLU_NAME}")
@@ -149,7 +151,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          endforeach()
          #
          # Search for "DependenciesAndLibraries.cmake" to include.
-         # Disable with: `mulle-sourcetree mark GLU no-cmakedependency`
+         # Disable with: `mulle-sourcetree mark GLU no-cmake-dependency`
          #
          foreach( _TMP_GLU_NAME "GLU")
             set( _TMP_GLU_DIR "${_TMP_GLU_ROOT}/include/${_TMP_GLU_NAME}/cmake")
@@ -189,7 +191,8 @@ endif()
 
 #
 # Generated from sourcetree: d398f155-a76d-4ed8-ab5d-54d2dbc72c80;X11;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
-# Disable with: `mulle-sourcetree mark d398f155-a76d-4ed8-ab5d-54d2dbc72c80 `
+# Disable with : `mulle-sourcetree mark X11 `
+# Disable for this platform: `mulle-sourcetree mark X11 no-cmake-platform-linux`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT X11_LIBRARY)
@@ -202,7 +205,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       if( X11_LIBRARY)
          #
          # Add X11_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark X11 no-cmakeadd`
+         # Disable with: `mulle-sourcetree mark X11 no-cmake-add`
          #
          set( OS_SPECIFIC_LIBRARIES
             ${OS_SPECIFIC_LIBRARIES}
@@ -211,15 +214,15 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          )
          #
          # Inherit ObjC loader and link dependency info.
-         # Disable with: `mulle-sourcetree mark X11 no-cmakeinherit`
+         # Disable with: `mulle-sourcetree mark X11 no-cmake-inherit`
          #
-         # // temporarily expand CMAKE_MODULE_PATH
+         # temporarily expand CMAKE_MODULE_PATH
          get_filename_component( _TMP_X11_ROOT "${X11_LIBRARY}" DIRECTORY)
          get_filename_component( _TMP_X11_ROOT "${_TMP_X11_ROOT}" DIRECTORY)
          #
          #
          # Append header directory to user search path.
-         # Disable with: `mulle-sourcetree mark X11 no-cmakesearchpath`
+         # Disable with: `mulle-sourcetree mark X11 no-cmake-searchpath`
          #
          foreach( _TMP_X11_NAME "X11")
             set( _TMP_X11_DIR "${_TMP_X11_ROOT}/include/${_TMP_X11_NAME}")
@@ -236,7 +239,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          endforeach()
          #
          # Search for "DependenciesAndLibraries.cmake" to include.
-         # Disable with: `mulle-sourcetree mark X11 no-cmakedependency`
+         # Disable with: `mulle-sourcetree mark X11 no-cmake-dependency`
          #
          foreach( _TMP_X11_NAME "X11")
             set( _TMP_X11_DIR "${_TMP_X11_ROOT}/include/${_TMP_X11_NAME}/cmake")
@@ -276,7 +279,8 @@ endif()
 
 #
 # Generated from sourcetree: 7a44004b-d9fa-449c-ab04-5487427b3848;Xrandr;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
-# Disable with: `mulle-sourcetree mark 7a44004b-d9fa-449c-ab04-5487427b3848 `
+# Disable with : `mulle-sourcetree mark Xrandr `
+# Disable for this platform: `mulle-sourcetree mark Xrandr no-cmake-platform-linux`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XRANDR_LIBRARY)
@@ -289,7 +293,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       if( XRANDR_LIBRARY)
          #
          # Add XRANDR_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark Xrandr no-cmakeadd`
+         # Disable with: `mulle-sourcetree mark Xrandr no-cmake-add`
          #
          set( OS_SPECIFIC_LIBRARIES
             ${OS_SPECIFIC_LIBRARIES}
@@ -298,15 +302,15 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          )
          #
          # Inherit ObjC loader and link dependency info.
-         # Disable with: `mulle-sourcetree mark Xrandr no-cmakeinherit`
+         # Disable with: `mulle-sourcetree mark Xrandr no-cmake-inherit`
          #
-         # // temporarily expand CMAKE_MODULE_PATH
+         # temporarily expand CMAKE_MODULE_PATH
          get_filename_component( _TMP_XRANDR_ROOT "${XRANDR_LIBRARY}" DIRECTORY)
          get_filename_component( _TMP_XRANDR_ROOT "${_TMP_XRANDR_ROOT}" DIRECTORY)
          #
          #
          # Append header directory to user search path.
-         # Disable with: `mulle-sourcetree mark Xrandr no-cmakesearchpath`
+         # Disable with: `mulle-sourcetree mark Xrandr no-cmake-searchpath`
          #
          foreach( _TMP_XRANDR_NAME "Xrandr")
             set( _TMP_XRANDR_DIR "${_TMP_XRANDR_ROOT}/include/${_TMP_XRANDR_NAME}")
@@ -323,7 +327,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          endforeach()
          #
          # Search for "DependenciesAndLibraries.cmake" to include.
-         # Disable with: `mulle-sourcetree mark Xrandr no-cmakedependency`
+         # Disable with: `mulle-sourcetree mark Xrandr no-cmake-dependency`
          #
          foreach( _TMP_XRANDR_NAME "Xrandr")
             set( _TMP_XRANDR_DIR "${_TMP_XRANDR_ROOT}/include/${_TMP_XRANDR_NAME}/cmake")
@@ -363,7 +367,8 @@ endif()
 
 #
 # Generated from sourcetree: b104dcf2-8259-4930-83d2-8b85dcdb833e;Xxf86vm;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
-# Disable with: `mulle-sourcetree mark b104dcf2-8259-4930-83d2-8b85dcdb833e `
+# Disable with : `mulle-sourcetree mark Xxf86vm `
+# Disable for this platform: `mulle-sourcetree mark Xxf86vm no-cmake-platform-linux`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XXF86VM_LIBRARY)
@@ -376,7 +381,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       if( XXF86VM_LIBRARY)
          #
          # Add XXF86VM_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark Xxf86vm no-cmakeadd`
+         # Disable with: `mulle-sourcetree mark Xxf86vm no-cmake-add`
          #
          set( OS_SPECIFIC_LIBRARIES
             ${OS_SPECIFIC_LIBRARIES}
@@ -385,15 +390,15 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          )
          #
          # Inherit ObjC loader and link dependency info.
-         # Disable with: `mulle-sourcetree mark Xxf86vm no-cmakeinherit`
+         # Disable with: `mulle-sourcetree mark Xxf86vm no-cmake-inherit`
          #
-         # // temporarily expand CMAKE_MODULE_PATH
+         # temporarily expand CMAKE_MODULE_PATH
          get_filename_component( _TMP_XXF86VM_ROOT "${XXF86VM_LIBRARY}" DIRECTORY)
          get_filename_component( _TMP_XXF86VM_ROOT "${_TMP_XXF86VM_ROOT}" DIRECTORY)
          #
          #
          # Append header directory to user search path.
-         # Disable with: `mulle-sourcetree mark Xxf86vm no-cmakesearchpath`
+         # Disable with: `mulle-sourcetree mark Xxf86vm no-cmake-searchpath`
          #
          foreach( _TMP_XXF86VM_NAME "Xxf86vm")
             set( _TMP_XXF86VM_DIR "${_TMP_XXF86VM_ROOT}/include/${_TMP_XXF86VM_NAME}")
@@ -410,7 +415,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          endforeach()
          #
          # Search for "DependenciesAndLibraries.cmake" to include.
-         # Disable with: `mulle-sourcetree mark Xxf86vm no-cmakedependency`
+         # Disable with: `mulle-sourcetree mark Xxf86vm no-cmake-dependency`
          #
          foreach( _TMP_XXF86VM_NAME "Xxf86vm")
             set( _TMP_XXF86VM_DIR "${_TMP_XXF86VM_ROOT}/include/${_TMP_XXF86VM_NAME}/cmake")
@@ -450,7 +455,8 @@ endif()
 
 #
 # Generated from sourcetree: f62b1a75-fa78-4cfd-9040-18085a4f631c;Xinerama;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
-# Disable with: `mulle-sourcetree mark f62b1a75-fa78-4cfd-9040-18085a4f631c `
+# Disable with : `mulle-sourcetree mark Xinerama `
+# Disable for this platform: `mulle-sourcetree mark Xinerama no-cmake-platform-linux`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XINERAMA_LIBRARY)
@@ -463,7 +469,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       if( XINERAMA_LIBRARY)
          #
          # Add XINERAMA_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark Xinerama no-cmakeadd`
+         # Disable with: `mulle-sourcetree mark Xinerama no-cmake-add`
          #
          set( OS_SPECIFIC_LIBRARIES
             ${OS_SPECIFIC_LIBRARIES}
@@ -472,15 +478,15 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          )
          #
          # Inherit ObjC loader and link dependency info.
-         # Disable with: `mulle-sourcetree mark Xinerama no-cmakeinherit`
+         # Disable with: `mulle-sourcetree mark Xinerama no-cmake-inherit`
          #
-         # // temporarily expand CMAKE_MODULE_PATH
+         # temporarily expand CMAKE_MODULE_PATH
          get_filename_component( _TMP_XINERAMA_ROOT "${XINERAMA_LIBRARY}" DIRECTORY)
          get_filename_component( _TMP_XINERAMA_ROOT "${_TMP_XINERAMA_ROOT}" DIRECTORY)
          #
          #
          # Append header directory to user search path.
-         # Disable with: `mulle-sourcetree mark Xinerama no-cmakesearchpath`
+         # Disable with: `mulle-sourcetree mark Xinerama no-cmake-searchpath`
          #
          foreach( _TMP_XINERAMA_NAME "Xinerama")
             set( _TMP_XINERAMA_DIR "${_TMP_XINERAMA_ROOT}/include/${_TMP_XINERAMA_NAME}")
@@ -497,7 +503,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          endforeach()
          #
          # Search for "DependenciesAndLibraries.cmake" to include.
-         # Disable with: `mulle-sourcetree mark Xinerama no-cmakedependency`
+         # Disable with: `mulle-sourcetree mark Xinerama no-cmake-dependency`
          #
          foreach( _TMP_XINERAMA_NAME "Xinerama")
             set( _TMP_XINERAMA_DIR "${_TMP_XINERAMA_ROOT}/include/${_TMP_XINERAMA_NAME}/cmake")
@@ -537,7 +543,8 @@ endif()
 
 #
 # Generated from sourcetree: 2c53a20e-075d-4978-a7ac-f9789d580d68;Xcursor;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
-# Disable with: `mulle-sourcetree mark 2c53a20e-075d-4978-a7ac-f9789d580d68 `
+# Disable with : `mulle-sourcetree mark Xcursor `
+# Disable for this platform: `mulle-sourcetree mark Xcursor no-cmake-platform-linux`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XCURSOR_LIBRARY)
@@ -550,7 +557,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       if( XCURSOR_LIBRARY)
          #
          # Add XCURSOR_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark Xcursor no-cmakeadd`
+         # Disable with: `mulle-sourcetree mark Xcursor no-cmake-add`
          #
          set( OS_SPECIFIC_LIBRARIES
             ${OS_SPECIFIC_LIBRARIES}
@@ -559,15 +566,15 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          )
          #
          # Inherit ObjC loader and link dependency info.
-         # Disable with: `mulle-sourcetree mark Xcursor no-cmakeinherit`
+         # Disable with: `mulle-sourcetree mark Xcursor no-cmake-inherit`
          #
-         # // temporarily expand CMAKE_MODULE_PATH
+         # temporarily expand CMAKE_MODULE_PATH
          get_filename_component( _TMP_XCURSOR_ROOT "${XCURSOR_LIBRARY}" DIRECTORY)
          get_filename_component( _TMP_XCURSOR_ROOT "${_TMP_XCURSOR_ROOT}" DIRECTORY)
          #
          #
          # Append header directory to user search path.
-         # Disable with: `mulle-sourcetree mark Xcursor no-cmakesearchpath`
+         # Disable with: `mulle-sourcetree mark Xcursor no-cmake-searchpath`
          #
          foreach( _TMP_XCURSOR_NAME "Xcursor")
             set( _TMP_XCURSOR_DIR "${_TMP_XCURSOR_ROOT}/include/${_TMP_XCURSOR_NAME}")
@@ -584,7 +591,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
          endforeach()
          #
          # Search for "DependenciesAndLibraries.cmake" to include.
-         # Disable with: `mulle-sourcetree mark Xcursor no-cmakedependency`
+         # Disable with: `mulle-sourcetree mark Xcursor no-cmake-dependency`
          #
          foreach( _TMP_XCURSOR_NAME "Xcursor")
             set( _TMP_XCURSOR_DIR "${_TMP_XCURSOR_ROOT}/include/${_TMP_XCURSOR_NAME}/cmake")
@@ -624,7 +631,8 @@ endif()
 
 #
 # Generated from sourcetree: e727cc11-4d6e-4cac-8e49-b4af83930cdf;dl;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
-# Disable with: `mulle-sourcetree mark e727cc11-4d6e-4cac-8e49-b4af83930cdf `
+# Disable with : `mulle-sourcetree mark dl `
+# Disable for this platform: `mulle-sourcetree mark dl no-cmake-platform-linux`
 #
 if( NOT DL_LIBRARY)
    find_library( DL_LIBRARY NAMES dl)
@@ -636,7 +644,7 @@ if( NOT DL_LIBRARY)
    if( DL_LIBRARY)
       #
       # Add DL_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark dl no-cmakeadd`
+      # Disable with: `mulle-sourcetree mark dl no-cmake-add`
       #
       set( OS_SPECIFIC_LIBRARIES
          ${OS_SPECIFIC_LIBRARIES}
@@ -645,15 +653,15 @@ if( NOT DL_LIBRARY)
       )
       #
       # Inherit ObjC loader and link dependency info.
-      # Disable with: `mulle-sourcetree mark dl no-cmakeinherit`
+      # Disable with: `mulle-sourcetree mark dl no-cmake-inherit`
       #
-      # // temporarily expand CMAKE_MODULE_PATH
+      # temporarily expand CMAKE_MODULE_PATH
       get_filename_component( _TMP_DL_ROOT "${DL_LIBRARY}" DIRECTORY)
       get_filename_component( _TMP_DL_ROOT "${_TMP_DL_ROOT}" DIRECTORY)
       #
       #
       # Append header directory to user search path.
-      # Disable with: `mulle-sourcetree mark dl no-cmakesearchpath`
+      # Disable with: `mulle-sourcetree mark dl no-cmake-searchpath`
       #
       foreach( _TMP_DL_NAME "dl")
          set( _TMP_DL_DIR "${_TMP_DL_ROOT}/include/${_TMP_DL_NAME}")
@@ -670,7 +678,7 @@ if( NOT DL_LIBRARY)
       endforeach()
       #
       # Search for "DependenciesAndLibraries.cmake" to include.
-      # Disable with: `mulle-sourcetree mark dl no-cmakedependency`
+      # Disable with: `mulle-sourcetree mark dl no-cmake-dependency`
       #
       foreach( _TMP_DL_NAME "dl")
          set( _TMP_DL_DIR "${_TMP_DL_ROOT}/include/${_TMP_DL_NAME}/cmake")
@@ -709,7 +717,8 @@ endif()
 
 #
 # Generated from sourcetree: c2345537-4e93-493b-bf21-9e6621303a04;pthread;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
-# Disable with: `mulle-sourcetree mark c2345537-4e93-493b-bf21-9e6621303a04 `
+# Disable with : `mulle-sourcetree mark pthread `
+# Disable for this platform: `mulle-sourcetree mark pthread no-cmake-platform-linux`
 #
 if( NOT PTHREAD_LIBRARY)
    find_library( PTHREAD_LIBRARY NAMES pthread)
@@ -721,7 +730,7 @@ if( NOT PTHREAD_LIBRARY)
    if( PTHREAD_LIBRARY)
       #
       # Add PTHREAD_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark pthread no-cmakeadd`
+      # Disable with: `mulle-sourcetree mark pthread no-cmake-add`
       #
       set( OS_SPECIFIC_LIBRARIES
          ${OS_SPECIFIC_LIBRARIES}
@@ -730,15 +739,15 @@ if( NOT PTHREAD_LIBRARY)
       )
       #
       # Inherit ObjC loader and link dependency info.
-      # Disable with: `mulle-sourcetree mark pthread no-cmakeinherit`
+      # Disable with: `mulle-sourcetree mark pthread no-cmake-inherit`
       #
-      # // temporarily expand CMAKE_MODULE_PATH
+      # temporarily expand CMAKE_MODULE_PATH
       get_filename_component( _TMP_PTHREAD_ROOT "${PTHREAD_LIBRARY}" DIRECTORY)
       get_filename_component( _TMP_PTHREAD_ROOT "${_TMP_PTHREAD_ROOT}" DIRECTORY)
       #
       #
       # Append header directory to user search path.
-      # Disable with: `mulle-sourcetree mark pthread no-cmakesearchpath`
+      # Disable with: `mulle-sourcetree mark pthread no-cmake-searchpath`
       #
       foreach( _TMP_PTHREAD_NAME "pthread")
          set( _TMP_PTHREAD_DIR "${_TMP_PTHREAD_ROOT}/include/${_TMP_PTHREAD_NAME}")
@@ -755,7 +764,7 @@ if( NOT PTHREAD_LIBRARY)
       endforeach()
       #
       # Search for "DependenciesAndLibraries.cmake" to include.
-      # Disable with: `mulle-sourcetree mark pthread no-cmakedependency`
+      # Disable with: `mulle-sourcetree mark pthread no-cmake-dependency`
       #
       foreach( _TMP_PTHREAD_NAME "pthread")
          set( _TMP_PTHREAD_DIR "${_TMP_PTHREAD_ROOT}/include/${_TMP_PTHREAD_NAME}/cmake")
@@ -794,7 +803,8 @@ endif()
 
 #
 # Generated from sourcetree: 4f8c9930-b601-4bed-9ef6-59002def0b11;m;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
-# Disable with: `mulle-sourcetree mark 4f8c9930-b601-4bed-9ef6-59002def0b11 `
+# Disable with : `mulle-sourcetree mark m `
+# Disable for this platform: `mulle-sourcetree mark m no-cmake-platform-linux`
 #
 if( NOT M_LIBRARY)
    find_library( M_LIBRARY NAMES m)
@@ -806,7 +816,7 @@ if( NOT M_LIBRARY)
    if( M_LIBRARY)
       #
       # Add M_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark m no-cmakeadd`
+      # Disable with: `mulle-sourcetree mark m no-cmake-add`
       #
       set( OS_SPECIFIC_LIBRARIES
          ${OS_SPECIFIC_LIBRARIES}
@@ -815,15 +825,15 @@ if( NOT M_LIBRARY)
       )
       #
       # Inherit ObjC loader and link dependency info.
-      # Disable with: `mulle-sourcetree mark m no-cmakeinherit`
+      # Disable with: `mulle-sourcetree mark m no-cmake-inherit`
       #
-      # // temporarily expand CMAKE_MODULE_PATH
+      # temporarily expand CMAKE_MODULE_PATH
       get_filename_component( _TMP_M_ROOT "${M_LIBRARY}" DIRECTORY)
       get_filename_component( _TMP_M_ROOT "${_TMP_M_ROOT}" DIRECTORY)
       #
       #
       # Append header directory to user search path.
-      # Disable with: `mulle-sourcetree mark m no-cmakesearchpath`
+      # Disable with: `mulle-sourcetree mark m no-cmake-searchpath`
       #
       foreach( _TMP_M_NAME "m")
          set( _TMP_M_DIR "${_TMP_M_ROOT}/include/${_TMP_M_NAME}")
@@ -840,7 +850,7 @@ if( NOT M_LIBRARY)
       endforeach()
       #
       # Search for "DependenciesAndLibraries.cmake" to include.
-      # Disable with: `mulle-sourcetree mark m no-cmakedependency`
+      # Disable with: `mulle-sourcetree mark m no-cmake-dependency`
       #
       foreach( _TMP_M_NAME "m")
          set( _TMP_M_DIR "${_TMP_M_ROOT}/include/${_TMP_M_NAME}/cmake")
@@ -878,8 +888,9 @@ endif()
 
 
 #
-# Generated from sourcetree: 186860c9-0456-4544-910b-95f1e848cd75;z;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
-# Disable with: `mulle-sourcetree mark 186860c9-0456-4544-910b-95f1e848cd75 `
+# Generated from sourcetree: 186860c9-0456-4544-910b-95f1e848cd75;z;no-all-load,no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
+# Disable with : `mulle-sourcetree mark z `
+# Disable for this platform: `mulle-sourcetree mark z no-cmake-platform-linux`
 #
 if( NOT Z_LIBRARY)
    find_library( Z_LIBRARY NAMES z)
@@ -891,7 +902,7 @@ if( NOT Z_LIBRARY)
    if( Z_LIBRARY)
       #
       # Add Z_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark z no-cmakeadd`
+      # Disable with: `mulle-sourcetree mark z no-cmake-add`
       #
       set( OS_SPECIFIC_LIBRARIES
          ${OS_SPECIFIC_LIBRARIES}
@@ -906,8 +917,9 @@ endif()
 
 
 #
-# Generated from sourcetree: 7624c74f-7fe1-48bb-ac0b-8757606dbaae;bz2;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
-# Disable with: `mulle-sourcetree mark 7624c74f-7fe1-48bb-ac0b-8757606dbaae `
+# Generated from sourcetree: 7624c74f-7fe1-48bb-ac0b-8757606dbaae;bz2;no-all-load,no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
+# Disable with : `mulle-sourcetree mark bz2 `
+# Disable for this platform: `mulle-sourcetree mark bz2 no-cmake-platform-linux`
 #
 if( NOT BZ2_LIBRARY)
    find_library( BZ2_LIBRARY NAMES bz2)
@@ -919,7 +931,7 @@ if( NOT BZ2_LIBRARY)
    if( BZ2_LIBRARY)
       #
       # Add BZ2_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark bz2 no-cmakeadd`
+      # Disable with: `mulle-sourcetree mark bz2 no-cmake-add`
       #
       set( OS_SPECIFIC_LIBRARIES
          ${OS_SPECIFIC_LIBRARIES}
@@ -934,8 +946,9 @@ endif()
 
 
 #
-# Generated from sourcetree: c2429dea-a3d1-4360-8094-d5de92469565;png;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
-# Disable with: `mulle-sourcetree mark c2429dea-a3d1-4360-8094-d5de92469565 `
+# Generated from sourcetree: c2429dea-a3d1-4360-8094-d5de92469565;png;no-all-load,no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
+# Disable with : `mulle-sourcetree mark png `
+# Disable for this platform: `mulle-sourcetree mark png no-cmake-platform-linux`
 #
 if( NOT PNG_LIBRARY)
    find_library( PNG_LIBRARY NAMES png)
@@ -947,7 +960,7 @@ if( NOT PNG_LIBRARY)
    if( PNG_LIBRARY)
       #
       # Add PNG_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark png no-cmakeadd`
+      # Disable with: `mulle-sourcetree mark png no-cmake-add`
       #
       set( OS_SPECIFIC_LIBRARIES
          ${OS_SPECIFIC_LIBRARIES}
@@ -962,8 +975,9 @@ endif()
 
 
 #
-# Generated from sourcetree: 8be56cd3-eb2f-4805-ae2a-bb7b14522a8b;harfbuzz;no-all-load,no-build,no-cmakeinherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
-# Disable with: `mulle-sourcetree mark 8be56cd3-eb2f-4805-ae2a-bb7b14522a8b `
+# Generated from sourcetree: 8be56cd3-eb2f-4805-ae2a-bb7b14522a8b;harfbuzz;no-all-load,no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-import,no-share,no-update;
+# Disable with : `mulle-sourcetree mark harfbuzz `
+# Disable for this platform: `mulle-sourcetree mark harfbuzz no-cmake-platform-linux`
 #
 if( NOT HARFBUZZ_LIBRARY)
    find_library( HARFBUZZ_LIBRARY NAMES harfbuzz)
@@ -975,7 +989,7 @@ if( NOT HARFBUZZ_LIBRARY)
    if( HARFBUZZ_LIBRARY)
       #
       # Add HARFBUZZ_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark harfbuzz no-cmakeadd`
+      # Disable with: `mulle-sourcetree mark harfbuzz no-cmake-add`
       #
       set( OS_SPECIFIC_LIBRARIES
          ${OS_SPECIFIC_LIBRARIES}

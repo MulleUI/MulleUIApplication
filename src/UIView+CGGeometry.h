@@ -1,6 +1,7 @@
 #include "UIView.h"
 #include "CGGeometry.h"
 
+
 //******************************************************************************
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
@@ -21,7 +22,6 @@
 @interface UIView( CGGeometry)
 
 - (CGPoint) translatedPoint:(CGPoint) point;
-
 
 - (CGRect) convertRect:(CGRect) pos toView:(UIView*)toView;
 - (CGRect) convertRect:(CGRect) pos fromView:(UIView*)fromView;

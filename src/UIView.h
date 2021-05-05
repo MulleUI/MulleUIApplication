@@ -17,13 +17,61 @@
 
 struct MulleFrameInfo;
 
-
+//  The "raison d^etre" of UIView
+//  =============================
+//  UIView is mainly there to handle UIEvents and to set up the transformation
+//  for its CALayers (position the layers on the framebuffer).
+//  UIViews are also there to provide a child/parent hierarchy to make it
+//  easier to create complex userinterfaces.
 //
-// the main layer which is bottom-most defines the geometry
-// the UIView must have a mainLayer which is responsible for the "background"
-// other layers are composited on top of it
-// Then the subviews are drawn/composited on those (these are scaled and
-// transformed)
+//  If events didn't exist, one could get by with just layers.
+//
+//  A UIView does no drawing, it merely layouts. It is completely independent
+//  from OpenGL or whatever the backend is.
+//
+//  The "standard" UIView hierarchy.
+//  =================================
+//  frame.origin          UIView
+//       .--------------------------------------.
+//       |bounds.origin                         |
+//       |               frame.origin           |
+//       |                    .-----------.     |
+//       |                    |           |     |
+//       |                    | Subview 1 |     |
+//       |                    |           |     |
+//       | frame.origin       '-----------'     |
+//       |      .---------------.    frame.size |
+//       |      |               |               |
+//       |      |   Subview 2   |               |
+//       |      |               |               |
+//       |      '---------------'               |
+//       |                 frame.size           |
+//       |                                      |
+//       |                           bounds.size|
+//       '--------------------------------------'
+//                                         frame.size
+//  Subviews live in the bounds of the superview. In 99% of all cases the
+//  bounds are just like the frame, but the origin set to 0.0,0.0.
+//  As bounds.size is then equal to frame.size there is no scaling involved.
+//
+//  Managing the bounds of a UIView for drawing purposes is the wrong idea,
+//  use the bounds of the CALayer for that. In fact the bounds of a UIView IMO
+//  should only be changed, if you are
+//  scrolling subviews within it (bounds.origin) but then you are better off
+//  with a UIScrollView.
+//
+//  Changing the bounds.size is usually bad as this changes the size of the UI
+//  elements. (Which _could_ be good if you are implementing some
+//  sort of support for poor-sighted individuals... maybe)
+//
+//  All layers (and subviews) live in the bounds of the view. The view
+//  inherits the transformation and adds its own frame/bounds transformation
+//  to it.
+//
+// the main layer is responsible for the "background" and the "border"
+//
+// Other layers are composited on top of it
+// Then the subviews are drawn/composited on those.
 //
 struct MulleClickDragDifferentiator
 {
@@ -39,15 +87,20 @@ struct MulleClickDragDifferentiator
 //
 enum UIViewAutoresizing
 {
-   UIViewAutoresizingNone                 = 0x00,
-   UIViewAutoresizingFlexibleWidth        = 0x10,
-   UIViewAutoresizingFlexibleHeight       = 0x20,
-   MulleUIViewAutoresizingIgnoreMargins   = 0x40,
-   MulleUIViewAutoresizingStickToTop      = 0x100,
-   MulleUIViewAutoresizingStickToBottom   = 0x200,
-   MulleUIViewAutoresizingStickToLeft     = 0x400,
-   MulleUIViewAutoresizingStickToRight    = 0x800,
-   MulleUIViewAutoresizingStickToCenter   = 0xF00
+   UIViewAutoresizingNone               = 0x00,
+   UIViewAutoresizingFlexibleWidth      = 0x10,
+   UIViewAutoresizingFlexibleHeight     = 0x20,
+   MulleUIViewAutoresizingFlexible      = 0x30,
+   MulleUIViewAutoresizingStickToTop    = 0x100,
+   MulleUIViewAutoresizingStickToBottom = 0x200,
+   MulleUIViewAutoresizingStickToMiddle = 0x300,   // v center
+   MulleUIViewAutoresizingStickToLeft   = 0x400,
+   MulleUIViewAutoresizingStickToRight  = 0x800,
+   MulleUIViewAutoresizingStickToCenter = 0xC00,   // h center
+
+   // some special bits
+   MulleUIViewAutoresizingClipToBounds  = 0x1000,    // size to fit into bounds if smaller
+   MulleUIViewAutoresizingCullAtBounds  = 0x2000,    // set to size 0.0 if exceeds bounds
 };
 
 typedef NSUInteger   UIViewAutoresizing;
@@ -83,34 +136,83 @@ enum UILayoutStrategy
 @property( getter=isHidden)                 BOOL   hidden;                  // default: NO
 @property( getter=isUserInteractionEnabled) BOOL   userInteractionEnabled;  // default: YES
 
-@property BOOL   clipsSubviews;  // default: YES
+@property BOOL   clipsToBounds;  // default: YES
 @property BOOL   needsLayout;   // use setNeedsLayout for marking
 @property BOOL   needsCaching;
 
 // On UIView this does nothing
 //@property BOOL   needsDisplay;  // used by UIWindow only currently
 
+//
+// This is used during layout of subviews to restrict the size of the bounds,
+// where subviews can be placed. Use -layoutRect in layout code, which takes
+// padding into account
+//
+@property UIEdgeInsets         padding;
+
+//
+// Margins are used during subview layout. Its the distance of the view to other
+// views. What is conventionally though of as "padding" is really just a
+//
+@property UIEdgeInsets         margins;
+// this gets inherited down to all layers and subviews
 @property CGFloat              alpha;
 @property UIViewAutoresizing   autoresizingMask;
-// used with autoresizingMask. Check conflict with contentInsets (not the same)
-@property UIEdgeInsets         margins;
 
-// possibly UIStackView should store this in an array of its own,
-// but then it has to sync with removeFromSubviews: but here the view
-// should clear itself, if added to a superview...
-@property CGSize               mulleLayoutSize; // used by UIStackView and other layouters to remember the original size
+// frame is the position and size relative to the superview
+@property CGRect   frame;
+
+//
+// bounds is the used to place the layers and subviews in, their frames
+// are relative to the bounds. If there is a size difference between bounds
+// and frame then there will be scaling. Usually the bounds.origin is 0,0
+// and the bounds.size is tied to the frame.size.
+// Changing a UIView bounds origin can be useful for scrolling views. But
+// changing the bounds.size is very rarely useful (as UI elements will become
+// too small or too large to click). For zoomed drawing use the bounds of the
+// layer.
+// If the bounds are not set manually, the bounds.size tracks the frame.size.
+//
+// Use layoutRect if you are asking for bounds during layout
+//
+@property CGRect   bounds;
+
+//
+// tyically, contentRect is { CGPointZero, bounds.size }. It's the playground 
+// for the subviews to be placed in (via subview frame). Padding is added by
+// layoutRect
+//
+- (CGRect) contentRect;
+
+// layoutRect take the contentRect and subtract the padding. Only used
+// by UIView during layout
+- (CGRect) layoutRect;
+
+//
+// When autoresizing is used the original frame is stored here on the first
+// layout and then used as the frame to layout in subsequent layout steps
+// this protects us from accumulated fp errors
+//
+@property CGRect   originalFrame;
+
+// abused by UIStackView, will be moved away later
+@property CGSize   mulleLayoutSize;
 
 - (void) setNeedsDisplay;
 - (void) setNeedsCaching;  // wipes the _cacheLayer and asks for a new one to be drawn
 
 + (Class) layerClass;
 
-+ (instancetype) mulleViewWithFrame:(CGRect) frame;
++ (instancetype) viewWithFrame:(CGRect) frame;
 
-- (instancetype) initWithFrame:(CGRect) frame;
-
+//
 // designated initializer, override this for defaults
+//
+- (instancetype) initWithLayer:(CALayer *) layer
+                         frame:(CGRect) frame;
+
 - (instancetype) initWithLayer:(CALayer *) layer;
+- (instancetype) initWithFrame:(CGRect) frame;
 
 - (void) mulleAddRetainedLayer:(CALayer *) layer;
 - (void) mulleAddRetainedSubview:(UIView *) layer;
@@ -119,15 +221,21 @@ enum UILayoutStrategy
 - (void) addSubview:(UIView *) layer;
 - (void) setSubviews:(struct mulle_pointerarray *) array;
 
+// this is the "main" layer. Each view has a bottom most layer that is
+// supposed to fill out the UIView with background color and border. It
+//
 - (CALayer *) layer;
 
 - (void) addSubviewsIntersectingRect:(CGRect) rect
                       toPointerArray:(struct mulle_pointerarray *) views
               invertIntersectionTest:(BOOL) flag;
 
+// called for each view, before layouting starts
+// if a subclass overrides, it should call super
+- (void) willRenderWithAbsoluteTime:(CAAbsoluteTime) renderTime;
+
 - (void) renderWithContext:(CGContext *) context;
 - (void) animateWithAbsoluteTime:(CAAbsoluteTime) renderTime;
-- (void) willAnimateWithAbsoluteTime:(CAAbsoluteTime) renderTime;
 
 - (MulleTextureImage *) textureImageWithContext:(CGContext *) context
                                       frameInfo:(struct MulleFrameInfo *) info
@@ -144,13 +252,12 @@ enum UILayoutStrategy
 
 - (CGFloat) pixelsPerInchOfPrimaryMonitor;
 
-// UNUSED ??
+// UNUSED so far
 - (CGRect) clipRect;
 
 // - (CALayer *) mainLayer;  // mainlayer is an internal thing
 
-- (void) updateRenderCachesWithContext:(CGContext *) context
-                             frameInfo:(struct MulleFrameInfo *) info;
+- (void) updateRenderCachesWithFrameInfo:(struct MulleFrameInfo *) info;
 
 // view must be part of window view hierarchy, for these function to work
 // properly
@@ -166,21 +273,12 @@ enum UILayoutStrategy
 @end
 
 
+//
+// these all get fowarded to the "main" layer
+//
 @interface UIView( CALayerForwarding)
 
-// methods forward to CALayer (mainLayer)
-//
-// bounds define the paint transformation for layers only
-// subviews are not affected
-//
-- (CGRect) bounds;
-- (void) setBounds:(CGRect) rect;
-- (CGRect) frame;
-
-// resist the temptation to call [self setNeedsLayout:YES] in setFrame:
-// as this will lead to unwanted recursion
-- (void) setFrame:(CGRect) rect;
-
+/*
 - (void) setBackgroundColor:(CGColorRef) color;
 - (void) setBorderColor:(CGColorRef) color;
 - (void) setBorderWidth:(CGFloat) value;
@@ -189,8 +287,19 @@ enum UILayoutStrategy
 - (CGColorRef) borderColor;
 - (CGFloat) borderWidth;
 - (CGFloat) cornerRadius;
+*/
 - (char *) debugNameCString;
 - (void) setDebugNameCString:(char *) s;
+
+
+@property void                      (*drawCallback)( CALayer *layer, CGContext *ctxt);
+@property( observable) CGFloat      cornerRadius;
+@property( observable) CGFloat      borderWidth;
+@property( observable) CGFloat      opacity;
+@property( observable) CGColorRef   borderColor;
+@property( observable) CGColorRef   backgroundColor;
+@property( observable) CGPoint      pixelCenter;
+@property( observable) BOOL         masksToBounds;
 
 @end
 

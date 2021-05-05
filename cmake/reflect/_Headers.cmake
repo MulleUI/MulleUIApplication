@@ -24,12 +24,12 @@ src/reflect/_MulleUI-include-private.h
 )
 
 set( PRIVATE_GENERIC_HEADERS
+src/import-private.h
 src/include-private.h
 )
 
 set( PRIVATE_HEADERS
 src/YogaKit/YGLayout+Private.h
-src/import-private.h
 src/mulle-js-nanovg-private.h
 src/mulle-js-private.h
 )
@@ -38,6 +38,7 @@ set( PUBLIC_GENERATED_HEADERS
 src/reflect/_MulleUI-export.h
 src/reflect/_MulleUI-import.h
 src/reflect/_MulleUI-include.h
+src/reflect/_MulleUI-provide.h
 )
 
 set( PUBLIC_GENERIC_HEADERS
@@ -61,11 +62,13 @@ src/CALayer+CAAnimation.h
 src/CALayer.h
 src/CAShapeLayer.h
 src/CATime.h
+src/CGAffineTransform+CString.h
 src/CGAffineTransform.h
 src/CGBase.h
 src/CGColor+MulleObjC.h
 src/CGColor.h
 src/CGContext+CGFont.h
+src/CGContext+Render.h
 src/CGContext.h
 src/CGFont.h
 src/CGGeometry+CString.h
@@ -147,6 +150,7 @@ src/UITextView+Cursor.h
 src/UITextView+UIEvent.h
 src/UITextView.h
 src/UIView+CAAnimation.h
+src/UIView+CALayer.h
 src/UIView+CGGeometry.h
 src/UIView+Layout.h
 src/UIView+NSArray.h
@@ -154,6 +158,7 @@ src/UIView+UIEvent.h
 src/UIView+UIResponder.h
 src/UIView.h
 src/UIWindow+CGGeometry.h
+src/UIWindow+RenderQueue.h
 src/UIWindow+UIEvent.h
 src/UIWindow+UIPasteboard.h
 src/UIWindow+UIResponder.h

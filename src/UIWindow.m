@@ -42,6 +42,12 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
+- (void) requestClose
+{
+   [self os_requestClose];
+}
+
+
 - (void) syncFrameWithWindow
 {
    [self os_syncFrameWithWindow];
@@ -51,13 +57,13 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 // When we a create a window on Linux, the first one usually stays where
 // it's at, and doesn't get a refresh or move notice. But a window manager
 // may reposititon the subsequent window (or even the first), so we get
-// a move and refresh event. The refresh event will hit after the first 
+// a move and refresh event. The refresh event will hit after the first
 // render forcing a second render sortof immediately, as the eventloop is
 // positioned byhind the renderloop.
 //
-- (id) initWithFrame:(CGRect) frame
-        titleCString:(char *) title
-           styleMask:(NSUInteger) styleMask
+- (instancetype) initWithFrame:(CGRect) frame
+                  titleCString:(char *) title
+                     styleMask:(NSUInteger) styleMask
 {
    assert( [NSThread mulleIsMainThread]);
 
@@ -79,6 +85,8 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
       return( nil);
    }
 
+   [super initWithFrame:frame];
+
    // assume window has a title bar for contentRect calculation
    // (No difference to frame for me here on Linux)
    [self syncFrameWithWindow];
@@ -91,49 +99,71 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    // _contentPlane can be used
    frame.origin = CGPointZero;
 
+   // its kinda pointless to inherit clipRects down for views, that are full
+   // window size
+   _clipsToBounds = NO;
+
    _contentPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
    [_contentPlane setDebugNameCString:"Window/ContentPlane"];
+   [_contentPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
+   [_contentPlane setClipsToBounds:NO];
    [self addSubview:_contentPlane];
 
    _toolTipPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
    [_toolTipPlane setDebugNameCString:"Window/ToolTipPlane"];
+   [_toolTipPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
+   [_toolTipPlane setClipsToBounds:NO];
    [self addSubview:_toolTipPlane];
    [_toolTipPlane setHidden:YES];
 
    _menuPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
+   [_menuPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
    [_menuPlane setDebugNameCString:"Window/MenuPlane"];
+   [_menuPlane setClipsToBounds:NO];
    [self addSubview:_menuPlane];
    [_menuPlane setHidden:YES];
 
    _dragAndDropPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
+   [_dragAndDropPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
    [_dragAndDropPlane setDebugNameCString:"Window/DragAndDropPlane"];
+   [_dragAndDropPlane setClipsToBounds:NO];
    [self addSubview:_dragAndDropPlane];
    [_dragAndDropPlane setHidden:YES];
 
    _alertPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
+   [_alertPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
    [_alertPlane setDebugNameCString:"Window/AlertPlane"];
+   [_alertPlane setClipsToBounds:NO];
    [_alertPlane setHidden:YES];
    [self addSubview:_alertPlane];
 
-   _windowSize      = [self os_windowSize];
-   _framebufferSize = [self os_framebufferSize];
+   _mulle_pointerarray_init( &_renderQueue, 128, MulleObjCInstanceGetAllocator( self));
+   _mulle_pointerarray_init( &_delegateViews, 8, MulleObjCInstanceGetAllocator( self));
 
    _renderContextLock = [NSLock new];
 
+   // rename to bind context to thread ?
+   [self os_startRender];
+   _context = [CGContext new];
+
+   _framebufferSize = [self os_framebufferSize];
+   [self os_endRender];
+
    _scrollWheelSensitivity = 20.0;
+   _eventFrequency         = 60.0;
 
    // initially dirty with renderer 1, renderer go!
    _needsDisplayLock = [[NSConditionLock alloc] initWithCondition:1];
    [self setNeedsLayout:YES];
 
-   _mulle__pointerfifo4_init( &_eventQueue);
+   ui_window_pointer_fifo_init( &_eventQueue);
    [self os_initEvents];
 
    return( self);
 }
 
 
-- (id) initWithFrame:(CGRect) frame
+- (instancetype) initWithFrame:(CGRect) frame
 {
    return( [self initWithFrame:frame
                   titleCString:"Demo"
@@ -141,9 +171,19 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
++ (instancetype) windowWithFrame:(CGRect) frame;
+{
+   return( [[[self alloc] initWithFrame:frame] autorelease]);
+}
+
 - (void) finalize
 {
    [self discardPendingEvents];
+
+   // get rid of textures possibly or so
+   [self os_startRender];
+   [_context mullePerformFinalize];
+   [self os_endRender];
 
    // TODO: delete window ?
    //       remove from screen ?
@@ -161,30 +201,30 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    mulle_pointerarray_done( &_trackingViews);
    mulle_pointerarray_release_all( &_enteredViews);
    mulle_pointerarray_done( &_enteredViews);
+   mulle_pointerarray_done( &_delegateViews);
+   mulle_pointerarray_done( &_renderQueue);
 
    mulle_quadtree_destroy( _quadtree);
 
+   [_context release];
    [_renderContextLock release];
+   [_needsDisplayLock release];
 
-   _mulle__pointerfifo4_done( &_eventQueue);
+   ui_window_pointer_fifo_done( &_eventQueue);
 
    // TODO: delete window ?
    [super dealloc];
 }
 
 
-- (void) runInApplication:(UIApplication *) application 
+- (void) runInApplication:(UIApplication *) application
 {
-   CGContext   *context;
-
-   context = [self createContext];
    // should be public ?
    [self setThread:[NSThread currentThread]];
-   [self renderLoopWithContext:context];
+   [self renderLoop];
 
    // when window closes we are here
    // should tell application that we are done, but do a finalize first
-   [context mullePerformFinalize];
    [self mullePerformFinalize];
 }
 
@@ -192,8 +232,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 - (void) setNeedsDisplay
 {
    //
-   // will not wait for the renderer to finish, if not already set
-   // problem: may "swallow" some of the changes if the view hierarchy is
+   // Will not wait for the renderer to finish, if not already set.
+   //
+   // Problem: may "swallow" some of the changes, if the view hierarchy is
    // not properly locked... (But it should be)
    //
    if( [_needsDisplayLock tryLockWhenCondition:0])
@@ -204,7 +245,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 - (BOOL) needsDisplay
 {
    //
-   // if we can tryLock with 1, its dirty unlock keeping the dirty state
+   // if we can tryLock with 1, its dirty. unlock keeping the dirty state
    //
    if( [_needsDisplayLock tryLockWhenCondition:1])
    {
@@ -238,28 +279,20 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
-
-- (void) layoutSubviews
+- (CGColorRef) backgroundColor
 {
-   CGRect     frame;
+   return( [_context backgroundColor]);
+}
 
-   assert( [_contentPlane layer]);
+- (void) setBackgroundColor:(CGColorRef) color
+{
+   return( [_context setBackgroundColor:color]);
+}
 
-   frame.origin = CGPointZero;
-   frame.size   = _frame.size;
 
-   [_contentPlane setFrame:frame];
-   [_menuPlane setFrame:frame];
-   [_dragAndDropPlane setFrame:frame];
-   [_toolTipPlane setFrame:frame];
-   [_alertPlane setFrame:frame];
-
-   // don't use setNeedsLayout as we are inside a layout already
-   [_contentPlane setNeedsLayout:YES];
-   [_menuPlane setNeedsLayout:YES];
-   [_dragAndDropPlane setNeedsLayout:YES];
-   [_toolTipPlane setNeedsLayout:YES];
-   [_alertPlane setNeedsLayout:YES];
+- (CGAffineTransform) transformForRenderQueue:(CGAffineTransform) inherited
+{
+   return( CGAffineTransformMakeIdentity());
 }
 
 
@@ -289,6 +322,22 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    abort();
 }
 
+
+- (void) addToDelegateViews:(UIView *) view
+{
+   assert( _mulle_pointerarray_find( &_delegateViews, view) == mulle_not_found_e);
+
+   _mulle_pointerarray_add( &_delegateViews, view);
+}
+
+
+- (void) removeFromDelegateViews:(UIView *) view
+{
+   extern void   mulle_pointerarray_remove( struct mulle_pointerarray *, void *);
+
+   // defined in UIView
+   mulle_pointerarray_remove( &_delegateViews, view);
+}
 
 
 @end
