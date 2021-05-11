@@ -104,6 +104,7 @@
    mulle_pointerarray_release_all( _layers);
    mulle_pointerarray_destroy( _layers);
 
+   [_cacheLayer release];
    [_mainLayer release];
 
    [_subviewsArrayProxy release];
@@ -471,6 +472,7 @@ static inline CGRect   getBounds( UIView *self)
 #endif
 }
 
+
 - (char *) cStringDescription
 {
    char        *result;
@@ -499,50 +501,28 @@ static inline CGRect   getBounds( UIView *self)
    return( result);
 }
 
-- (void) _createRenderCacheIfNeededWithFrameInfo:(struct MulleFrameInfo *) info
+- (MulleImageLayer *) cachedLayerWithFrameInfo:(struct MulleFrameInfo *) info
 {
-#ifdef HAVE_RENDER_CACHE
-   UIImage   *image;
-
-   if( ! _needsCaching)
-      return;
-
-   _needsCaching = NO;
-   image = [self textureImageWithContext:[[self window] context]
-                              frameInfo:info
-                                 options:0];
-   if( image)
+   if( _needsCaching)
    {
-      _cacheLayer = [[MulleImageLayer alloc] initWithFrame:[_mainLayer frame]];
-      [_cacheLayer setImage:image];
-   }
+#ifdef HAVE_RENDER_CACHE
+      UIImage   *image;
+
+      assert( _cacheLayer == nil);
+      _needsCaching = NO;
+      image = [self textureImageWithContext:[[self window] context]
+                                 frameInfo:info
+                                    options:0];
+      if( image)
+         _cacheLayer = [[MulleImageLayer alloc] initWithImage:image];
 #endif
+   }
+   return( _cacheLayer);
 }
 
 
 - (void) willRenderWithAbsoluteTime:(CAAbsoluteTime) time
 {
-}
-
-
-- (void) updateRenderCachesWithFrameInfo:(struct MulleFrameInfo *) info
-{
-#ifdef HAVE_RENDER_CACHE
-   struct mulle_pointerarrayenumerator   rover;
-   UIView                                *view;
-
-#ifdef RENDER_VERBOSE_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   rover = mulle_pointerarray_enumerate( _subviews);
-   while( mulle_pointerarrayenumerator_next( &rover, (void **) &view))
-      [view updateRenderCachesWithContext:context
-                                frameInfo:info];
-   mulle_pointerarrayenumerator_done( &rover);
-
-   [self _createRenderCacheIfNeededWithFrameInfo:info];
-#endif
 }
 
 
@@ -610,12 +590,14 @@ static inline CGRect   getBounds( UIView *self)
    struct mulle_bitmap_size   bitmapSize;
    NVGcontext                 *vg;
 
-   frame.origin = CGPointZero;
-   frame.size   = [self frame].size;
+   frame = [self frame];
 
-   renderInfo.frame                  = frame;
-   renderInfo.framebufferSize.width  = frame.size.width / info->pixelRatio;
-   renderInfo.framebufferSize.height = frame.size.height / info->pixelRatio;
+   memset( &renderInfo, 0, sizeof( renderInfo));
+
+   renderInfo.size                   = frame.size;
+   renderInfo.viewportFrame.size     = renderInfo.size;
+   renderInfo.framebufferSize.width  = renderInfo.size.width / info->pixelRatio;
+   renderInfo.framebufferSize.height = renderInfo.size.height / info->pixelRatio;
    renderInfo.UIScale                = info->UIScale;
    renderInfo.pixelRatio             = info->pixelRatio;
    renderInfo.isPerfEnabled          = NO;
@@ -633,7 +615,7 @@ static inline CGRect   getBounds( UIView *self)
    nvgluBindFramebuffer( [image framebuffer]);
    @autoreleasepool
    {
-      [context startRenderWithFrameInfo:&renderInfo];
+      [context beginRenderWithFrameInfo:&renderInfo];
       [context clearFramebuffer];
 
       vg = [context nvgContext];

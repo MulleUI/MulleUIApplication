@@ -34,6 +34,13 @@ src/main-transform.m
 src/main-viewconversion.m
 )
 
+# no UIKit
+set( CAANIMATION_SOURCES
+src/main-coregraphics.m
+src/main-coreanimation.m
+src/main-ca-implicit.m
+)
+
 # barebones drawing using UIView and CALayer only
 set( BAREBONES_SOURCES
 src/main-autoresizingmask.m
@@ -66,11 +73,7 @@ src/main-scrollview.m
 #src/main-textfield.m
 )
 
-# more sophistated using subclasse like menus or buttons
-set( MAIN_SOURCES
-#${NON_GRAPHIC_MAIN_SOURCES}
-${BAREBONES_SOURCES}
-${VIEW_SUBCLASS_SOURCES}
+set( OTHER_SOURCES
 #src/main-animate-circles.m
 src/main-calculator.m
 src/main-event-queue.m
@@ -87,6 +90,15 @@ src/main-textlayout.m
 src/main-textview.m
 src/main-tiger.m
 src/main-windows.m
+)
+
+# more sophistated using subclasse like menus or buttons
+set( MAIN_SOURCES
+#${NON_GRAPHIC_MAIN_SOURCES}
+${CAANIMATION_SOURCES}
+#${BAREBONES_SOURCES}
+#${VIEW_SUBCLASS_SOURCES}
+#${OTHER_SOURCES}
 )
 
 foreach( MAIN_SOURCE ${MAIN_SOURCES})

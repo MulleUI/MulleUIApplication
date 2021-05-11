@@ -45,12 +45,18 @@
    scale_x = 1.0;
    scale_y = 1.0;
 
-   info->frame            = _frame;
-   info->framebufferSize  = [self framebufferSize];
+   //
+   // assumption is, the optimizing compiler will inline this with -O3
+   // and then combine with settings
+   //
+   memset( info, 0, sizeof( *info));
+
+   info->size                 = _frame.size;
+   info->viewportFrame.size   = _frame.size;
+   info->framebufferSize      = [self framebufferSize];
 
    info->UIScale         = CGVectorMake( scale_x, scale_y);
 	info->pixelRatio      = info->framebufferSize.width / _frame.size.width;
-   info->isPerfEnabled   = NO;
    info->renderFrame     = _didRender;
 
    // does not do refreshRate yet, the renderloop does this
@@ -145,7 +151,7 @@
 //                       |
 //                       v
 //  .-----------------------------------------.
-//  | CGContext renderLayers:                 |
+//  | CGContext renderObjects:                |
 //  '-----------------------------------------'
 //
 // glitch hunt:
@@ -198,7 +204,6 @@
          (*_didLayoutCallback)( self, info, renderTime);
    }
 
-
    /*
     * Animate
     */
@@ -207,14 +212,16 @@
       //
       // create the renderQueue. This will set the transforms for all
       // the layer and calculate the actual opacity, which is then stored
-      // in layer transform and layer alpha
+      // in layer transform and layer alpha.
       //
       _mulle_pointerarray_reset( &_renderQueue);
       [self createRenderQueue:&_renderQueue];
       if( _didCreateRenderQueueCallback)
          (*_didCreateRenderQueueCallback)( self, info, renderTime);
+
+
       [CAAnimation animateObjects:&_renderQueue
-                    absoluteTime:renderTime];
+                     absoluteTime:renderTime];
 
       if( _didAnimateCallback)
          (*_didAnimateCallback)( self, info, renderTime);
@@ -244,14 +251,10 @@
     */
    @autoreleasepool
    {
-      // nvgGlobalCompositeOperation( ctxt->vg, NVG_ATOP);
-      // TODO: move this unto a per layer base ?
-      [self updateRenderCachesWithFrameInfo:info];
-
       [_context clearFramebuffer];
-      [_context startRenderWithFrameInfo:info];
+      [_context beginRenderWithFrameInfo:info];
       {
-         [_context renderLayers:&_renderQueue];
+         [_context renderObjects:&_renderQueue];
 
          if( _didRenderCallback)
             (*_didRenderCallback)( self, info, renderTime);

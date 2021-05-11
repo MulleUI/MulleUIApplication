@@ -93,7 +93,7 @@
 {
    UIEvent   *event;
 
-#ifdef CALLBACK_DEBUG
+#ifdef CALLBACK_DEBUG || defined( RESIZE_CALLBACK_DEBUG)
    fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
 #endif
 

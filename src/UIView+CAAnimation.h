@@ -1,21 +1,22 @@
 #import "UIView.h"
 
 #import "CAAnimation.h"
+#import "CATransaction.h"
 
-enum UIViewAnimationCurve 
+
+enum UIViewAnimationCurve
 {
-   UIViewAnimationCurveEaseInOut,
-   UIViewAnimationCurveEaseIn,
-   UIViewAnimationCurveEaseOut,
-   UIViewAnimationCurveLinear
+   UIViewAnimationCurveEaseInOut = CAAnimationCurveEaseInOut,
+   UIViewAnimationCurveEaseIn    = CAAnimationCurveEaseIn,
+   UIViewAnimationCurveEaseOut   = CAAnimationCurveEaseOut,
+   UIViewAnimationCurveLinear    = CAAnimationCurveLinear
 };
-
 
 
 //
 // Doing it like this is kinda bad, because different windows could have
 // different threads but they couldn't create animations at the same time
-// because it is tied to the class. On the other, one can reuse more 
+// because it is tied to the class. On the other, one can reuse more
 // UIKit code, by keeping this as is.
 // Possible solution: Have [UIWindow window] in a thread local variable
 // and forward all these UIView calls there
@@ -24,12 +25,11 @@ enum UIViewAnimationCurve
 //
 @interface UIView ( CAAnimation)
 
-+ (void) beginAnimations:(char *) animationID 
++ (void) beginAnimations:(char *) animationID
                  context:(void *) context;
 + (void) commitAnimations;
 
 + (BOOL) areAnimationsEnabled;
-+ (void) addAnimatedLayer:(CALayer *) layer;
 
 + (void) setAnimationDelegate:(id) delegate;
 + (void) setAnimationWillStartSelector:(SEL) selector;
@@ -55,6 +55,8 @@ enum UIViewAnimationCurve
 // if repeatCount < 0.0 then it repeats indefinitely
 + (void ) setAnimationRepeatCount:(float) repeatCount;
 + (float) animationRepeatCount;
+
++ (void) addAnimatableObject:(id <CAImplicitlyAnimatableObject>) object;
 
 @end
 

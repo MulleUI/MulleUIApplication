@@ -163,6 +163,69 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    glfwSetWindowCloseCallback( _window, windowCloseCallback);
 }
 
+- (void *) os_createWindowWithFrame:(CGRect) frame
+                       titleCString:(char *) title
+                          styleMask:(NSUInteger) styleMask
+{
+   void   *window;
+
+   assert( [NSThread mulleIsMainThread]);
+
+#if MULLE_UI_GLVERSION == MULLE_GLES2
+   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0);
+#endif
+#if MULLE_UI_GLVERSION == MULLE_GLES3
+   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2);
+   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
+#if MULLE_UI_GLVERSION == MULLE_GL
+   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0);
+   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
+
+   if( styleMask & MulleWindowStyleMaskResizable)
+   	glfwWindowHint( GLFW_RESIZABLE, GL_TRUE);
+   if( styleMask & MulleWindowStyleMaskInvisible)
+   	glfwWindowHint( GLFW_VISIBLE, GL_FALSE);
+
+   // not super sure about this, but lets try to avoid "old" OpenGL
+   // calls. alas, we are doing OpenGLES 2.0 minimum, so I don't know
+   // if this is useful.
+
+   // TODO: create windows invisible always, but make visible after first
+   //       render call. pro: window won't show up empty for an unknown
+   //       amount of time. con: window won't show up at all for an unknown
+   //       amount of time.
+   window = glfwCreateWindow( (int) frame.size.width,
+                              (int) frame.size.height,
+                              title ? title : "",
+                              0,
+                              0);
+   if( ! window)
+   {
+      fprintf( stderr, "glfwCreateWindow failed us\n");
+      return( NULL);
+   }
+
+   // this is basically the "rendezvous" point where nanoVG latches unto
+   // its also the receiver for OpenGL calls. That's why we need a window
+   // to draw stuff
+   //
+   glfwSetWindowUserPointer( window, self);
+
+   return( window);
+}
+
+
+- (void) os_destroyWindow
+{
+   glfwDestroyWindow( _window);
+}
+
+
 + (CGFloat) os_primaryMonitorPPI
 {
    GLFWmonitor      *monitor;
@@ -207,69 +270,6 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
 
    _frame.origin = CGPointMake( xpos, ypos);
    _frame.size   = CGSizeMake( width, height);
-}
-
-
-- (void *) os_createWindowWithFrame:(CGRect) frame
-                       titleCString:(char *) title
-                          styleMask:(NSUInteger) styleMask
-{
-   void   *window;
-
-   assert( [NSThread mulleIsMainThread]);
-
-#if MULLE_UI_GLVERSION == MULLE_GLES2
-   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0);
-#endif
-#if MULLE_UI_GLVERSION == MULLE_GLES3
-   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2);
-   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#endif
-#if MULLE_UI_GLVERSION == MULLE_GL
-   glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0);
-   glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#endif
-
-   if( styleMask & MulleWindowStyleMaskResizable)
-   	glfwWindowHint( GLFW_RESIZABLE, GL_TRUE);
-   if( styleMask & MulleWindowStyleMaskInvisible)
-   	glfwWindowHint( GLFW_VISIBLE, GL_FALSE);
-
-   // not super sure about this, but lets try to avoid "old" OpenGL
-   // calls. alas, we are doing OpenGLES 2.0 minimum, so I don't know
-   // if this is useful.
-
-   // TODO: create windows invisible always, but make visible after first
-   //       render call. pro: window won't show up empty for an unknown 
-   //       amount of time. con: window won't show up at all for an unknown 
-   //       amount of time.
-   window = glfwCreateWindow( (int) frame.size.width,
-                              (int) frame.size.height,
-                              title ? title : "",
-                              0,
-                              0);
-   if( ! window)
-   {
-      fprintf( stderr, "glfwCreateWindow failed us\n");
-      return( NULL);
-   }
-
-   // this is basically the "rendezvous" point where nanoVG latches unto
-   // its also the receiver for OpenGL calls. That's why we need a window
-   // to draw stuff
-   //
-   glfwSetWindowUserPointer( window, self);
-
-   return( window);
-}
-
-
-- (void) os_destroyWindow
-{
-   glfwDestroyWindow( _window);
 }
 
 

@@ -80,7 +80,7 @@
 
 
 //
-// by default, the mainLayer fills the contentRect of 
+// by default, the mainLayer fills the contentRect of
 // its owning UIView.
 //
 - (void) layoutLayer:(CALayer *) layer
@@ -205,7 +205,7 @@
 //   fprintf( stderr, "bounds         : %s\n", CGRectCStringDescription( bounds));
 
    //
-   // if view doesn't fit into bounds, we do what ? 
+   // if view doesn't fit into bounds, we do what ?
    // culling is done in the renderQueue step (if clipping is set)
    // If clipping is not set MulleUIViewAutoresizingCullAtBounds will be useful
    // as well
@@ -228,6 +228,29 @@
    return( UILayoutStrategyDefault);
 }
 
+// non cached, if this is true, then we can't cache the layer hierarchy
+//
+- (BOOL) hasAnimatedCachableLayers
+{
+   struct mulle_pointerarrayenumerator   rover;
+   CALayer                               *layer;
+   BOOL                                  flag;
+
+   if( [_mainLayer hasAnimations])
+      return( YES);
+
+   flag  = NO;
+   rover = mulle_pointerarray_enumerate( _layers);
+   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
+   {
+      flag = [layer hasAnimations];
+      if( flag)
+         break;
+   }
+   mulle_pointerarrayenumerator_done( &rover);
+   return( flag);
+}
+
 
 - (void) layoutLayers
 {
@@ -236,6 +259,16 @@
    CGRect                                contentRect;
 
    contentRect = [self contentRect]; // not layoutRect
+
+#ifdef HAVE_RENDER_CACHE
+   if( _cacheLayer)
+   {
+      if( CGRectEqualToRect( contentRect, [_cacheLayer frame])
+         return;
+      [_cacheLayer release];
+      _cacheLayer = nil;
+   }
+#endif
    [self layoutLayer:_mainLayer
               inRect:contentRect];
 

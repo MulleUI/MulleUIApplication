@@ -160,7 +160,7 @@ enum UILayoutStrategy
 @property UIViewAutoresizing   autoresizingMask;
 
 // frame is the position and size relative to the superview
-@property CGRect   frame;
+@property CGRect               frame;
 
 //
 // bounds is the used to place the layers and subviews in, their frames
@@ -175,10 +175,10 @@ enum UILayoutStrategy
 //
 // Use layoutRect if you are asking for bounds during layout
 //
-@property CGRect   bounds;
+@property CGRect               bounds;
 
 //
-// tyically, contentRect is { CGPointZero, bounds.size }. It's the playground 
+// tyically, contentRect is { CGPointZero, bounds.size }. It's the playground
 // for the subviews to be placed in (via subview frame). Padding is added by
 // layoutRect
 //
