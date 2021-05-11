@@ -19,6 +19,8 @@ src/main-canvas-bounds-frame.m
 src/main-clip.m
 src/main-collectionview.m
 src/main-contentmode.m
+src/main-coreanimation.m
+src/main-coregraphics.m
 src/main-draw.m
 src/main-event-queue.m
 src/main-fbo.m
@@ -65,6 +67,7 @@ src/CALayer+CAAnimation.m
 src/CALayer.m
 src/CAShapeLayer.m
 src/CATime.c
+src/CATransaction.m
 src/CGAffineTransform+CString.m
 src/CGAffineTransform.c
 src/CGColor.c

@@ -91,4 +91,8 @@ typedef enum
 // it's better to check this method though as I might change by mind...
 - (BOOL) isCulledByLayout;
 
+// does not conside the cacheLayer because its used to figure out if we
+// can use the cacheLayer.
+- (BOOL) hasAnimatedCachableLayers;
+
 @end

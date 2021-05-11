@@ -14,7 +14,7 @@
 
 @interface UIWindow( RenderQueue)
 
-// all layers are placed into the render queue, the layers get their
+// all layers (are placed into the render queue, the layers get their
 // transform and alpha set
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue;
 

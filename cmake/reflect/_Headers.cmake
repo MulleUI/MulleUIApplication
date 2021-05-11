@@ -62,6 +62,7 @@ src/CALayer+CAAnimation.h
 src/CALayer.h
 src/CAShapeLayer.h
 src/CATime.h
+src/CATransaction.h
 src/CGAffineTransform+CString.h
 src/CGAffineTransform.h
 src/CGBase.h

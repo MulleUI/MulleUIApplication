@@ -55,30 +55,41 @@
 
    //
    // if we clip to nothing we don't do anything
-   // we use 0.1 for FP errors. An invalid intersetion also produces 
+   // we use 0.1 for FP errors. An invalid intersetion also produces
    // inf origins, which apparently is bad later on. This should implicitly
    // catch this too
    if( subClipRect.size.width < 0.1 || subClipRect.size.height < 0.1)
       return;
 
-   /*
-    * Layers
-    */
-   [_mainLayer setTransform:xform];
-   [_mainLayer setAlpha:alpha];
-   [_mainLayer setClipRect:subClipRect];
-   mulle_pointerarray_add( renderQueue, _mainLayer);
-
-   rover = mulle_pointerarray_enumerate( _layers);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
+#ifdef HAVE_RENDER_CACHE
+   if( _cacheLayer)
    {
-      [layer setTransform:xform];
-      [layer setAlpha:alpha];
-      [layer setClipRect:subClipRect];
-      mulle_pointerarray_add( renderQueue, layer);
+      [_cacheLayer setTransform:xform];
+      [_cacheLayer setAlpha:alpha];
+      [_cacheLayer setClipRect:subClipRect];
+      mulle_pointerarray_add( renderQueue, _cacheLayer);
    }
-   mulle_pointerarrayenumerator_done( &rover);
+   else
+#endif
+   {
+      /*
+      * Layers
+      */
+      [_mainLayer setTransform:xform];
+      [_mainLayer setAlpha:alpha];
+      [_mainLayer setClipRect:subClipRect];
+      mulle_pointerarray_add( renderQueue, _mainLayer);
 
+      rover = mulle_pointerarray_enumerate( _layers);
+      while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
+      {
+         [layer setTransform:xform];
+         [layer setAlpha:alpha];
+         [layer setClipRect:subClipRect];
+         mulle_pointerarray_add( renderQueue, layer);
+      }
+      mulle_pointerarrayenumerator_done( &rover);
+   }
    /*
     * Subviews
     */

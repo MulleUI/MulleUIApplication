@@ -6,6 +6,9 @@
 #import "CALayer+CAAnimation.h"
 
 
+// MEMO: this is currently the same as a CATransaction just global and
+//       lock protected. Basically I don't want to throw it away just yet :)
+//
 @implementation UIView ( CAAnimation)
 
 enum
@@ -18,24 +21,20 @@ enum
 
 static struct
 {
-   mulle_thread_mutex_t        _lock;
+   mulle_thread_mutex_t          _lock;
 
    // mutable state
-   struct mulle_pointerarray   _animatedLayers;
+   struct mulle_pointerarray     _animatedLayers;
 
-   char                        *_animationID;
-   void                        *_context;
-   id                          _delegate;
-   SEL                         _animationWillStartSelector;
-   SEL                         _animationDidStopSelector;
+   char                          *_animationID;
+   void                          *_context;
+   id                            _delegate;
+   SEL                           _animationWillStartSelector;
+   SEL                           _animationDidStopSelector;
 
-   CARelativeTime              _animationDelay;
-   CARelativeTime              _animationDuration;
-   float                       _animationRepeatCount;
-   NSUInteger                  _animationCurve;
-   BOOL                        _animationReverses;
+   struct CAAnimationParameters  _parameters;
 
-   mulle_atomic_pointer_t      _animationState;
+   mulle_atomic_pointer_t        _state;
 } Self;
 
 
@@ -65,7 +64,7 @@ static inline void   SelfUnlock()
 + (void) beginAnimations:(char *) animationID
                  context:(void *) context
 {
-   assert( _mulle_atomic_pointer_read( &Self._animationState) == NULL);
+   assert( _mulle_atomic_pointer_read( &Self._state) == NULL);
 
    SelfLock();
    {
@@ -73,23 +72,26 @@ static inline void   SelfUnlock()
 
       Self._animationID       = animationID ? mulle_strdup( animationID) : NULL;
       Self._context           = context;
-      _mulle_atomic_pointer_nonatomic_write( &Self._animationState,
+      _mulle_atomic_pointer_nonatomic_write( &Self._state,
                                             (void *) (intptr_t)  UIViewAnimationStarted);
-      
+
       _mulle_pointerarray_done( &Self._animatedLayers);
       _mulle_pointerarray_init( &Self._animatedLayers, 16, NULL);
 
       // reset everything to default values or ?
-      Self._animationDelay              = 0.0;
-      Self._animationDuration           = 2.0;
-      Self._animationReverses           = 0.0;
-      Self._animationRepeatCount        = 0.0;
+      Self._parameters.animationDelay        = 0.0;
+      Self._parameters.animationDuration     = 2.0;
+      Self._parameters.animationRepeatCount  = 0.0;
+      Self._parameters.animationAutoreverses = 0.0;
+      Self._parameters.animationCurve        = 0.0;
+
       Self._delegate                    = nil;
       Self._animationWillStartSelector  = 0;
       Self._animationDidStopSelector    = 0;
    }
    SelfUnlock();
 }
+
 
 + (void) commitAnimations
 {
@@ -102,20 +104,24 @@ static inline void   SelfUnlock()
    SEL                                   willStart;
    SEL                                   didEnd;
    MulleAnimationDelegate                *animationDelegate;
+   struct CAAnimationParameters          parameters;
 
-   assert( _mulle_atomic_pointer_read( &Self._animationState) == (void *) (intptr_t) UIViewAnimationStarted);
+   assert( _mulle_atomic_pointer_read( &Self._state) == (void *) (intptr_t) UIViewAnimationStarted);
 
    SelfLock();
    {
-      _mulle_atomic_pointer_nonatomic_write( &Self._animationState,
+      _mulle_atomic_pointer_nonatomic_write( &Self._state,
                                             (void *) (intptr_t)  UIViewAnimationCommitting);
 
       memcpy( &tmp, &Self._animatedLayers, sizeof( struct mulle_pointerarray));
+
       _mulle_pointerarray_init( &Self._animatedLayers, 16, NULL);
       animationID       = Self._animationID;
       Self._animationID = NULL;
       context           = Self._context;
       context           = NULL;
+
+      parameters        = Self._parameters;
 
       delegate                         = Self._delegate;
       Self._delegate                   = nil;
@@ -140,8 +146,9 @@ static inline void   SelfUnlock()
    rover = mulle_pointerarray_enumerate( &tmp);
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
    {
-      [layer commitImplicitAnimationsWithAnimationID:animationID
-                                   animationDelegate:animationDelegate];
+      [layer commitImplicitAnimationsWithID:animationID
+                                   delegate:animationDelegate
+                                 parameters:&parameters]; // either UIView class or CATransaction
    }
    mulle_pointerarrayenumerator_done( &rover);
 
@@ -156,7 +163,7 @@ static inline void   SelfUnlock()
    //
 
    // return to idle
-   _mulle_atomic_pointer_write( &Self._animationState,
+   _mulle_atomic_pointer_write( &Self._state,
                                (void *) (intptr_t)  UIViewAnimationIdle);
 }
 
@@ -164,7 +171,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 {
    void  *state;
 
-   state = _mulle_atomic_pointer_read( &Self._animationState);
+   state = _mulle_atomic_pointer_read( &Self._state);
    return( state != NULL);
 }
 
@@ -177,7 +184,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 //
 //
 //
-+ (void) addAnimatedLayer:(CALayer *) layer
++ (void) addAnimatableObject:(id <CAImplicitlyAnimatableObject>) layer
 {
    assert( layer);
    assert( [layer isKindOfClass:[CALayer class]]);
@@ -262,15 +269,13 @@ BOOL   UIViewAreAnimationsEnabled( void)
 
 
 //
-
-
 + (CARelativeTime) animationDelay
 {
    CARelativeTime   value;
 
    SelfLock();
    {
-      value = Self._animationDelay;
+      value = Self._parameters.animationDelay;
    }
    SelfUnlock();
    return( value);
@@ -281,7 +286,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 {
    SelfLock();
    {
-      Self._animationDelay = delay;
+      Self._parameters.animationDelay = delay;
    }
    SelfUnlock();
 }
@@ -292,7 +297,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 
    SelfLock();
    {
-      value = Self._animationDuration;
+      value = Self._parameters.animationDuration;
    }
    SelfUnlock();
    return( value);
@@ -303,7 +308,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 {
    SelfLock();
    {
-      Self._animationDuration = duration;
+      Self._parameters.animationDuration = duration;
    }
    SelfUnlock();
 }
@@ -315,7 +320,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 
    SelfLock();
    {
-      value = Self._animationCurve;
+      value = Self._parameters.animationCurve;
    }
    SelfUnlock();
    return( value);
@@ -326,7 +331,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 {
    SelfLock();
    {
-      Self._animationCurve = value;
+      Self._parameters.animationCurve = value;
    }
    SelfUnlock();
 }
@@ -338,7 +343,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 
    SelfLock();
    {
-      value = Self._animationReverses;
+      value = Self._parameters.animationAutoreverses;
    }
    SelfUnlock();
    return( value);
@@ -349,10 +354,33 @@ BOOL   UIViewAreAnimationsEnabled( void)
 {
    SelfLock();
    {
-      Self._animationReverses = flag;
+      Self._parameters.animationAutoreverses = flag;
    }
    SelfUnlock();
 }
+
++ (BOOL) animationAutoreverses
+{
+   BOOL   value;
+
+   SelfLock();
+   {
+      value = Self._parameters.animationAutoreverses;
+   }
+   SelfUnlock();
+   return( value);
+}
+
+
++ (void) setAnimationAutoreverses:(BOOL) flag
+{
+   SelfLock();
+   {
+      Self._parameters.animationAutoreverses = flag;
+   }
+   SelfUnlock();
+}
+
 
 // incompatible
 + (float) animationRepeatCount
@@ -361,7 +389,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 
    SelfLock();
    {
-      value = Self._animationRepeatCount;
+      value = Self._parameters.animationRepeatCount;
    }
    SelfUnlock();
    return( value);
@@ -372,7 +400,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 {
    SelfLock();
    {
-      Self._animationRepeatCount = value < 0.0 ? -1.0 : value;
+      Self._parameters.animationRepeatCount = value < 0.0 ? -1.0 : value;
    }
    SelfUnlock();
 }
@@ -385,7 +413,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 
    SelfLock();
    {
-      value = Self._animationRepeatCount != 0.0;
+      value = Self._parameters.animationRepeatCount != 0.0;
    }
    SelfUnlock();
    return( value);
@@ -396,7 +424,7 @@ BOOL   UIViewAreAnimationsEnabled( void)
 {
    SelfLock();
    {
-      Self._animationRepeatCount = flag ? -1.0 : 0.0;
+      Self._parameters.animationRepeatCount = flag ? -1.0 : 0.0;
    }
    SelfUnlock();
 }
