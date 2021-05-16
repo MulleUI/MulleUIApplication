@@ -1,19 +1,10 @@
 #import "import.h"
 
-#import <mulle-container/mulle-container.h>
-#import "CGGeometry.h"
-#import "YogaProtocol.h"
-#import "CATime.h"
-#import "CGColor.h"
 #import "MulleTrackingArea.h"
 #import "UIEdgeInsets.h"
 
 
-@class CALayer;
-@class CGContext;
 @class UIWindow;
-@class MulleImageLayer;
-@class MulleTextureImage;
 
 struct MulleFrameInfo;
 
@@ -106,15 +97,8 @@ enum UIViewAutoresizing
 typedef NSUInteger   UIViewAutoresizing;
 
 
-enum UILayoutStrategy
-{
-   UILayoutStrategyDefault,
-   UILayoutStrategyContinue,
-   UILayoutStrategyStop
-};
 
-
-@interface UIView : NSObject < Yoga>
+@interface UIView : NSObject
 {
    UIView                                *_superview;
    CALayer                               *_mainLayer;
@@ -122,13 +106,9 @@ enum UILayoutStrategy
    struct mulle_pointerarray             *_layers;     // todo why no inline ?
    struct mulle_pointerarray             *_subviews;
 
-   // ivars for Yoga
-   id <NSArray,NSFastEnumeration>         _subviewsArrayProxy;
-   YGLayout                              *_yoga;
-
    struct MulleTrackingAreaArray         _trackingAreas;
 
-   MulleImageLayer                       *_cacheLayer;
+   CGLayer                               *_cacheLayer;
 
    struct MulleClickDragDifferentiator   _clickOrDrag;
 }
@@ -198,7 +178,6 @@ enum UILayoutStrategy
 // abused by UIStackView, will be moved away later
 @property CGSize   mulleLayoutSize;
 
-- (void) setNeedsDisplay;
 - (void) setNeedsCaching;  // wipes the _cacheLayer and asks for a new one to be drawn
 
 + (Class) layerClass;
@@ -234,12 +213,6 @@ enum UILayoutStrategy
 // if a subclass overrides, it should call super
 - (void) willRenderWithAbsoluteTime:(CAAbsoluteTime) renderTime;
 
-- (void) renderWithContext:(CGContext *) context;
-- (void) animateWithAbsoluteTime:(CAAbsoluteTime) renderTime;
-
-- (MulleTextureImage *) textureImageWithContext:(CGContext *) context
-                                      frameInfo:(struct MulleFrameInfo *) info
-                                        options:(NSUInteger) options;
 
 - (NSInteger) getLayers:(CALayer **) buf
                  length:(NSUInteger) length;
@@ -256,8 +229,6 @@ enum UILayoutStrategy
 - (CGRect) clipRect;
 
 // - (CALayer *) mainLayer;  // mainlayer is an internal thing
-
-- (void) updateRenderCachesWithFrameInfo:(struct MulleFrameInfo *) info;
 
 // view must be part of window view hierarchy, for these function to work
 // properly

@@ -1,8 +1,5 @@
 #import "import.h"
 
-#include "CGGeometry.h"
-#include "CATime.h"
-
 @class UIWindow;
 @class UIView;
 

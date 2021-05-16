@@ -9,7 +9,7 @@
             "MIMode": "gdb",
             "request": "launch",
             "stopAtEntry": false,
-            "program": "${workspaceFolder}/kitchen/Debug/photoshop",
+            "program": "${workspaceFolder}/kitchen/Debug/particles",
             "args": [ ],
             "environment": [],
             "cwd": "${workspaceFolder}",

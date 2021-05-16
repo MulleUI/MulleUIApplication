@@ -2,14 +2,56 @@
 // Copyright (c) 2020 Nat!, Mulle kybernetiK
 //
 // prefer a local UIView over one in import.h
-#ifdef __has_include
-# if __has_include( "UIView.h")
-#  import "UIView.h"
-# endif
-#endif
+#import "UIView.h"
 
-// we want "import.h" always anyway
-#import "import.h"
+
+
+
+typedef enum
+{
+   UIViewContentModeScaleToFill     = MulleLayoutContentModeScaleToFill,
+   UIViewContentModeScaleAspectFit  = MulleLayoutContentModeScaleAspectFit,
+   UIViewContentModeScaleAspectFill = MulleLayoutContentModeScaleAspectFill,
+
+//   UIViewContentModeRedraw,  // not supported
+
+   UIViewContentModeCenter      = MulleLayoutContentModeCenter,
+
+   UIViewContentModeTop         = MulleLayoutContentModeTop,
+   UIViewContentModeBottom      = MulleLayoutContentModeBottom,
+   UIViewContentModeLeft        = MulleLayoutContentModeLeft,
+   UIViewContentModeRight       = MulleLayoutContentModeRight,
+
+   UIViewContentModeTopLeft     = MulleLayoutContentModeTopLeft,
+   UIViewContentModeTopRight    = MulleLayoutContentModeTopRight,
+   UIViewContentModeBottomLeft  = MulleLayoutContentModeBottomLeft,
+   UIViewContentModeBottomRight = MulleLayoutContentModeBottomRight
+} UIViewContentMode;
+#define N_UIViewContentModeNames 12
+
+
+#define UIViewContentModeNames      MulleLayoutContentModeNames
+
+static inline char   *UIViewContentModeCStringDescription( UIViewContentMode mode)
+{
+   return( MulleLayoutContentModeCStringDescription( (MulleLayoutContentMode) mode));
+}
+
+
+static inline UIViewContentMode  UIViewContentModeParseCString( char *s)
+{
+   return( (UIViewContentMode) MulleLayoutContentModeParseCString( s));
+}
+
+
+
+enum UILayoutStrategy
+{
+   UILayoutStrategyDefault,
+   UILayoutStrategyContinue,
+   UILayoutStrategyStop
+};
+
 
 
 /*

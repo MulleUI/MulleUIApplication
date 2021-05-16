@@ -1,13 +1,11 @@
-#import "import.h"
-
-#include "CGGeometry.h"
+#include "import.h"
 
 
 struct MulleTrackingArea
 {
    CGRect    rect;
    id        userInfo;
-   struct 
+   struct
    {
       unsigned  receivesObscuredEvents : 1;
    } flag;
@@ -28,7 +26,7 @@ static inline void    MulleTrackingAreaDone( struct MulleTrackingArea *p)
 }
 
 
-static inline void    MulleTrackingAreaSetRect( struct MulleTrackingArea *p, 
+static inline void    MulleTrackingAreaSetRect( struct MulleTrackingArea *p,
                                                 CGRect rect)
 {
    p->rect = rect;
@@ -41,16 +39,16 @@ static inline CGRect    MulleTrackingAreaGetRect( struct MulleTrackingArea *p)
 }
 
 
-static inline void    MulleTrackingAreaSetUserInfo( struct MulleTrackingArea *p, 
+static inline void    MulleTrackingAreaSetUserInfo( struct MulleTrackingArea *p,
                                                     id userInfo)
 {
    [p->userInfo autorelease];
-   p->userInfo = [userInfo retain]; 
+   p->userInfo = [userInfo retain];
 }
 
 static inline id    MulleTrackingAreaGetUserInfo( struct MulleTrackingArea *p)
 {
-   return( p->userInfo); 
+   return( p->userInfo);
 }
 
 
@@ -76,7 +74,7 @@ static inline NSUInteger
    MulleTrackingAreaArrayGetCount( struct MulleTrackingAreaArray *array)
 {
    return( array ? array->n : 0);
-}   
+}
 
 struct MulleTrackingArea   *
    MulleTrackingAreaArrayNewItem( struct MulleTrackingAreaArray *array);

@@ -4,7 +4,6 @@
 
 - (id) _firstResponder;
 
-+ (void) sendEmptyEvent;
 - (void) setupQuadtree;
 
 // Use -[UIView addTrackingAreaWithRect:toWindow:userInfo:]. It will call

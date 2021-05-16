@@ -1,5 +1,4 @@
 #include "UIView.h"
-#include "CGGeometry.h"
 
 
 //******************************************************************************
@@ -30,5 +29,12 @@
 
 - (void) dumpWithIndent:(NSUInteger) indent;
 - (void) dump;
+
+@end
+
+
+@interface CALayer( CGGeometry)
+
+- (void) dumpWithIndent:(NSUInteger) indent;
 
 @end

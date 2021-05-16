@@ -5,6 +5,60 @@
 #import "import-private.h"
 
 
+static uintptr_t   object_hash( struct mulle_container_keycallback *callback,
+                               void * obj)
+{
+   return( (uintptr_t) [(id) obj hash]);
+}
+
+static int   object_is_equal( struct mulle_container_keycallback *callback,
+                             void *obj,
+                             void *other)
+{
+   return( [(id) obj isEqual:(id) other]);
+}
+
+
+static void   *object_retain( struct mulle_container_keycallback *callback,
+                              void *obj,
+                              struct mulle_allocator *allocator)
+{
+   return( [(id) obj retain]);
+}
+
+
+static void   object_autorelease( struct mulle_container_keycallback *callback,
+                                  void *obj,
+                                  struct mulle_allocator *allocator)
+{
+   [(id) obj autorelease];
+}
+
+static void   *object_describe( struct mulle_container_keycallback *callback,
+                                void *obj,
+                                struct mulle_allocator **p_allocator)
+{
+   *p_allocator = NULL;
+   return( mulle_objc_object_call( (id) obj, @selector( description), (id) obj));
+}
+
+
+
+
+static const struct mulle_container_keycallback   key_retain_callback =
+{
+   object_hash,
+   object_is_equal,
+   object_retain,
+   object_autorelease,
+   object_describe,
+
+   nil,
+   NULL
+};
+
+
+
 @implementation UIApplication
 
 - (id) init
@@ -16,7 +70,7 @@
    allocator = MulleObjCInstanceGetAllocator( self);
    mulle_array_init( &_windows,
                      2,
-                     MulleObjCContainerKeyRetainCallback,
+                     (struct mulle_container_keycallback *) &key_retain_callback,
                      allocator);
    return( self);
 }

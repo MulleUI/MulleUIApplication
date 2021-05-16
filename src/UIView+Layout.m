@@ -3,13 +3,11 @@
 //
 #import "UIView+Layout.h"
 
-#import "UIView+CAAnimation.h"
-#import "import-private.h"
-
 #import "UIWindow.h"
-#import "CALayer.h"
-#import "CGGeometry+CString.h"
+#import "UIView+CAAnimation.h"
 #import "UIEdgeInsets+CString.h"
+
+#import "import-private.h"
 
 
 @implementation UIView ( Layout)

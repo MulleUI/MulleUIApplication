@@ -2,8 +2,6 @@
 
 #import "import-private.h"
 
-#import "CALayer.h"
-#import "CALayer+CAAnimation.h"
 
 
 // MEMO: this is currently the same as a CATransaction just global and

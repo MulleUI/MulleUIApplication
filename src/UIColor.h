@@ -1,7 +1,5 @@
 #import "import.h"
 
-#import "CGColor.h"
-
 //
 // UIColor is merely a factory for CGColorRef which is really the
 // nanovg color struct
@@ -22,8 +20,6 @@
 + (CGColorRef) lightGrayColor;
 + (CGColorRef) underPageBackgroundColor;
 + (CGColorRef) colorWithCGColor:(CGColorRef) cgColor;
-
-+ (NSValue *) mulleValueWithCGColor:(CGColorRef) cgColor;
 
 @end
 

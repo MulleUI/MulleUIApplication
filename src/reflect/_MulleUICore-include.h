@@ -5,14 +5,14 @@
  *
  *      mulle-sde environment set MULLE_SOURCETREE_TO_C_INCLUDE_FILE DISABLE
  *
- *   To not generate any header files:
+ *   To not let mulle-sourcetree-to-c generate any header files:
  *
  *      mulle-sde environment set MULLE_SOURCETREE_TO_C_RUN DISABLE
  *
  */
 
-#ifndef _mulle_ui_include_h__
-#define _mulle_ui_include_h__
+#ifndef _mulle_ui_core_include_h__
+#define _mulle_ui_core_include_h__
 
 // You can tweak the following #include with these commands.
 // (Use 83270b01-d35c-4b2e-8b74-7b87855d7c30 instead of glfw if there are duplicate entries)
@@ -22,19 +22,21 @@
 //    toggle #include:    `mulle-sourcetree mark glfw [no-]import`
 //    toggle public:      `mulle-sourcetree mark glfw [no-]public`
 //    toggle optional:    `mulle-sourcetree mark glfw [no-]require`
-//    remove for platform:`mulle-sourcetree mark glfw no-platform-<name>`
+//    remove for platform:`mulle-sourcetree mark glfw no-platform-<uname>`
+//        (use mulle-sourcetree-to-c --unames for known values)
 #include <GLFW/glfw3.h>   // glfw
 
 // You can tweak the following #include with these commands.
-// (Use 6a75997e-281d-4d5a-88d7-096548c2ab59 instead of mulle-testallocator if there are duplicate entries)
-//    remove:             `mulle-sourcetree mark mulle-testallocator no-header`
-//    rename:             `mulle-sde dependency|library set mulle-testallocator include whatever.h`
-//    reorder:            `mulle-sourcetree move mulle-testallocator <up|down>`
-//    toggle #include:    `mulle-sourcetree mark mulle-testallocator [no-]import`
-//    toggle public:      `mulle-sourcetree mark mulle-testallocator [no-]public`
-//    toggle optional:    `mulle-sourcetree mark mulle-testallocator [no-]require`
-//    remove for platform:`mulle-sourcetree mark mulle-testallocator no-platform-<name>`
-#include <mulle-testallocator/mulle-testallocator.h>   // mulle-testallocator
+// (Use 148522C7-9709-4A0B-8D63-AC57AD5E520C instead of mulle-quadtree if there are duplicate entries)
+//    remove:             `mulle-sourcetree mark mulle-quadtree no-header`
+//    rename:             `mulle-sde dependency|library set mulle-quadtree include whatever.h`
+//    reorder:            `mulle-sourcetree move mulle-quadtree <up|down>`
+//    toggle #include:    `mulle-sourcetree mark mulle-quadtree [no-]import`
+//    toggle public:      `mulle-sourcetree mark mulle-quadtree [no-]public`
+//    toggle optional:    `mulle-sourcetree mark mulle-quadtree [no-]require`
+//    remove for platform:`mulle-sourcetree mark mulle-quadtree no-platform-<uname>`
+//        (use mulle-sourcetree-to-c --unames for known values)
+#include <mulle-quadtree/mulle-quadtree.h>   // mulle-quadtree
 
 // You can tweak the following #include with these commands.
 // (Use 554cb551-8992-4382-a794-e5e8c3242817 instead of mulle-fifo if there are duplicate entries)
@@ -44,7 +46,8 @@
 //    toggle #include:    `mulle-sourcetree mark mulle-fifo [no-]import`
 //    toggle public:      `mulle-sourcetree mark mulle-fifo [no-]public`
 //    toggle optional:    `mulle-sourcetree mark mulle-fifo [no-]require`
-//    remove for platform:`mulle-sourcetree mark mulle-fifo no-platform-<name>`
+//    remove for platform:`mulle-sourcetree mark mulle-fifo no-platform-<uname>`
+//        (use mulle-sourcetree-to-c --unames for known values)
 #include <mulle-fifo/mulle-fifo.h>   // mulle-fifo
 
 #endif

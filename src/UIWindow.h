@@ -1,7 +1,5 @@
 #import "UIView.h"
 
-#import <mulle-container/mulle-container.h>
-#import <mulle-fifo/mulle-fifo.h>
 
 struct MulleFrameInfo;
 
@@ -16,8 +14,10 @@ enum MulleWindowStyleMask
 {
 //  MulleWindowStyleMaskClosable        = 0x1,
 //  MulleWindowStyleMaskMiniaturizable  = 0x2,
-  MulleWindowStyleMaskResizable       = 0x4,
-  MulleWindowStyleMaskInvisible       = 0x8
+  MulleWindowStyleMaskResizable         = 0x4,
+  MulleWindowStyleMaskInvisible         = 0x8,
+  MulleWindowStyleMaskNoEdgeAntialias   = 0x10,
+  MulleWindowStyleMaskNoStencilStrokes  = 0x20
 };
 
 #define ui_window_pointer_fifo   mulle__pointerfifo128
@@ -150,8 +150,10 @@ enum MulleWindowStyleMask
 + (instancetype) windowWithFrame:(CGRect) frame;
 
 // does not deal with focus of events
-- (void) show;
-- (void) hide;
+//- (void) show;
+//- (void) hide;
+
+- (void) setNeedsDisplay;
 
 + (CGFloat) primaryMonitorPPI;
 

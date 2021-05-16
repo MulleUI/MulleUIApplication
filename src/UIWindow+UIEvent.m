@@ -4,15 +4,10 @@
 
 #import "import-private.h"
 
-#import "CGGeometry+CString.h"
 #import "UIEvent.h"
 #import "UIView+UIEvent.h"
-#import "UIView+NSArray.h"
 #import "UIView+CGGeometry.h"
 #import "mulle-pointerarray+ObjC.h"
-#include <time.h>
-#include "mulle-quadtree.h"
-#include "mulle-timespec.h"
 
 
 //#define CALLBACK_DEBUG
@@ -93,7 +88,7 @@
 {
    UIEvent   *event;
 
-#ifdef CALLBACK_DEBUG || defined( RESIZE_CALLBACK_DEBUG)
+#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
    fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
 #endif
 
@@ -530,22 +525,24 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    {
    case UIEventTypePresses :
 #ifdef DEBUG
-      if( [event eventType] == UIEventTypePresses && [event action] == GLFW_PRESS)
+      if( [event eventType] == UIEventTypePresses)
       {
          UIKeyboardEvent   *keyEvent;
 
          keyEvent = (UIKeyboardEvent *) event;
-
-         // F12 key: 301
-         if( [keyEvent key] == 301)
+         if( [keyEvent action] == GLFW_PRESS)
          {
-            [self dump];
-            return( nil);
-         }
-         if( [keyEvent key] == 300)
-         {
-            [self dumpRenderQueue:&_renderQueue];
-            return( nil);
+            // F12 key: 301
+            if( [keyEvent key] == 301)
+            {
+               [self dump];
+               return( nil);
+            }
+            if( [keyEvent key] == 300)
+            {
+               [self dumpRenderQueue:&_renderQueue];
+               return( nil);
+            }
          }
       }
 #endif
@@ -557,6 +554,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
    case UIEventTypeWindow :
       event = [self handleWindowEvent:(UIWindowEvent *) event];
+   default:
       break;
    }
 

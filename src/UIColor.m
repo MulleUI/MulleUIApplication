@@ -34,10 +34,4 @@
 + (CGColorRef) underPageBackgroundColor  { return( getNVGColor( 0x6b716fFF)); }
 + (CGColorRef ) colorWithCGColor:(CGColorRef) cgColor  { return( cgColor); }
 
-+ (NSValue *) mulleValueWithCGColor:(CGColorRef) cgColor
-{
-   return( [NSValue valueWithBytes:&cgColor
-                          objCType:@encode( CGColorRef)]);
-}
-
 @end

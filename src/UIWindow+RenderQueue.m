@@ -3,12 +3,10 @@
 //
 #import "UIWindow+RenderQueue.h"
 
-#import "import-private.h"
-
+#import "UIView+CGGeometry.h"
 #import "UIView+Layout.h"
-#import "CALayer.h"
-#import "CGGeometry+CString.h"
-#import "UIEdgeInsets+CString.h"
+
+#import "import-private.h"
 
 
 @implementation UIView ( RenderQueue)

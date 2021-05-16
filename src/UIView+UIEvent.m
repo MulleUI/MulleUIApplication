@@ -1,11 +1,9 @@
 #import "UIView+UIEvent.h"
 
+#import "UIView+CGGeometry.h"
 #import "UIWindow.h"
 #import "UIWindow+UIResponder.h"
 #import "UIResponder.h"
-#import "UIView+CGGeometry.h"
-#import "CALayer.h"  // for _NVGtransform
-#import "CGGeometry+CString.h"
 
 
 @interface UIResponder
@@ -70,7 +68,7 @@
    button = [event button];
 
    if( action == GLFW_PRESS)
-      _clickOrDrag._suppressUntilTimestamp = [event timestamp] + 
+      _clickOrDrag._suppressUntilTimestamp = [event timestamp] +
                                              _clickOrDrag._mouseMotionSuppressionDelay;
 
    switch( button)
@@ -275,7 +273,7 @@
    frame    = [self frame];
    point.x += frame.origin.x;
    point.y += frame.origin.y;
-  
+
    rover = mulle_pointerarray_reverseenumerate( _layers);
    while( _mulle_pointerarrayreverseenumerator_next( &rover, (void **) &layer))
       if( CGRectContainsPoint( [layer frame], point))
@@ -320,6 +318,8 @@
 
    case UIEventTypeScroll :
       event = [self handleMouseScrollEvent:(UIMouseScrollEvent *) event];
+
+   default :
       break;
    }
 
@@ -410,7 +410,7 @@
    {
 #ifdef EVENT_DEBUG
       fprintf( stderr, "Subview %s did consume event\n", [view cStringDescription]);
-#endif      
+#endif
       return( nil);
    }
 
@@ -487,7 +487,7 @@
 #ifdef EVENT_DEBUG
          fprintf( stderr, "First Responder handled event: %s\n",
                         (char *) [responder cStringDescription]);
-#endif         
+#endif
          return( event);
       }
    }
