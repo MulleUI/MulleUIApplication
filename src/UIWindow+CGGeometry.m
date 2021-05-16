@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2020 Nat!, Mulle kybernetiK
 //
-#import "UIWindow+CGGeometry.h"
+#import "UIWindow.h"
 
 #import "import-private.h"
 
@@ -15,3 +15,5 @@
 }
 
 @end
+
+

@@ -1,8 +1,6 @@
 #define _GNU_SOURCE // for strrchr
 #import "UIFont.h"
 
-#import "CGFont.h"
-
 
 @implementation UIFont
 
@@ -14,7 +12,7 @@
 }
 
 
-+ (instancetype) fontWithNameCString:(char *) name 
++ (instancetype) fontWithNameCString:(char *) name
                                 size:(CGFloat) pointSize
 {
    UIFont   *font;
@@ -33,7 +31,7 @@
 }
 
 
-- (void) dealloc 
+- (void) dealloc
 {
    struct mulle_allocator  *allocator;
 

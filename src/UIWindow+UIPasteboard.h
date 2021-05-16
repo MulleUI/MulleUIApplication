@@ -2,11 +2,7 @@
 // Copyright (c) 2020 Nat!, Mulle kybernetiK
 //
 // prefer a local UIWindow over one in import.h
-#ifdef __has_include
-# if __has_include( "UIWindow.h")
-#  import "UIWindow.h"
-# endif
-#endif
+#import "UIWindow.h"
 
 // we want "import.h" always anyway
 #import "import.h"
@@ -19,7 +15,7 @@
 
 - (UIPasteboard *) pasteboard;
 
-@end 
+@end
 
 
 @interface UIWindow( OSPasteboard)

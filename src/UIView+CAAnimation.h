@@ -1,8 +1,5 @@
 #import "UIView.h"
 
-#import "CAAnimation.h"
-#import "CATransaction.h"
-
 
 enum UIViewAnimationCurve
 {

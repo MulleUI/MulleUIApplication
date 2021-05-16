@@ -6,24 +6,12 @@
 
 #import "import-private.h"
 
-#import "CAAnimation.h"
-#import "CALayer.h"  // for color
-#import "CALayer+CAAnimation.h"  // for color
-#import "CGContext.h"
-#import "CGGeometry+CString.h"
 #import "UIApplication.h"
 #import "UIEvent.h"
 #import "UIView+CGGeometry.h"
-#import "UIView+NSArray.h"
 #import "UIView+UIEvent.h"
 #import "UIView+Layout.h"
-#import "UIView+Yoga.h"
 #import "mulle-pointerarray+ObjC.h"
-#include <time.h>
-#include "mulle-quadtree.h"
-#include "mulle-timespec.h"
-
-#import "CALayer.h"  // debugging tmp
 
 
 @implementation UIWindow
@@ -144,7 +132,8 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    // rename to bind context to thread ?
    [self os_startRender];
-   _context = [CGContext new];
+   _context = [[CGContext alloc] initWithEdgeAntialiasing:!(styleMask & MulleWindowStyleMaskNoEdgeAntialias)
+                                        useStencilStrokes:!(styleMask & MulleWindowStyleMaskNoStencilStrokes)];
 
    _framebufferSize = [self os_framebufferSize];
    [self os_endRender];

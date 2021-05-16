@@ -2,7 +2,6 @@
 
 #import "UIWindow+UIEvent.h"
 #import "UIView+CGGeometry.h"
-#import "CGGeometry+CString.h"
 
 
 @implementation UIEvent
@@ -236,9 +235,9 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 {
    char   *s;
 
-   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f>",
+   s = MulleCG_asprintf( "<%p %s @%.1f %.1f t:%.6f>",
                   self,
-                  class_getName( object_getClass( self)),
+                  MulleObjCClassGetNameCString( NSClassFromObject( self)),
                   _locationInWindow.x,
                   _locationInWindow.y,
                   _timestamp);
@@ -403,9 +402,9 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 {
    char   *s;
 
-   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f b:%d a:%d>",
+   s = MulleCG_asprintf( "<%p %s @%.1f %.1f t:%.6f b:%d a:%d>",
                   self,
-                  class_getName( object_getClass( self)),
+                  MulleObjCClassGetNameCString( NSClassFromObject( self)),
                   _locationInWindow.x,
                   _locationInWindow.y,
                   _timestamp,

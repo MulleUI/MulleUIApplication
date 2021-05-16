@@ -23,10 +23,8 @@
    Here the prefix is harmless and serves disambiguation. If you have no
    sourcetree, then you don't need it.
  */
-#include "_MulleUI-include.h"
+#include "_MulleUICore-include.h"
 
 /* You can add some more include statements here */
-
-#include "version.h"
 
 #endif

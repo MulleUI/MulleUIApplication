@@ -64,8 +64,8 @@ struct MulleTrackingArea   *
       if( array->size < 4)
          array->size = 4;
 
-      array->items = mulle_allocator_realloc( array->allocator, 
-                                              array->items, 
+      array->items = mulle_allocator_realloc( array->allocator,
+                                              array->items,
                                               sizeof( struct MulleTrackingArea) * array->size);
    }
 
@@ -111,7 +111,7 @@ void
       return;
 
    assert( array);
-   
+
    index = item - array->items;
    assert( index >= 0 && index < array->n);
 
@@ -119,12 +119,12 @@ void
 
    //
    // assume: 4 entries (0,1,2,3), removing entry 2, have to compact 1 from behind
-   //          
+   //
    tocopy = array->n - index - 1;      // 4 - 2 - 1 = 2
    if( tocopy > 0)
    {
-      memmove( &array->items[ index], 
-               &array->items[ index + 1], 
+      memmove( &array->items[ index],
+               &array->items[ index + 1],
                tocopy * sizeof( struct MulleTrackingArea));
    }
    --array->n;

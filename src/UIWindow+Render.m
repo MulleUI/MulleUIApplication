@@ -10,14 +10,7 @@
 #import "UIWindow+UIEvent.h"
 #import "UIView+Layout.h"
 #import "UIWindow+RenderQueue.h"
-#import "CAAnimation.h"
-#import "CGContext.h"
-#import "CGContext+Render.h"
-#import "CGGeometry+CString.h"
-#import "CATime.h"
 #import "UIEvent.h"
-#include <time.h>
-#include "mulle-timespec.h"
 
 
 // #define PRINTF_PROFILE_RENDER
@@ -173,7 +166,7 @@
    clock_gettime( CLOCK_REALTIME, &start);
 
 #ifdef PRINTF_PROFILE_LAYOUT
-      printf( "@%ld:%09ld layout start\n", start.tv_sec, start.tv_nsec);
+   printf( "@%ld:%09ld layout start\n", start.tv_sec, start.tv_nsec);
 #endif
 
    renderTime = CAAbsoluteTimeWithTimespec( start);
@@ -327,7 +320,6 @@
       ++frames;
 
       [self getFrameInfo:&info];  // retrieve newest geometry
-      // info.isPerfEnabled = YES;
       [self renderFrameWithFrameInfo:&info];
 
 #ifdef SWAP_DEBUG

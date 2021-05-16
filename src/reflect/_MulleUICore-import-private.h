@@ -5,7 +5,7 @@
  *
  *      mulle-sde environment set MULLE_SOURCETREE_TO_C_PRIVATEIMPORT_FILE DISABLE
  *
- *   To not generate any header files:
+ *   To not let mulle-sourcetree-to-c generate any header files:
  *
  *      mulle-sde environment set MULLE_SOURCETREE_TO_C_RUN DISABLE
  *
@@ -13,7 +13,7 @@
 /* no headers */
 
 #ifdef __has_include
-# if __has_include( "_MulleUI-include-private.h")
-#  include "_MulleUI-include-private.h"
+# if __has_include( "_MulleUICore-include-private.h")
+#  include "_MulleUICore-include-private.h"
 # endif
 #endif

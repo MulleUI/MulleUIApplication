@@ -1,7 +1,5 @@
-#import "UIView+NSArray.h"
+#import "UIView+UIViewEditing.h"
 
-
-#import "MulleObjectArray.h"
 
 #pragma clang diagnostic ignored "-Wparentheses"
 
@@ -13,7 +11,7 @@
 @end
 
 
-@implementation UIView( NSArray)
+@implementation UIView( UIViewEditing)
 
 static inline NSUInteger   UIViewGetIndexOfSubview( UIView *self, UIView *other)
 {
@@ -31,17 +29,6 @@ static inline NSUInteger   UIViewGetIndexOfSubview( UIView *self, UIView *other)
    }
    mulle_pointerarrayenumerator_done( &rover);
    return( NSNotFound);
-}
-
-- (NSArray *) subviews
-{
-   if( ! self->_subviews)
-      return( nil);
-
-   if( ! _subviewsArrayProxy)
-      _subviewsArrayProxy = [[MulleObjectArray alloc] initWithPointerarray:self->_subviews
-                                                              freeWhenDone:NO];
-   return( (NSArray *) _subviewsArrayProxy);
 }
 
 

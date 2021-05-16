@@ -2,9 +2,6 @@
 
 #import "UIWindow.h"
 
-#import "CGGeometry+CString.h"
-#import "CALayer.h"  // for _NVGtransform
-
 
 #define DUMP_LAYERS
 
@@ -25,7 +22,7 @@
                CGRectCStringDescription( [self clipRect]));
    if( [self masksToBounds])
       fprintf ( stderr, " masks");
-   fprintf( stderr, "\n");               
+   fprintf( stderr, "\n");
 }
 
 @end
@@ -551,10 +548,6 @@ static CGPoint   convertBoundsPointToFramePoint( UIView *self, CGPoint point, CG
 #ifdef DUMP_LAYERS
    [self dumpLayersWithIndent:indent + 3];
 #endif
-//   if( _yoga)
-//   {
-//      fprintf( stderr, "%s\n", [[_yoga debugDescription] cStringDescription]);
-//   }
    [self dumpSubviewsWithIndent:indent + 3];
 }
 

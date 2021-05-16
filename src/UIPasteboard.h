@@ -1,12 +1,6 @@
 //
 // Copyright (c) 2020 Nat!, Mulle kybernetiK
 //
-#ifdef __has_include
-# if __has_include( "NSObject.h")
-#  import "NSObject.h"
-# endif
-#endif
-
 #import "import.h"
 
 @class UIWindow;
