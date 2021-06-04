@@ -13,7 +13,7 @@ if( MULLE_TRACE_INCLUDE)
 endif()
 
 #
-# Generated from sourcetree: EAEB2BA5-A5F9-467F-A4FA-5C6B7FD63AB4;MulleGraphics;;
+# Generated from sourcetree: EAEB2BA5-A5F9-467F-A4FA-5C6B7FD63AB4;MulleGraphics;no-singlephase;
 # Disable with : `mulle-sourcetree mark MulleGraphics no-link`
 # Disable for this platform: `mulle-sourcetree mark MulleGraphics no-cmake-platform-linux`
 #
@@ -35,7 +35,8 @@ if( NOT MULLE_GRAPHICS_LIBRARY)
          CACHE INTERNAL "need to cache this"
       )
       #
-      # Inherit ObjC loader and link dependency info.
+      # Inherit information from dependency.
+      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
       # Disable with: `mulle-sourcetree mark MulleGraphics no-cmake-inherit`
       #
       # temporarily expand CMAKE_MODULE_PATH
@@ -69,17 +70,9 @@ if( NOT MULLE_GRAPHICS_LIBRARY)
          if( EXISTS "${_TMP_MULLE_GRAPHICS_DIR}/DependenciesAndLibraries.cmake")
             unset( MULLE_GRAPHICS_DEFINITIONS)
             list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_GRAPHICS_DIR}")
-            # we only want top level INHERIT_OBJC_LOADERS, so disable them
-            if( NOT NO_INHERIT_OBJC_LOADERS)
-               set( NO_INHERIT_OBJC_LOADERS OFF)
-            endif()
-            list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-            set( NO_INHERIT_OBJC_LOADERS ON)
             #
             include( "${_TMP_MULLE_GRAPHICS_DIR}/DependenciesAndLibraries.cmake")
             #
-            list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-            list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
             #
             list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_GRAPHICS_DIR}")
             set( INHERITED_DEFINITIONS
@@ -110,7 +103,68 @@ if( NOT MULLE_GRAPHICS_LIBRARY)
          endforeach()
       endif()
    else()
+      # Disable with: `mulle-sourcetree mark MulleGraphics no-require-link`
       message( FATAL_ERROR "MULLE_GRAPHICS_LIBRARY was not found")
+   endif()
+endif()
+
+
+#
+# Generated from sourcetree: 148522C7-9709-4A0B-8D63-AC57AD5E520C;mulle-quadtree;no-all-load,no-cmake-inherit,no-cmake-searchpath,no-import,no-singlephase;
+# Disable with : `mulle-sourcetree mark mulle-quadtree no-link`
+# Disable for this platform: `mulle-sourcetree mark mulle-quadtree no-cmake-platform-linux`
+#
+if( NOT MULLE_QUADTREE_LIBRARY)
+   find_library( MULLE_QUADTREE_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-quadtree${CMAKE_STATIC_LIBRARY_SUFFIX} mulle-quadtree NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
+   message( STATUS "MULLE_QUADTREE_LIBRARY is ${MULLE_QUADTREE_LIBRARY}")
+   #
+   # The order looks ascending, but due to the way this file is read
+   # it ends up being descending, which is what we need.
+   #
+   if( MULLE_QUADTREE_LIBRARY)
+      #
+      # Add MULLE_QUADTREE_LIBRARY to DEPENDENCY_LIBRARIES list.
+      # Disable with: `mulle-sourcetree mark mulle-quadtree no-cmake-add`
+      #
+      set( DEPENDENCY_LIBRARIES
+         ${DEPENDENCY_LIBRARIES}
+         ${MULLE_QUADTREE_LIBRARY}
+         CACHE INTERNAL "need to cache this"
+      )
+      # intentionally left blank
+   else()
+      # Disable with: `mulle-sourcetree mark mulle-quadtree no-require-link`
+      message( FATAL_ERROR "MULLE_QUADTREE_LIBRARY was not found")
+   endif()
+endif()
+
+
+#
+# Generated from sourcetree: 554cb551-8992-4382-a794-e5e8c3242817;mulle-fifo;no-all-load,no-cmake-inherit,no-cmake-searchpath,no-import,no-singlephase;
+# Disable with : `mulle-sourcetree mark mulle-fifo no-link`
+# Disable for this platform: `mulle-sourcetree mark mulle-fifo no-cmake-platform-linux`
+#
+if( NOT MULLE_FIFO_LIBRARY)
+   find_library( MULLE_FIFO_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-fifo${CMAKE_STATIC_LIBRARY_SUFFIX} mulle-fifo NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
+   message( STATUS "MULLE_FIFO_LIBRARY is ${MULLE_FIFO_LIBRARY}")
+   #
+   # The order looks ascending, but due to the way this file is read
+   # it ends up being descending, which is what we need.
+   #
+   if( MULLE_FIFO_LIBRARY)
+      #
+      # Add MULLE_FIFO_LIBRARY to DEPENDENCY_LIBRARIES list.
+      # Disable with: `mulle-sourcetree mark mulle-fifo no-cmake-add`
+      #
+      set( DEPENDENCY_LIBRARIES
+         ${DEPENDENCY_LIBRARIES}
+         ${MULLE_FIFO_LIBRARY}
+         CACHE INTERNAL "need to cache this"
+      )
+      # intentionally left blank
+   else()
+      # Disable with: `mulle-sourcetree mark mulle-fifo no-require-link`
+      message( FATAL_ERROR "MULLE_FIFO_LIBRARY was not found")
    endif()
 endif()
 
@@ -138,7 +192,8 @@ if( NOT GLFW3_LIBRARY)
          CACHE INTERNAL "need to cache this"
       )
       #
-      # Inherit ObjC loader and link dependency info.
+      # Inherit information from dependency.
+      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
       # Disable with: `mulle-sourcetree mark glfw no-cmake-inherit`
       #
       # temporarily expand CMAKE_MODULE_PATH
@@ -196,71 +251,14 @@ if( NOT GLFW3_LIBRARY)
          endif()
       endforeach()
    else()
+      # Disable with: `mulle-sourcetree mark glfw no-require-link`
       message( FATAL_ERROR "GLFW3_LIBRARY was not found")
    endif()
 endif()
 
 
 #
-# Generated from sourcetree: 148522C7-9709-4A0B-8D63-AC57AD5E520C;mulle-quadtree;no-all-load,no-cmake-inherit,no-cmake-searchpath,no-import,no-singlephase;
-# Disable with : `mulle-sourcetree mark mulle-quadtree no-link`
-# Disable for this platform: `mulle-sourcetree mark mulle-quadtree no-cmake-platform-linux`
-#
-if( NOT MULLE_QUADTREE_LIBRARY)
-   find_library( MULLE_QUADTREE_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-quadtree${CMAKE_STATIC_LIBRARY_SUFFIX} mulle-quadtree NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
-   message( STATUS "MULLE_QUADTREE_LIBRARY is ${MULLE_QUADTREE_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( MULLE_QUADTREE_LIBRARY)
-      #
-      # Add MULLE_QUADTREE_LIBRARY to DEPENDENCY_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark mulle-quadtree no-cmake-add`
-      #
-      set( DEPENDENCY_LIBRARIES
-         ${DEPENDENCY_LIBRARIES}
-         ${MULLE_QUADTREE_LIBRARY}
-         CACHE INTERNAL "need to cache this"
-      )
-      # intentionally left blank
-   else()
-      message( FATAL_ERROR "MULLE_QUADTREE_LIBRARY was not found")
-   endif()
-endif()
-
-
-#
-# Generated from sourcetree: 554cb551-8992-4382-a794-e5e8c3242817;mulle-fifo;no-all-load,no-cmake-inherit,no-cmake-searchpath,no-import,no-singlephase;
-# Disable with : `mulle-sourcetree mark mulle-fifo no-link`
-# Disable for this platform: `mulle-sourcetree mark mulle-fifo no-cmake-platform-linux`
-#
-if( NOT MULLE_FIFO_LIBRARY)
-   find_library( MULLE_FIFO_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-fifo${CMAKE_STATIC_LIBRARY_SUFFIX} mulle-fifo NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
-   message( STATUS "MULLE_FIFO_LIBRARY is ${MULLE_FIFO_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( MULLE_FIFO_LIBRARY)
-      #
-      # Add MULLE_FIFO_LIBRARY to DEPENDENCY_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark mulle-fifo no-cmake-add`
-      #
-      set( DEPENDENCY_LIBRARIES
-         ${DEPENDENCY_LIBRARIES}
-         ${MULLE_FIFO_LIBRARY}
-         CACHE INTERNAL "need to cache this"
-      )
-      # intentionally left blank
-   else()
-      message( FATAL_ERROR "MULLE_FIFO_LIBRARY was not found")
-   endif()
-endif()
-
-
-#
-# Generated from sourcetree: 35644512-861A-4ED8-8962-20ADD32052E3;MulleObjCLockFoundation;;
+# Generated from sourcetree: 35644512-861A-4ED8-8962-20ADD32052E3;MulleObjCLockFoundation;no-singlephase;
 # Disable with : `mulle-sourcetree mark MulleObjCLockFoundation no-link`
 # Disable for this platform: `mulle-sourcetree mark MulleObjCLockFoundation no-cmake-platform-linux`
 #
@@ -282,7 +280,8 @@ if( NOT MULLE_OBJC_LOCK_FOUNDATION_LIBRARY)
          CACHE INTERNAL "need to cache this"
       )
       #
-      # Inherit ObjC loader and link dependency info.
+      # Inherit information from dependency.
+      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
       # Disable with: `mulle-sourcetree mark MulleObjCLockFoundation no-cmake-inherit`
       #
       # temporarily expand CMAKE_MODULE_PATH
@@ -316,17 +315,9 @@ if( NOT MULLE_OBJC_LOCK_FOUNDATION_LIBRARY)
          if( EXISTS "${_TMP_MULLE_OBJC_LOCK_FOUNDATION_DIR}/DependenciesAndLibraries.cmake")
             unset( MULLE_OBJC_LOCK_FOUNDATION_DEFINITIONS)
             list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_OBJC_LOCK_FOUNDATION_DIR}")
-            # we only want top level INHERIT_OBJC_LOADERS, so disable them
-            if( NOT NO_INHERIT_OBJC_LOADERS)
-               set( NO_INHERIT_OBJC_LOADERS OFF)
-            endif()
-            list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-            set( NO_INHERIT_OBJC_LOADERS ON)
             #
             include( "${_TMP_MULLE_OBJC_LOCK_FOUNDATION_DIR}/DependenciesAndLibraries.cmake")
             #
-            list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-            list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
             #
             list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_OBJC_LOCK_FOUNDATION_DIR}")
             set( INHERITED_DEFINITIONS
@@ -357,6 +348,7 @@ if( NOT MULLE_OBJC_LOCK_FOUNDATION_LIBRARY)
          endforeach()
       endif()
    else()
+      # Disable with: `mulle-sourcetree mark MulleObjCLockFoundation no-require-link`
       message( FATAL_ERROR "MULLE_OBJC_LOCK_FOUNDATION_LIBRARY was not found")
    endif()
 endif()

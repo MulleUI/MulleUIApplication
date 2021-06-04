@@ -8,21 +8,33 @@ if( MULLE_TRACE_INCLUDE)
    MESSAGE( STATUS "# Include \"${CMAKE_CURRENT_LIST_FILE}\"" )
 endif()
 
+#
+# contents are derived from the file locations
+
 set( INCLUDE_DIRS
 src
 src/reflect
 )
 
+#
+# contents selected with patternfile ??-header--private-generated-headers
+#
 set( PRIVATE_GENERATED_HEADERS
 src/reflect/_MulleUICore-import-private.h
 src/reflect/_MulleUICore-include-private.h
 )
 
+#
+# contents selected with patternfile ??-header--private-generic-headers
+#
 set( PRIVATE_GENERIC_HEADERS
 src/import-private.h
 src/include-private.h
 )
 
+#
+# contents selected with patternfile ??-header--public-generated-headers
+#
 set( PUBLIC_GENERATED_HEADERS
 src/reflect/_MulleUICore-export.h
 src/reflect/_MulleUICore-import.h
@@ -30,15 +42,20 @@ src/reflect/_MulleUICore-include.h
 src/reflect/_MulleUICore-provide.h
 )
 
+#
+# contents selected with patternfile ??-header--public-generic-headers
+#
 set( PUBLIC_GENERIC_HEADERS
 src/import.h
 src/include.h
 )
 
+#
+# contents selected with patternfile ??-header--public-headers
+#
 set( PUBLIC_HEADERS
 src/MulleKeyboardEventConsumer.h
 src/MulleObjCLoader+MulleUICore.h
-src/MulleTrackingArea.h
 src/MulleUICore.h
 src/UIApplication.h
 src/UIColor.h
@@ -48,11 +65,13 @@ src/UIEvent.h
 src/UIFont.h
 src/UIPasteboard.h
 src/UIResponder.h
+src/UITrackingArea.h
 src/UIView+CAAnimation.h
 src/UIView+CALayer.h
 src/UIView+CGGeometry.h
 src/UIView+CGLayer.h
 src/UIView+Layout.h
+src/UIView+Render.h
 src/UIView+UIEvent.h
 src/UIView+UIResponder.h
 src/UIView+UIViewEditing.h

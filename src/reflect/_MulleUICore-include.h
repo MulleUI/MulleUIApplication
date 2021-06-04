@@ -15,18 +15,6 @@
 #define _mulle_ui_core_include_h__
 
 // You can tweak the following #include with these commands.
-// (Use 83270b01-d35c-4b2e-8b74-7b87855d7c30 instead of glfw if there are duplicate entries)
-//    remove:             `mulle-sourcetree mark glfw no-header`
-//    rename:             `mulle-sde dependency|library set glfw include whatever.h`
-//    reorder:            `mulle-sourcetree move glfw <up|down>`
-//    toggle #include:    `mulle-sourcetree mark glfw [no-]import`
-//    toggle public:      `mulle-sourcetree mark glfw [no-]public`
-//    toggle optional:    `mulle-sourcetree mark glfw [no-]require`
-//    remove for platform:`mulle-sourcetree mark glfw no-platform-<uname>`
-//        (use mulle-sourcetree-to-c --unames for known values)
-#include <GLFW/glfw3.h>   // glfw
-
-// You can tweak the following #include with these commands.
 // (Use 148522C7-9709-4A0B-8D63-AC57AD5E520C instead of mulle-quadtree if there are duplicate entries)
 //    remove:             `mulle-sourcetree mark mulle-quadtree no-header`
 //    rename:             `mulle-sde dependency|library set mulle-quadtree include whatever.h`
@@ -49,5 +37,17 @@
 //    remove for platform:`mulle-sourcetree mark mulle-fifo no-platform-<uname>`
 //        (use mulle-sourcetree-to-c --unames for known values)
 #include <mulle-fifo/mulle-fifo.h>   // mulle-fifo
+
+// You can tweak the following #include with these commands.
+// (Use 83270b01-d35c-4b2e-8b74-7b87855d7c30 instead of glfw if there are duplicate entries)
+//    remove:             `mulle-sourcetree mark glfw no-header`
+//    rename:             `mulle-sde dependency|library set glfw include whatever.h`
+//    reorder:            `mulle-sourcetree move glfw <up|down>`
+//    toggle #include:    `mulle-sourcetree mark glfw [no-]import`
+//    toggle public:      `mulle-sourcetree mark glfw [no-]public`
+//    toggle optional:    `mulle-sourcetree mark glfw [no-]require`
+//    remove for platform:`mulle-sourcetree mark glfw no-platform-<uname>`
+//        (use mulle-sourcetree-to-c --unames for known values)
+#include <GLFW/glfw3.h>   // glfw
 
 #endif

@@ -40,7 +40,7 @@
    if( MulleAlphaIsTransparent( alpha))
       return;
 
-   projection = MulleAffineTransformMakeProjection( _frame, [self bounds]);
+   projection = CGAffineTransformMakeProjection( _frame, [self bounds]);
    xform      = CGAffineTransformConcat( inheritedXform, projection);
 
    subClipRect = clipRect;

@@ -30,7 +30,7 @@
 
 # pragma mark -
 
-- (void) beginLayoutWithFrameInfo:(struct MulleFrameInfo *) info
+- (void) beginLayoutWithFrameInfo:(struct CGFrameInfo *) info
 {
    [UIView beginAnimations:NULL
                    context:NULL];
@@ -261,7 +261,7 @@
 #ifdef HAVE_RENDER_CACHE
    if( _cacheLayer)
    {
-      if( CGRectEqualToRect( contentRect, [_cacheLayer frame])
+      if( CGRectEqualToRect( contentRect, [_cacheLayer frame]))
          return;
       [_cacheLayer release];
       _cacheLayer = nil;

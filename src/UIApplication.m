@@ -146,7 +146,7 @@ static const struct mulle_container_keycallback   key_retain_callback =
 }
 
 // assume all windows thread are quiescent now... else why call terminate :)
-- (void) terminate
+- (int) terminate
 {
    struct mulle_arrayenumerator   rover;
    UIWindow                       *window;
@@ -161,6 +161,7 @@ static const struct mulle_container_keycallback   key_retain_callback =
 
    // this shuts down glfw, it doesn't exit
    [[self class] os_terminate];
+   return( _returnValue);
 }
 
 
@@ -190,7 +191,7 @@ int  UIApplicationMain( int argc, char **argv, Class appClass, id delegate)
    app = [appClass sharedInstance];
    [app setDelegate:delegate];
    [app run];
-   return( 0);
+   return( [app returnValue]);
 }
 
 @end

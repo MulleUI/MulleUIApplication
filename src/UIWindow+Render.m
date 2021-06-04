@@ -27,8 +27,9 @@
    return( _context);
 }
 
+
 // can only be called from main thread :()
-- (void) getFrameInfo:(struct MulleFrameInfo *) info
+- (void) getFrameInfo:(struct CGFrameInfo *) info
 {
    float      scale_x, scale_y;
 
@@ -48,9 +49,12 @@
    info->viewportFrame.size   = _frame.size;
    info->framebufferSize      = [self framebufferSize];
 
-   info->UIScale         = CGVectorMake( scale_x, scale_y);
-	info->pixelRatio      = info->framebufferSize.width / _frame.size.width;
-   info->renderFrame     = _didRender;
+   info->UIScale              = CGVectorMake( scale_x, scale_y);
+	info->pixelRatio           = info->framebufferSize.width / _frame.size.width;
+   info->frameNumber          = _didRender;
+   info->renderStart          = CAAbsoluteTimeNow();
+   // should check the monitor where the window is on really
+   info->monitorRefreshRate   = _primaryMonitorRefreshRate;
 
    // does not do refreshRate yet, the renderloop does this
 }
@@ -78,22 +82,34 @@
 }
 
 
-- (void) processEvents
+- (NSUInteger) processEvents:(CAAbsoluteTime) now
 {
-   // use at max 200 Hz refresh rate (0: polls)
-   // use 0.001Hz for event debugging. The wait time is "max", events
-   // will be processed if something comes in and then render will be
-   // immediate anyway. Animations won't be processed though..
+   CARelativeTime   timeout;
 
-   // For multi-threaded apps this is a bug. Only the main thread
-   // may call this.If we only render one frame though, we don't wait
-   // for events at all
+   // Four cases:
+   // UIWindowFrameRateUnsynced (0.0), UIWindowFrameRateAsync (INFINITE)
+   // UIWindowFrameRateSynced (which is the primary monitor refresh rate)
+   // or a framerate like 1/60.0 for 60 Hz
+   //
+   // UIWindowFrameRateUnsynced: timout == INFINITE, returnsEarly: YES
+   // UIWindowFrameRateAsync: timout == 0.0  returnsEarly: YES
+   // Else timeout: returnsEarly: NO
+   assert( _frameRate == UIWindowFrameRateUnsynced ||
+           _frameRate == UIWindowFrameRateAsync ||
+           _frameRate == UIWindowFrameRateSynced ||
+           _frameRate <= 1.0);  // why lower than 1fps ??
 
-   [self waitForEventsHz:0.0]; // _eventFrequency]; // 0.001];
+   return( [self waitForEvents:_frameRate == UIWindowFrameRateSynced
+                                 ? 1.0 / _primaryMonitorRefreshRate
+                                 : _frameRate
+                           now:now
+                  returnsEarly:_frameRate == UIWindowFrameRateUnsynced||
+                               _frameRate == UIWindowFrameRateAsync]);
+
 }
 
 
-- (void) willRenderWithAbsoluteTime:(CAAbsoluteTime) renderTime
+- (void) willRenderWithFrameInfo:(struct CGFrameInfo *) info
 {
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
@@ -104,13 +120,13 @@
 
    rover = mulle_pointerarray_enumerate( &_delegateViews);
    while(  mulle_pointerarrayenumerator_next( &rover, (void **) &view))
-      [view willRenderWithAbsoluteTime:renderTime];
+      [view willRenderWithAbsoluteTime:info->renderStart];
    mulle_pointerarrayenumerator_done( &rover);
 }
 
 // UIWindow render chain
 //    Creates a queue of CALayers from the UIView hierarchy. Layers are
-//    setup so they draw themselves into the window space.
+//    setup so they draw themselves into the window coordinate space.
 //
 //                                                  UIWindow Delegate Views
 //  .----------------------------------------.      .---.---.
@@ -135,11 +151,9 @@
 //    of the layers in   |                                  v
 //    the queue.         |
 //                       v                          CALayer Render Queue
-//  .-----------------------------------------.     .---.---.---.---.---.----.
-//  | CGAnimation animateObjects:absoluteTime: |     | A1| B1| B2| C1| C2| C3 |
-//  '-----------------------------------------'     '---'---'---'---'---'----'
-//                       |
-//                       |
+//  .------------------------------------------.    .---.---.---.---.---.----.
+//  | CGAnimation animateObjects:absoluteTime: |    | A1| B1| B2| C1| C2| C3 |
+//  '------------------------------------------'    '---'---'---'---'---'----'
 //                       |
 //                       |
 //                       v
@@ -154,14 +168,13 @@
 // c) the glitch occurs when there is already drawing on the screen
 // d) the glitch looks like the buffer is cleared and then not swapped
 //
-- (void) renderFrameWithFrameInfo:(struct MulleFrameInfo *) info
+- (void) renderFrame:(struct CGFrameInfo *) info
 {
    struct timespec   diff;
    struct timespec   start;
    struct timespec   end;
    struct timespec   sleep;
    long              nsperframe;
-   CAAbsoluteTime    renderTime;
 
    clock_gettime( CLOCK_REALTIME, &start);
 
@@ -169,7 +182,8 @@
    printf( "@%ld:%09ld layout start\n", start.tv_sec, start.tv_nsec);
 #endif
 
-   renderTime = CAAbsoluteTimeWithTimespec( start);
+
+   [_renderDelegate windowWillBeginRender:self];
 
   /*
     * Layout
@@ -177,12 +191,12 @@
    @autoreleasepool
    {
       if( _willRenderCallback)
-         (*_willRenderCallback)( self, info, renderTime);
+         (*_willRenderCallback)( self, info);
 
-      [self willRenderWithAbsoluteTime:renderTime];
+      [self willRenderWithFrameInfo:info];
 
       if( _willLayoutCallback)
-         (*_willLayoutCallback)( self, info, renderTime);
+         (*_willLayoutCallback)( self, info);
 
       // do layout before the animation step, as this will generate animations
 #if LAYOUT_ANIMATIONS
@@ -194,7 +208,7 @@
       [self endLayout];
 #endif
       if( _didLayoutCallback)
-         (*_didLayoutCallback)( self, info, renderTime);
+         (*_didLayoutCallback)( self, info);
    }
 
    /*
@@ -210,14 +224,14 @@
       _mulle_pointerarray_reset( &_renderQueue);
       [self createRenderQueue:&_renderQueue];
       if( _didCreateRenderQueueCallback)
-         (*_didCreateRenderQueueCallback)( self, info, renderTime);
+         (*_didCreateRenderQueueCallback)( self, info);
 
 
       [CAAnimation animateObjects:&_renderQueue
-                     absoluteTime:renderTime];
+                     absoluteTime:info->renderStart];
 
       if( _didAnimateCallback)
-         (*_didAnimateCallback)( self, info, renderTime);
+         (*_didAnimateCallback)( self, info);
       //
       // can animations add and subtract layers and views ?
       // they may, but they won't show up this render
@@ -245,13 +259,15 @@
    @autoreleasepool
    {
       [_context clearFramebuffer];
-      [_context beginRenderWithFrameInfo:info];
+      [_context beginRender:info];
       {
          [_context renderObjects:&_renderQueue];
 
          if( _didRenderCallback)
-            (*_didRenderCallback)( self, info, renderTime);
+            (*_didRenderCallback)( self, info);
       }
+
+      [_renderDelegate windowWillEndRender:self];
       [_context endRender];
    }
 
@@ -263,7 +279,7 @@
 #ifdef PRINTF_PROFILE_RENDER
    clock_gettime( CLOCK_REALTIME, &end);
    diff = timespec_diff( start, end);
-   nsperframe = (1000000000L + (info.refreshRate - 1)) / info.refreshRate;
+   nsperframe = (1000000000L + (info.monitorRefreshRate - 1)) / info.monitorRefreshRate;
    if( diff.tv_sec > 0 || diff.tv_nsec >= nsperframe)
       fprintf( stderr, "frame #%ld: @%ld:%09ld render end, OVERFLW %.4f frames\n",
                            _didRender,
@@ -271,13 +287,14 @@
                            end.tv_nsec,
                            diff.tv_sec ? 9999.9999 : (diff.tv_nsec / (double) nsperframe) - 1);
 #endif
+   [_renderDelegate windowDidEndRender:self];
 }
 
 
 // 0 is forever
 - (BOOL) renderUpToNumberOfFrames:(NSUInteger) maxFrames
 {
-   struct MulleFrameInfo   info;
+   struct CGFrameInfo   info;
    struct timespec         diff;
    struct timespec         start;
    struct timespec         end;
@@ -289,8 +306,8 @@
 
 #ifdef PRINTF_PROFILE_RENDER
       clock_gettime( CLOCK_REALTIME, &start);
-      nsperframe = (1000000000L + (info.refreshRate - 1)) / info.refreshRate;
-      fprintf( stderr, "Refresh: %d (%09ld ns/frame)\n", info.refreshRate, nsperframe);
+      nsperframe = (1000000000L + (info.monitorRefreshRate - 1)) / info.monitorRefreshRate;
+      fprintf( stderr, "Refresh: %d (%09ld ns/frame)\n", info.monitorRefreshRate, nsperframe);
 #endif
 
    // take renderlock here, relinquish later when wating for events
@@ -298,10 +315,8 @@
    [self os_startRender];
 
    // put elsewhere
-   [UIWindow os_setSwapInterval:0];  // need 0 for smooth pointer/control sync
+   [UIWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
 
-   // should check the monitor where the window is on really
-   info.refreshRate = _primaryMonitorRefreshRate;
 
    oldFrame = _frame;
    frames   = 0;
@@ -320,7 +335,7 @@
       ++frames;
 
       [self getFrameInfo:&info];  // retrieve newest geometry
-      [self renderFrameWithFrameInfo:&info];
+      [self renderFrame:&info];
 
 #ifdef SWAP_DEBUG
       fprintf( stderr, "%s %s swaps framebuffer (frame: %s, buffer: %s)\n",
@@ -330,6 +345,7 @@
                      CGSizeCStringDescription( info.framebufferSize));
 #endif
       [self os_swapBuffers];
+      _lastDidFramebufferSwapTimestamp = CAAbsoluteTimeNow();
       if( _didSwapCallback)
          (_didSwapCallback)( self, &info);
       _didRender++;
@@ -365,6 +381,9 @@
        */
       @autoreleasepool
       {
+         //
+         // TODO: more useful to this when a mouse event hits on demand
+         //
          [self setupQuadtree];
       }
 
@@ -373,7 +392,10 @@
 
       @autoreleasepool
       {
-         [self processEvents];
+         // we can get to 29.98 fps when we feed it the last timestamp
+         // but is it desirable ?
+         [self processEvents:_lastDidProcessEventsTimestamp ? _lastDidProcessEventsTimestamp : info.renderStart];
+         _lastDidProcessEventsTimestamp = CAAbsoluteTimeNow();
       }
 
 #ifdef PRINTF_PROFILE_EVENTS

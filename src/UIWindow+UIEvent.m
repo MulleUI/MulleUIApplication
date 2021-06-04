@@ -132,16 +132,13 @@
    if( self->_discardEvents & UIEventTypePresses)
       return;
 
-   event = [[[UIKeyboardEvent alloc] initWithWindow:self
-                                      mouseLocation:self->_mouseLocation
-                                          modifiers:mods
-                                                key:key
-                                           scanCode:scancode
-                                             action:action] autorelease];
-   if( self->_keyEventCallback)
-      event = (*self->_keyEventCallback)( self, event);
-   if( event)
-      [self queueEvent:event];
+   event = [[UIKeyboardEvent alloc] initWithWindow:self
+                                     mouseLocation:self->_mouseLocation
+                                         modifiers:mods
+                                               key:key
+                                          scanCode:scancode
+                                            action:action];
+   [self queueRetainedEvent:event];
 }
 
 
@@ -305,7 +302,7 @@
 {
    NSUInteger                 i;
    NSUInteger                 n;
-   struct MulleTrackingArea   *area;
+   struct UITrackingArea   *area;
    CGRect                     rect;
    CGRect                     converted;
 
@@ -320,7 +317,7 @@
    for( i = 0; i < n; i++)
    {
       area      = [view trackingAreaAtIndex:i];
-      rect      = MulleTrackingAreaGetRect( area);
+      rect      = UITrackingAreaGetRect( area);
       converted = [self convertRect:rect
                            fromView:view];
       assert( _quadtree);
@@ -521,6 +518,11 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    unsigned int                          n;
    BOOL                                  isDrag;
 
+   assert( event);
+
+   if( _eventCallback)
+      event = (*_eventCallback)( self, event);
+
    switch( [event eventType])
    {
    case UIEventTypePresses :
@@ -554,6 +556,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
    case UIEventTypeWindow :
       event = [self handleWindowEvent:(UIWindowEvent *) event];
+
    default:
       break;
    }
@@ -564,7 +567,8 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
 //   if( [event isKindOfClass:[UIMouseScrollEvent class]])
 //      [self dump];
-   return( [super handleEvent:event]);
+   event = [super handleEvent:event];
+   return( event);
 }
 
 
@@ -607,6 +611,8 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 - (void) queueRetainedEvent:(UIEvent *) event
 {
    assert( [NSThread mulleIsMainThread]);
+
+   assert( event);
 
    //
    // events that can not be queued will have to be discarded
@@ -658,21 +664,17 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 }
 
 
+
 //
 // Execute all events in the queue until empty. This has to be called by the
 // Windows thread
 //
-- (NSUInteger) pollEvents
+- (NSUInteger) handleEventQueue
 {
-   UIEvent   *event;
-   BOOL      mask;
-
-   assert( [self isWindowThread]);
+   UIEvent      *event;
+   NSUInteger   mask;
 
    mask = 0;
-   if( [NSThread mulleIsMainThread])
-      [UIEvent os_pollEvents];
-
    for(;;)
    {
       event = ui_window_pointer_fifo_read_barrier( &_eventQueue);
@@ -688,6 +690,14 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
       [event release];
    }
    return( mask);
+}
+
+
+- (NSUInteger) pollEvents
+{
+   if( [NSThread mulleIsMainThread])
+      [UIEvent os_pollEvents];
+   return( [self handleEventQueue]);
 }
 
 
@@ -712,11 +722,10 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
                 returnsEarly:(BOOL) returnsEarly
 {
    struct timespec   delay;
-   CAAbsoluteTime    now;
    CAAbsoluteTime    then;
    NSUInteger        mask;
+   CARelativeTime    diff;
 
-   now  = CAAbsoluteTimeNow();
    then = now + timeout;
    mask = 0;
 
@@ -727,31 +736,17 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
          break;
 
       // could also check here, if events took too much time
-      if( CAAbsoluteTimeNow() >= then)
+      diff = CAAbsoluteTimeNow() - then;
+      if( diff >= 0.0)
          break;
 
       delay.tv_sec  = 0;
-      delay.tv_nsec = ms( 0.5);
+      delay.tv_nsec = diff < ms( 0.5) ? diff : ms( 0.5);
       nanosleep( &delay, NULL);
    }
    return( mask);
 }
 
-
-- (NSUInteger) waitForEventsHz:(double) hz
-{
-   return( [self waitForEvents:hz > 0.0 ? 1.0/hz : 0.0
-                           now:CAAbsoluteTimeNow()
-                  returnsEarly:YES]);
-}
-
-
-- (NSUInteger) waitForEvents:(CARelativeTime) timeout
-{
-   return( [self waitForEvents:timeout
-                           now:CAAbsoluteTimeNow()
-                  returnsEarly:YES]);
-}
 
 @end
 

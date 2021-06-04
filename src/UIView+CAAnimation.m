@@ -4,174 +4,35 @@
 
 
 
-// MEMO: this is currently the same as a CATransaction just global and
-//       lock protected. Basically I don't want to throw it away just yet :)
-//
 @implementation UIView ( CAAnimation)
 
-enum
-{
-   UIViewAnimationIdle,
-   UIViewAnimationStarted,
-   UIViewAnimationCommitting
-};
-
-
-static struct
-{
-   mulle_thread_mutex_t          _lock;
-
-   // mutable state
-   struct mulle_pointerarray     _animatedLayers;
-
-   char                          *_animationID;
-   void                          *_context;
-   id                            _delegate;
-   SEL                           _animationWillStartSelector;
-   SEL                           _animationDidStopSelector;
-
-   struct CAAnimationParameters  _parameters;
-
-   mulle_atomic_pointer_t        _state;
-} Self;
-
-
-static inline void   SelfLock()
-{
-   mulle_thread_mutex_lock( &Self._lock);
-}
-
-static inline void   SelfUnlock()
-{
-   mulle_thread_mutex_unlock( &Self._lock);
-}
-
-
-+ (void) load
-{
-   mulle_thread_mutex_init( &Self._lock);
-}
-
-
-+ (void) unload
-{
-   _mulle_pointerarray_done( &Self._animatedLayers);
-   mulle_thread_mutex_done( &Self._lock);
-}
 
 + (void) beginAnimations:(char *) animationID
                  context:(void *) context
 {
-   assert( _mulle_atomic_pointer_read( &Self._state) == NULL);
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      mulle_free( Self._animationID);
+   transaction = [CATransaction new];
 
-      Self._animationID       = animationID ? mulle_strdup( animationID) : NULL;
-      Self._context           = context;
-      _mulle_atomic_pointer_nonatomic_write( &Self._state,
-                                            (void *) (intptr_t)  UIViewAnimationStarted);
-
-      _mulle_pointerarray_done( &Self._animatedLayers);
-      _mulle_pointerarray_init( &Self._animatedLayers, 16, NULL);
-
-      // reset everything to default values or ?
-      Self._parameters.animationDelay        = 0.0;
-      Self._parameters.animationDuration     = 2.0;
-      Self._parameters.animationRepeatCount  = 0.0;
-      Self._parameters.animationAutoreverses = 0.0;
-      Self._parameters.animationCurve        = 0.0;
-
-      Self._delegate                    = nil;
-      Self._animationWillStartSelector  = 0;
-      Self._animationDidStopSelector    = 0;
-   }
-   SelfUnlock();
+   [transaction setAnimationID:animationID];
+   [transaction setContext:context];
+   [transaction setAnimationDuration:2.0];
+   [transaction setAnimationRepeatCount:1.0];
+   [transaction setAnimationCurve:UIViewAnimationCurveEaseInOut];
+   [transaction begin];
 }
 
 
 + (void) commitAnimations
 {
-   CALayer                               *layer;
-   char                                  *animationID;
-   struct mulle_pointerarray             tmp;
-   struct mulle_pointerarrayenumerator   rover;
-   void                                  *context;
-   id                                    delegate;
-   SEL                                   willStart;
-   SEL                                   didEnd;
-   MulleAnimationDelegate                *animationDelegate;
-   struct CAAnimationParameters          parameters;
+   CATransaction   *transaction;
 
-   assert( _mulle_atomic_pointer_read( &Self._state) == (void *) (intptr_t) UIViewAnimationStarted);
-
-   SelfLock();
-   {
-      _mulle_atomic_pointer_nonatomic_write( &Self._state,
-                                            (void *) (intptr_t)  UIViewAnimationCommitting);
-
-      memcpy( &tmp, &Self._animatedLayers, sizeof( struct mulle_pointerarray));
-
-      _mulle_pointerarray_init( &Self._animatedLayers, 16, NULL);
-      animationID       = Self._animationID;
-      Self._animationID = NULL;
-      context           = Self._context;
-      context           = NULL;
-
-      parameters        = Self._parameters;
-
-      delegate                         = Self._delegate;
-      Self._delegate                   = nil;
-      willStart                        = Self._animationWillStartSelector;
-      Self._animationWillStartSelector = 0;
-      didEnd                           = Self._animationDidStopSelector;
-      Self._animationDidStopSelector   = 0;
-   }
-   SelfUnlock();
-
-   animationDelegate = nil;
-   if( delegate)
-   {
-      animationDelegate = [[MulleAnimationDelegate new] autorelease];
-      [animationDelegate setIdentifier:animationID];
-      [animationDelegate setContext:context];
-      [animationDelegate setDelegate:delegate];
-      [animationDelegate setAnimationWillStartSelector:willStart];
-      [animationDelegate setAnimationDidStopSelector:didEnd];
-   }
-
-   rover = mulle_pointerarray_enumerate( &tmp);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
-   {
-      [layer commitImplicitAnimationsWithID:animationID
-                                   delegate:animationDelegate
-                                 parameters:&parameters]; // either UIView class or CATransaction
-   }
-   mulle_pointerarrayenumerator_done( &rover);
-
-   mulle_free( animationID);
-   mulle_pointerarray_done( &tmp);
-
-   //
-   // TODO: we need a special kind of animation that is actually just calling
-   //       the delegate at appropriate times. This animation needs to be
-   //       part of a layer ? Window layer ? Or some completely different
-   //       mechanism ?
-   //
-
-   // return to idle
-   _mulle_atomic_pointer_write( &Self._state,
-                               (void *) (intptr_t)  UIViewAnimationIdle);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction commit];
+   [transaction autorelease];
 }
 
-BOOL   UIViewAreAnimationsEnabled( void)
-{
-   void  *state;
-
-   state = _mulle_atomic_pointer_read( &Self._state);
-   return( state != NULL);
-}
 
 
 + (BOOL) areAnimationsEnabled
@@ -179,20 +40,14 @@ BOOL   UIViewAreAnimationsEnabled( void)
    return( UIViewAreAnimationsEnabled());
 }
 
-//
-//
-//
+
 + (void) addAnimatableObject:(id <CAImplicitlyAnimatableObject>) layer
 {
-   assert( layer);
-   assert( [layer isKindOfClass:[CALayer class]]);
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      assert( _mulle_pointerarray_find( &Self._animatedLayers, layer) == mulle_not_found_e);
-      _mulle_pointerarray_add( &Self._animatedLayers, layer);
-   }
-   SelfUnlock();
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction addAnimatableObject:layer];
 }
 
 /* "properties" */
@@ -200,68 +55,61 @@ BOOL   UIViewAreAnimationsEnabled( void)
 
 + (id) animationDelegate
 {
-   id   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._delegate;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationDelegate]);
 }
+
 
 + (SEL) animationDidStopSelector
 {
-   SEL   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._animationDidStopSelector;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationDidStopSelector]);
 }
+
 
 + (SEL) animationWillStartSelector
 {
-   SEL   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._animationWillStartSelector;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationWillStartSelector]);
 }
 
 
 + (void) setAnimationDelegate:(id) value
 {
-   SelfLock();
-   {
-      Self._delegate = value;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationDelegate:value];
 }
 
 
 + (void) setAnimationDidStopSelector:(SEL) value
 {
-   SelfLock();
-   {
-      Self._animationDidStopSelector = value;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationDidStopSelector:value];
 }
 
 
 + (void) setAnimationWillStartSelector:(SEL) value
 {
-   SelfLock();
-   {
-      Self._animationWillStartSelector = value;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationWillStartSelector:value];
 }
 
 
@@ -269,162 +117,165 @@ BOOL   UIViewAreAnimationsEnabled( void)
 //
 + (CARelativeTime) animationDelay
 {
-   CARelativeTime   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._parameters.animationDelay;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationDelay]);
 }
 
 
 + (void) setAnimationDelay:(CARelativeTime) delay
 {
-   SelfLock();
-   {
-      Self._parameters.animationDelay = delay;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationDelay:delay];
 }
+
+
 
 + (CARelativeTime) animationDuration
 {
-   CARelativeTime   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._parameters.animationDuration;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationDuration]);
 }
 
 
 + (void) setAnimationDuration:(CARelativeTime) duration
 {
-   SelfLock();
-   {
-      Self._parameters.animationDuration = duration;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationDelay:duration];
 }
 
 
 + (NSUInteger) animationCurve
 {
-   NSUInteger   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._parameters.animationCurve;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationCurve]);
 }
 
 
 + (void) setAnimationCurve:(NSUInteger) value
 {
-   SelfLock();
-   {
-      Self._parameters.animationCurve = value;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+
+   [transaction setAnimationCurve:value];
+}
+
+
++ (CATweenFunction *) animationTweenFunction
+{
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationTweenFunction]);
+}
+
+
++ (void) setAnimationTweenFunction:(CATweenFunction *) tween
+{
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationTweenFunction:tween];   
 }
 
 
 + (BOOL) animationRepeatAutoreverses
 {
-   BOOL   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._parameters.animationAutoreverses;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationAutoreverses]);
 }
 
 
 + (void) setAnimationRepeatAutoreverses:(BOOL) flag
 {
-   SelfLock();
-   {
-      Self._parameters.animationAutoreverses = flag;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationAutoreverses:flag];
 }
+
 
 + (BOOL) animationAutoreverses
 {
-   BOOL   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._parameters.animationAutoreverses;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationAutoreverses]);
 }
 
 
 + (void) setAnimationAutoreverses:(BOOL) flag
 {
-   SelfLock();
-   {
-      Self._parameters.animationAutoreverses = flag;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationAutoreverses:flag];
 }
 
 
 // incompatible
 + (float) animationRepeatCount
 {
-   float   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._parameters.animationRepeatCount;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationRepeatCount]);
 }
 
 
 + (void) setAnimationRepeatCount:(float) value
 {
-   SelfLock();
-   {
-      Self._parameters.animationRepeatCount = value < 0.0 ? -1.0 : value;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationRepeatCount:value];
 }
 
 
 // incompatible
 + (BOOL) mulleAnimationRepeats
 {
-   BOOL   value;
+   CATransaction   *transaction;
 
-   SelfLock();
-   {
-      value = Self._parameters.animationRepeatCount != 0.0;
-   }
-   SelfUnlock();
-   return( value);
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationRepeatCount] >= 1.0);
 }
 
 
 + (void) mulleSetAnimationRepeats:(BOOL) flag
 {
-   SelfLock();
-   {
-      Self._parameters.animationRepeatCount = flag ? -1.0 : 0.0;
-   }
-   SelfUnlock();
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationRepeatCount:flag ? INFINITY : 0.0];
 }
 
 @end
