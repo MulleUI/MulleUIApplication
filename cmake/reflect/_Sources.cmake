@@ -8,23 +8,27 @@ if( MULLE_TRACE_INCLUDE)
    MESSAGE( STATUS "# Include \"${CMAKE_CURRENT_LIST_FILE}\"" )
 endif()
 
+#
+# contents selected with patternfile ??-source--sources
+#
 set( SOURCES
 src/GLFW/UIApplication+GLFW.m
 src/GLFW/UIEvent+GLFW.m
 src/GLFW/UIWindow+GLFW.m
 src/MulleKeyboardEventConsumer.m
-src/MulleTrackingArea.m
 src/UIApplication.m
 src/UIColor.m
 src/UIEvent.m
 src/UIFont.m
 src/UIPasteboard.m
 src/UIResponder.m
+src/UITrackingArea.m
 src/UIView+CAAnimation.m
 src/UIView+CALayer.m
 src/UIView+CGGeometry.m
 src/UIView+CGLayer.m
 src/UIView+Layout.m
+src/UIView+Render.m
 src/UIView+UIEvent.m
 src/UIView+UIResponder.m
 src/UIView+UIViewEditing.m
@@ -39,6 +43,9 @@ src/UIWindow.m
 src/mulle-pointerarray+ObjC.m
 )
 
+#
+# contents selected with patternfile ??-source--stage2-sources
+#
 set( STAGE2_SOURCES
 src/MulleObjCLoader+MulleUICore.m
 )

@@ -35,6 +35,9 @@ enum UIViewAnimationCurve
 + (NSUInteger) animationCurve;
 + (void) setAnimationCurve:(NSUInteger) curve;
 
++ (CATweenFunction *) animationTweenFunction;
++ (void) setAnimationTweenFunction:(CATweenFunction *) curve;
+
 + (CARelativeTime) animationDelay;
 + (void) setAnimationDelay:(CARelativeTime) delay;
 
@@ -57,4 +60,7 @@ enum UIViewAnimationCurve
 
 @end
 
-BOOL   UIViewAreAnimationsEnabled( void);
+static inline BOOL   UIViewAreAnimationsEnabled( void)
+{
+   return( CATransactionGetCurrentTransaction() != nil);
+}

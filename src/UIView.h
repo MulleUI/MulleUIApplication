@@ -1,63 +1,63 @@
 #import "import.h"
 
-#import "MulleTrackingArea.h"
+#import "UITrackingArea.h"
 #import "UIEdgeInsets.h"
 
 
 @class UIWindow;
 
-struct MulleFrameInfo;
+struct CGFrameInfo;
 
-//  The "raison d^etre" of UIView
-//  =============================
-//  UIView is mainly there to handle UIEvents and to set up the transformation
-//  for its CALayers (position the layers on the framebuffer).
-//  UIViews are also there to provide a child/parent hierarchy to make it
-//  easier to create complex userinterfaces.
+// The "raison d^etre" of UIView
+// =============================
+// UIView is mainly there to handle UIEvents and to set up the transformation
+// for its CALayers (position the layers on the framebuffer).
+// UIViews are also there to provide a child/parent hierarchy to make it
+// easier to create complex userinterfaces.
 //
-//  If events didn't exist, one could get by with just layers.
+// If events didn't exist, one could get by with just layers.
 //
-//  A UIView does no drawing, it merely layouts. It is completely independent
-//  from OpenGL or whatever the backend is.
+// A UIView does no drawing, it merely layouts. It is completely independent
+// from OpenGL or whatever the backend is.
 //
-//  The "standard" UIView hierarchy.
-//  =================================
-//  frame.origin          UIView
-//       .--------------------------------------.
-//       |bounds.origin                         |
-//       |               frame.origin           |
-//       |                    .-----------.     |
-//       |                    |           |     |
-//       |                    | Subview 1 |     |
-//       |                    |           |     |
-//       | frame.origin       '-----------'     |
-//       |      .---------------.    frame.size |
-//       |      |               |               |
-//       |      |   Subview 2   |               |
-//       |      |               |               |
-//       |      '---------------'               |
-//       |                 frame.size           |
-//       |                                      |
-//       |                           bounds.size|
-//       '--------------------------------------'
-//                                         frame.size
-//  Subviews live in the bounds of the superview. In 99% of all cases the
-//  bounds are just like the frame, but the origin set to 0.0,0.0.
-//  As bounds.size is then equal to frame.size there is no scaling involved.
+// The "standard" UIView hierarchy.
+// =================================
+// frame.origin          UIView
+//      .--------------------------------------.
+//      |bounds.origin                         |
+//      |               frame.origin           |
+//      |                    .-----------.     |
+//      |                    |           |     |
+//      |                    | Subview 1 |     |
+//      |                    |           |     |
+//      | frame.origin       '-----------'     |
+//      |      .---------------.    frame.size |
+//      |      |               |               |
+//      |      |   Subview 2   |               |
+//      |      |               |               |
+//      |      '---------------'               |
+//      |                 frame.size           |
+//      |                                      |
+//      |                           bounds.size|
+//      '--------------------------------------'
+//                                        frame.size
+// Subviews live in the bounds of the superview. In 99% of all cases the
+// bounds are just like the frame, but the origin set to 0.0,0.0.
+// As bounds.size is then equal to frame.size there is no scaling involved.
 //
-//  Managing the bounds of a UIView for drawing purposes is the wrong idea,
-//  use the bounds of the CALayer for that. In fact the bounds of a UIView IMO
-//  should only be changed, if you are
-//  scrolling subviews within it (bounds.origin) but then you are better off
-//  with a UIScrollView.
+// Managing the bounds of a UIView for drawing purposes is the wrong idea,
+// use the bounds of the CALayer for that. In fact the bounds of a UIView IMO
+// should only be changed, if you are
+// scrolling subviews within it (bounds.origin) but then you are better off
+// with a UIScrollView.
 //
-//  Changing the bounds.size is usually bad as this changes the size of the UI
-//  elements. (Which _could_ be good if you are implementing some
-//  sort of support for poor-sighted individuals... maybe)
+// Changing the bounds.size is usually bad as this changes the size of the UI
+// elements. (Which _could_ be good if you are implementing some
+// sort of support for poor-sighted individuals... maybe)
 //
-//  All layers (and subviews) live in the bounds of the view. The view
-//  inherits the transformation and adds its own frame/bounds transformation
-//  to it.
+// All layers (and subviews) live in the bounds of the view. The view
+// inherits the transformation and adds its own frame/bounds transformation
+// to it.
 //
 // the main layer is responsible for the "background" and the "border"
 //
@@ -106,7 +106,7 @@ typedef NSUInteger   UIViewAutoresizing;
    struct mulle_pointerarray             *_layers;     // todo why no inline ?
    struct mulle_pointerarray             *_subviews;
 
-   struct MulleTrackingAreaArray         _trackingAreas;
+   struct UITrackingAreaArray         _trackingAreas;
 
    CGLayer                               *_cacheLayer;
 
@@ -183,6 +183,7 @@ typedef NSUInteger   UIViewAutoresizing;
 + (Class) layerClass;
 
 + (instancetype) viewWithFrame:(CGRect) frame;
++ (instancetype) viewWithLayer:(CALayer *) layer;
 
 //
 // designated initializer, override this for defaults
@@ -232,12 +233,12 @@ typedef NSUInteger   UIViewAutoresizing;
 
 // view must be part of window view hierarchy, for these function to work
 // properly
-- (struct MulleTrackingArea *) addTrackingAreaWithRect:(CGRect) rect
+- (struct UITrackingArea *) addTrackingAreaWithRect:(CGRect) rect
                                               toWindow:(UIWindow *) window
                                               userInfo:(id) userInfo;
-- (void) removeTrackingArea:(struct MulleTrackingArea *) trackingRect;
+- (void) removeTrackingArea:(struct UITrackingArea *) trackingRect;
 - (NSUInteger) numberOfTrackingAreas;
-- (struct MulleTrackingArea *) trackingAreaAtIndex:(NSUInteger) i;
+- (struct UITrackingArea *) trackingAreaAtIndex:(NSUInteger) i;
 
 - (BOOL) mulleIsEffectivelyHidden;  // recursive test the hierarchy up
 

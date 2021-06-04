@@ -14,14 +14,15 @@
 }
 
 @property( assign) id   delegate;      // unused so far
-
+@property( assign) int  returnValue;
+ 
 - (void) addWindow:(UIWindow *) window;
 // does not call [UIWindow terminate]
 - (void) removeWindow:(UIWindow *) window;
 
 
 // call terminate on all windows and then remove all of them 
-- (void) terminate;
+- (int) terminate;
 
 // will never return, call terminate from somewhere to die
 - (void) run;

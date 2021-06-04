@@ -33,6 +33,7 @@
    nvgTransformPremultiply( transform, tmp);
 }
 
+
 - (void) updateReverseTransform:(float *) transform
 {
    CGRect          frame;
@@ -102,7 +103,7 @@
    if( ! layer)
       return( point);
 
-   xform = MulleAffineTransformMakeInverseProjection( [layer frame],
+   xform = CGAffineTransformMakeInverseProjection( [layer frame],
                                                       [layer bounds]);
 //   nvgTransformIdentity( transform);
 //   [layer updateTransform:transform];

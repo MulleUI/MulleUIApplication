@@ -1,3 +1,5 @@
+      { @selector( MulleObjCLoader), @selector( MulleCA) },      // 47a9beb6;MulleObjCLoader;3422b8ab;MulleCA
+      { @selector( MulleObjCLoader), @selector( MulleCG) },      // 47a9beb6;MulleObjCLoader;d422218a;MulleCG
       { @selector( MulleObjCLoader), @selector( MulleGraphics) },      // 47a9beb6;MulleObjCLoader;d36c3031;MulleGraphics
       { @selector( MulleObjCLoader), @selector( MulleObjCLockFoundation) },      // 47a9beb6;MulleObjCLoader;86a97828;MulleObjCLockFoundation
       { @selector( CALayer), @selector( CGGeometry) },      // 55df8726;CALayer;3ab12270;CGGeometry
@@ -21,6 +23,7 @@
       { @selector( UIView), @selector( CGGeometry) },      // 155b6ee8;UIView;3ab12270;CGGeometry
       { @selector( UIView), @selector( CGLayer) },      // 155b6ee8;UIView;abf82602;CGLayer
       { @selector( UIView), @selector( Layout) },      // 155b6ee8;UIView;788421ff;Layout
+      { @selector( UIView), @selector( Render) },      // 155b6ee8;UIView;50cf42d3;Render
       { @selector( UIView), @selector( RenderQueue) },      // 155b6ee8;UIView;1cf3a909;RenderQueue
       { @selector( UIView), @selector( UIEvent) },      // 155b6ee8;UIView;f88bf69f;UIEvent
       { @selector( UIView), @selector( UIResponder) },      // 155b6ee8;UIView;48335ff7;UIResponder

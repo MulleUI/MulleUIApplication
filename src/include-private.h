@@ -1,5 +1,5 @@
-#ifndef mulle_gl_example_include_private_h__
-#define mulle_gl_example_include_private_h__
+#ifndef mulle_ui_core_include_private_h__
+#define mulle_ui_core_include_private_h__
 
 
 /* DO:    #include this files in sources
@@ -7,6 +7,39 @@
    DONT:  #include this files in headers
           #import this file anywhere (except in import-private.h)
  */
+
+#define MULLE_UI_GL      1
+#define MULLE_UI_GLES2   2
+#define MULLE_UI_GLES3   3
+//#define MULLE_UI_VULKAN  4
+
+// change the "backend" to use
+#ifndef MULLE_UI_GLVERSION
+# define MULLE_UI_GLVERSION   MULLE_UI_GL
+#endif
+
+#if MULLE_UI_GLVERSION == MULLE_UI_GLES2
+# define GLFW_INCLUDE_ES2
+# ifdef DEFINE_NANOVG_GL_IMPLEMENTATION
+#  define NANOVG_GLES2_IMPLEMENTATION
+# endif
+#endif
+
+#if MULLE_UI_GLVERSION == MULLE_UI_GLES3
+# define GLFW_INCLUDE_ES3
+# ifdef DEFINE_NANOVG_GL_IMPLEMENTATION
+#  define NANOVG_GLES3_IMPLEMENTATION
+# endif
+#endif
+
+#if MULLE_UI_GLVERSION == MULLE_UI_GL
+// GLFW_INCLUDE_... keep undefined for OpenGL3
+// see: https://www.glfw.org/docs/latest/build_guide.html
+# ifdef DEFINE_NANOVG_GL_IMPLEMENTATION
+#  define NANOVG_GL3_IMPLEMENTATION
+# endif
+#endif
+
 
 #include "include.h"
 
@@ -17,4 +50,7 @@
 
 #include "_MulleUICore-include-private.h"
 
+/* You can add some more include statements here */
+
 #endif
+

@@ -7,18 +7,21 @@
 See live on stream how it progresses: [https://www.twitch.tv/mulle_kybernetik_tv/](). Every Wednesday at 14:00-18:00 CEST.
 
 
+![](demos/candycrash.png)
+
 
 ### You are here
 
-There is no actual "drawing" code in MulleUICore. Use "MulleGraphics" for drawing. See "MulleUIViews" for
-widgets.
+There is no actual "drawing" code in MulleUICore. Use "MulleGraphics" for
+drawing. See "MulleUIControl" for widgets.
+
 
 ```
   .-----------------------------------------.
   | MulleUIFoundation                       |
   '-----------------------------------------'
   .-----------------------------------------.
-  | MulleUIViews                            |
+  | MulleUIControl                          |
   '-----------------------------------------'
   .-----------------. .=====================.
   | MulleUIImage    | | MulleUICore         |

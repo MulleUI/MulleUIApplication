@@ -6,7 +6,7 @@
 
 // bits suitable or bitmasking
 typedef enum
-{
+{                              // leave 0 to nil
    UIEventTypePresses = 0x01,  // Keyboard
    UIEventTypeUnicode = 0x02,  // Unicode char (interpreted Keyboard)
    UIEventTypeTouches = 0x04,  // Mouse click

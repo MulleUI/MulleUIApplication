@@ -37,7 +37,8 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             CACHE INTERNAL "need to cache this"
          )
          #
-         # Inherit ObjC loader and link dependency info.
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
          # Disable with: `mulle-sourcetree mark GL no-cmake-inherit`
          #
          # temporarily expand CMAKE_MODULE_PATH
@@ -95,6 +96,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endif()
          endforeach()
       else()
+         # Disable with: `mulle-sourcetree mark GL no-require-link`
          message( FATAL_ERROR "GL_LIBRARY was not found")
       endif()
    endif()
@@ -125,7 +127,8 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             CACHE INTERNAL "need to cache this"
          )
          #
-         # Inherit ObjC loader and link dependency info.
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
          # Disable with: `mulle-sourcetree mark GLU no-cmake-inherit`
          #
          # temporarily expand CMAKE_MODULE_PATH
@@ -183,6 +186,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endif()
          endforeach()
       else()
+         # Disable with: `mulle-sourcetree mark GLU no-require-link`
          message( FATAL_ERROR "GLU_LIBRARY was not found")
       endif()
    endif()
@@ -213,7 +217,8 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             CACHE INTERNAL "need to cache this"
          )
          #
-         # Inherit ObjC loader and link dependency info.
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
          # Disable with: `mulle-sourcetree mark X11 no-cmake-inherit`
          #
          # temporarily expand CMAKE_MODULE_PATH
@@ -271,6 +276,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endif()
          endforeach()
       else()
+         # Disable with: `mulle-sourcetree mark X11 no-require-link`
          message( FATAL_ERROR "X11_LIBRARY was not found")
       endif()
    endif()
@@ -301,7 +307,8 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             CACHE INTERNAL "need to cache this"
          )
          #
-         # Inherit ObjC loader and link dependency info.
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
          # Disable with: `mulle-sourcetree mark Xrandr no-cmake-inherit`
          #
          # temporarily expand CMAKE_MODULE_PATH
@@ -359,6 +366,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endif()
          endforeach()
       else()
+         # Disable with: `mulle-sourcetree mark Xrandr no-require-link`
          message( FATAL_ERROR "XRANDR_LIBRARY was not found")
       endif()
    endif()
@@ -389,7 +397,8 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             CACHE INTERNAL "need to cache this"
          )
          #
-         # Inherit ObjC loader and link dependency info.
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
          # Disable with: `mulle-sourcetree mark Xxf86vm no-cmake-inherit`
          #
          # temporarily expand CMAKE_MODULE_PATH
@@ -447,6 +456,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endif()
          endforeach()
       else()
+         # Disable with: `mulle-sourcetree mark Xxf86vm no-require-link`
          message( FATAL_ERROR "XXF86VM_LIBRARY was not found")
       endif()
    endif()
@@ -477,7 +487,8 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             CACHE INTERNAL "need to cache this"
          )
          #
-         # Inherit ObjC loader and link dependency info.
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
          # Disable with: `mulle-sourcetree mark Xinerama no-cmake-inherit`
          #
          # temporarily expand CMAKE_MODULE_PATH
@@ -535,6 +546,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endif()
          endforeach()
       else()
+         # Disable with: `mulle-sourcetree mark Xinerama no-require-link`
          message( FATAL_ERROR "XINERAMA_LIBRARY was not found")
       endif()
    endif()
@@ -565,7 +577,8 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             CACHE INTERNAL "need to cache this"
          )
          #
-         # Inherit ObjC loader and link dependency info.
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
          # Disable with: `mulle-sourcetree mark Xcursor no-cmake-inherit`
          #
          # temporarily expand CMAKE_MODULE_PATH
@@ -623,180 +636,9 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endif()
          endforeach()
       else()
+         # Disable with: `mulle-sourcetree mark Xcursor no-require-link`
          message( FATAL_ERROR "XCURSOR_LIBRARY was not found")
       endif()
-   endif()
-endif()
-
-
-#
-# Generated from sourcetree: e727cc11-4d6e-4cac-8e49-b4af83930cdf;dl;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
-# Disable with : `mulle-sourcetree mark dl `
-# Disable for this platform: `mulle-sourcetree mark dl no-cmake-platform-linux`
-#
-if( NOT DL_LIBRARY)
-   find_library( DL_LIBRARY NAMES dl)
-   message( STATUS "DL_LIBRARY is ${DL_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( DL_LIBRARY)
-      #
-      # Add DL_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark dl no-cmake-add`
-      #
-      set( OS_SPECIFIC_LIBRARIES
-         ${OS_SPECIFIC_LIBRARIES}
-         ${DL_LIBRARY}
-         CACHE INTERNAL "need to cache this"
-      )
-      #
-      # Inherit ObjC loader and link dependency info.
-      # Disable with: `mulle-sourcetree mark dl no-cmake-inherit`
-      #
-      # temporarily expand CMAKE_MODULE_PATH
-      get_filename_component( _TMP_DL_ROOT "${DL_LIBRARY}" DIRECTORY)
-      get_filename_component( _TMP_DL_ROOT "${_TMP_DL_ROOT}" DIRECTORY)
-      #
-      #
-      # Append header directory to user search path.
-      # Disable with: `mulle-sourcetree mark dl no-cmake-searchpath`
-      #
-      foreach( _TMP_DL_NAME "dl")
-         set( _TMP_DL_DIR "${_TMP_DL_ROOT}/include/${_TMP_DL_NAME}")
-         if( IS_DIRECTORY "${_TMP_DL_DIR}")
-            set( INHERITED_INCLUDE_DIRS
-               ${INHERITED_INCLUDE_DIRS}
-               "${_TMP_DL_DIR}"
-               CACHE INTERNAL "need to cache this"
-            )
-            break()
-         else()
-            message( STATUS "${_TMP_DL_DIR} not found")
-         endif()
-      endforeach()
-      #
-      # Search for "DependenciesAndLibraries.cmake" to include.
-      # Disable with: `mulle-sourcetree mark dl no-cmake-dependency`
-      #
-      foreach( _TMP_DL_NAME "dl")
-         set( _TMP_DL_DIR "${_TMP_DL_ROOT}/include/${_TMP_DL_NAME}/cmake")
-         # use explicit path to avoid "surprises"
-         if( EXISTS "${_TMP_DL_DIR}/DependenciesAndLibraries.cmake")
-            unset( DL_DEFINITIONS)
-            list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_DL_DIR}")
-            # we only want top level INHERIT_OBJC_LOADERS, so disable them
-            if( NOT NO_INHERIT_OBJC_LOADERS)
-               set( NO_INHERIT_OBJC_LOADERS OFF)
-            endif()
-            list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-            set( NO_INHERIT_OBJC_LOADERS ON)
-            #
-            include( "${_TMP_DL_DIR}/DependenciesAndLibraries.cmake")
-            #
-            list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-            list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
-            #
-            list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_DL_DIR}")
-            set( INHERITED_DEFINITIONS
-               ${INHERITED_DEFINITIONS}
-               ${DL_DEFINITIONS}
-               CACHE INTERNAL "need to cache this"
-            )
-            break()
-         else()
-            message( STATUS "${_TMP_DL_DIR}/DependenciesAndLibraries.cmake not found")
-         endif()
-      endforeach()
-   else()
-      message( FATAL_ERROR "DL_LIBRARY was not found")
-   endif()
-endif()
-
-
-#
-# Generated from sourcetree: c2345537-4e93-493b-bf21-9e6621303a04;pthread;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
-# Disable with : `mulle-sourcetree mark pthread `
-# Disable for this platform: `mulle-sourcetree mark pthread no-cmake-platform-linux`
-#
-if( NOT PTHREAD_LIBRARY)
-   find_library( PTHREAD_LIBRARY NAMES pthread)
-   message( STATUS "PTHREAD_LIBRARY is ${PTHREAD_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( PTHREAD_LIBRARY)
-      #
-      # Add PTHREAD_LIBRARY to OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark pthread no-cmake-add`
-      #
-      set( OS_SPECIFIC_LIBRARIES
-         ${OS_SPECIFIC_LIBRARIES}
-         ${PTHREAD_LIBRARY}
-         CACHE INTERNAL "need to cache this"
-      )
-      #
-      # Inherit ObjC loader and link dependency info.
-      # Disable with: `mulle-sourcetree mark pthread no-cmake-inherit`
-      #
-      # temporarily expand CMAKE_MODULE_PATH
-      get_filename_component( _TMP_PTHREAD_ROOT "${PTHREAD_LIBRARY}" DIRECTORY)
-      get_filename_component( _TMP_PTHREAD_ROOT "${_TMP_PTHREAD_ROOT}" DIRECTORY)
-      #
-      #
-      # Append header directory to user search path.
-      # Disable with: `mulle-sourcetree mark pthread no-cmake-searchpath`
-      #
-      foreach( _TMP_PTHREAD_NAME "pthread")
-         set( _TMP_PTHREAD_DIR "${_TMP_PTHREAD_ROOT}/include/${_TMP_PTHREAD_NAME}")
-         if( IS_DIRECTORY "${_TMP_PTHREAD_DIR}")
-            set( INHERITED_INCLUDE_DIRS
-               ${INHERITED_INCLUDE_DIRS}
-               "${_TMP_PTHREAD_DIR}"
-               CACHE INTERNAL "need to cache this"
-            )
-            break()
-         else()
-            message( STATUS "${_TMP_PTHREAD_DIR} not found")
-         endif()
-      endforeach()
-      #
-      # Search for "DependenciesAndLibraries.cmake" to include.
-      # Disable with: `mulle-sourcetree mark pthread no-cmake-dependency`
-      #
-      foreach( _TMP_PTHREAD_NAME "pthread")
-         set( _TMP_PTHREAD_DIR "${_TMP_PTHREAD_ROOT}/include/${_TMP_PTHREAD_NAME}/cmake")
-         # use explicit path to avoid "surprises"
-         if( EXISTS "${_TMP_PTHREAD_DIR}/DependenciesAndLibraries.cmake")
-            unset( PTHREAD_DEFINITIONS)
-            list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_PTHREAD_DIR}")
-            # we only want top level INHERIT_OBJC_LOADERS, so disable them
-            if( NOT NO_INHERIT_OBJC_LOADERS)
-               set( NO_INHERIT_OBJC_LOADERS OFF)
-            endif()
-            list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-            set( NO_INHERIT_OBJC_LOADERS ON)
-            #
-            include( "${_TMP_PTHREAD_DIR}/DependenciesAndLibraries.cmake")
-            #
-            list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-            list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
-            #
-            list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_PTHREAD_DIR}")
-            set( INHERITED_DEFINITIONS
-               ${INHERITED_DEFINITIONS}
-               ${PTHREAD_DEFINITIONS}
-               CACHE INTERNAL "need to cache this"
-            )
-            break()
-         else()
-            message( STATUS "${_TMP_PTHREAD_DIR}/DependenciesAndLibraries.cmake not found")
-         endif()
-      endforeach()
-   else()
-      message( FATAL_ERROR "PTHREAD_LIBRARY was not found")
    endif()
 endif()
 
@@ -824,7 +666,8 @@ if( NOT M_LIBRARY)
          CACHE INTERNAL "need to cache this"
       )
       #
-      # Inherit ObjC loader and link dependency info.
+      # Inherit information from dependency.
+      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
       # Disable with: `mulle-sourcetree mark m no-cmake-inherit`
       #
       # temporarily expand CMAKE_MODULE_PATH
@@ -882,6 +725,7 @@ if( NOT M_LIBRARY)
          endif()
       endforeach()
    else()
+      # Disable with: `mulle-sourcetree mark m no-require-link`
       message( FATAL_ERROR "M_LIBRARY was not found")
    endif()
 endif()

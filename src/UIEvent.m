@@ -203,7 +203,7 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 
    translated = [view convertPoint:_locationInWindow
                           fromView:NULL];
-#ifdef DEBUG
+#if 0
    fprintf( stderr, "%s -> %s\n",
                CGPointCStringDescription( _locationInWindow),
                CGPointCStringDescription( translated));

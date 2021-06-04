@@ -21,9 +21,6 @@
 - (NSUInteger) waitForEvents:(CARelativeTime) timeout
                          now:(CAAbsoluteTime) now
                 returnsEarly:(BOOL) returnsEarly;
-- (NSUInteger) waitForEventsHz:(double) hz;
-- (NSUInteger) waitForEvents:(CARelativeTime) timeout;
-
 
 - (BOOL) willDiscardEvent:(UIEvent *) event;
 - (BOOL) willDiscardOverflowEvent:(UIEvent *) event;

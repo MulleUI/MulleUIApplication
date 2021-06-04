@@ -14,13 +14,13 @@
 // now) as we are starting an offline render.
 //
 - (CGLayer *) textureImageWithContext:(CGContext *) context
-                            frameInfo:(struct MulleFrameInfo *) info
+                            frameInfo:(struct CGFrameInfo *) info
                               options:(NSUInteger) options
 {
-   struct MulleFrameInfo     renderInfo;
+   struct CGFrameInfo     renderInfo;
    CGLayer                   *layer;
    CGRect                    frame;
-   struct MulleBitmapInfo     bitmapInfo;
+   struct CGBitmapInfo     bitmapInfo;
    NVGcontext                *vg;
 
    frame = [self frame];
@@ -40,20 +40,19 @@
    bitmapInfo.size.width       = (int) (renderInfo.framebufferSize.width + 0.5);
    bitmapInfo.size.height      = (int) (renderInfo.framebufferSize.height + 0.5);
    bitmapInfo.nColorComponents = 4;
-   bitmapInfo.encoding         = MulleBitmapEncodingRGBABytes;
+   bitmapInfo.encoding         = CGBitmapEncodingRGBABytes;
 
    layer = [[[CGLayer alloc] initWithBitmapInfo:bitmapInfo
-                                        context:context
-                                        options:options] autorelease];
+                                  imageFlags:(int) options
+                                        context:context] autorelease];
    if( ! layer)
       return( layer);
 
 
-
-   [layer beginRenderWithFrameInfo:&renderInfo];
+   [layer beginRender:&renderInfo];
    @autoreleasepool
    {
-      vg = [context nvgContext];
+      vg = CGContextGetNVGContext( context);
       // translate to 0.0 ? scale to fit ?
       if( options & NVG_IMAGE_FLIPY)
       {
@@ -63,6 +62,7 @@
       else
          nvgTranslate( vg, -frame.origin.x, -frame.origin.y);
 
+      // haben wir nach Window verschoben, war wohl dumm...
       [self renderInContext:context];
 #if 0
       nvgBeginPath( vg);

@@ -20,9 +20,15 @@
 }
 
 
-+ (instancetype) viewWithFrame:(CGRect) frame;
++ (instancetype) viewWithFrame:(CGRect) frame
 {
    return( [[[self alloc] initWithFrame:frame] autorelease]);
+}
+
+
++ (instancetype) viewWithLayer:(CALayer *) layer
+{
+   return( [[[self alloc] initWithLayer:layer] autorelease]);
 }
 
 
@@ -89,7 +95,7 @@
 
 - (void) dealloc
 {
-   MulleTrackingAreaArrayDone( &_trackingAreas);
+   UITrackingAreaArrayDone( &_trackingAreas);
 
    mulle_pointerarray_release_all( _subviews);
    mulle_pointerarray_destroy( _subviews);
@@ -216,6 +222,7 @@ static inline CGRect   getBounds( UIView *self)
    return( _subviews);
 }
 
+
 - (void) mulleAddRetainedSubview:(UIView *) view
 {
    struct mulle_pointerarray  *subviews;
@@ -235,6 +242,7 @@ static inline CGRect   getBounds( UIView *self)
 
    view->_superview = self;
 }
+
 
 - (void) addSubview:(UIView *) view
 {
@@ -492,7 +500,7 @@ static inline CGRect   getBounds( UIView *self)
 }
 
 #if 0
-- (CGLayer *) cachedLayerWithFrameInfo:(struct MulleFrameInfo *) info
+- (CGLayer *) cachedLayerWithFrameInfo:(struct CGFrameInfo *) info
 {
    if( _needsCaching)
    {
@@ -505,7 +513,7 @@ static inline CGRect   getBounds( UIView *self)
                                  frameInfo:info
                                     options:0];
       if( layer)
-         _cacheLayer = [[MulleImageLayer alloc] initWithImage:image];
+         _cacheLayer = [[CABitmapLayer alloc] initWithImage:image];
 #endif
    }
    return( _cacheLayer);
@@ -571,11 +579,11 @@ static inline CGRect   getBounds( UIView *self)
 
 # pragma mark - tracking rectangles
 
-- (struct MulleTrackingArea *) addTrackingAreaWithRect:(CGRect) rect
+- (struct UITrackingArea *) addTrackingAreaWithRect:(CGRect) rect
                                               toWindow:(UIWindow *) window
                                               userInfo:(id) userInfo
 {
-   struct MulleTrackingArea   *tracking;
+   struct UITrackingArea   *tracking;
    UIWindow                  *window;
 
    if( ! window)
@@ -583,24 +591,24 @@ static inline CGRect   getBounds( UIView *self)
 
    assert( window);
 
-   if( MulleTrackingAreaArrayGetCount( &_trackingAreas) == 0)
+   if( UITrackingAreaArrayGetCount( &_trackingAreas) == 0)
    {
       // if window does not exist, then a late add would not be noticed
       // and tracking fails...
       [window addTrackingView:self];
    }
 
-   tracking = MulleTrackingAreaArrayNewItem( &_trackingAreas);
-   MulleTrackingAreaInit( tracking, rect, userInfo);
+   tracking = UITrackingAreaArrayNewItem( &_trackingAreas);
+   UITrackingAreaInit( tracking, rect, userInfo);
    return( tracking);
 }
 
-- (void) removeTrackingArea:(struct MulleTrackingArea *) item
+- (void) removeTrackingArea:(struct UITrackingArea *) item
 {
    UIWindow   *window;
 
-   MulleTrackingAreaArrayRemoveItem( &_trackingAreas, item);
-   if( MulleTrackingAreaArrayGetCount( &_trackingAreas) == 0)
+   UITrackingAreaArrayRemoveItem( &_trackingAreas, item);
+   if( UITrackingAreaArrayGetCount( &_trackingAreas) == 0)
    {
       window = [self window];
       assert( window);
@@ -610,15 +618,15 @@ static inline CGRect   getBounds( UIView *self)
 
 - (NSUInteger) numberOfTrackingAreas
 {
-   return( MulleTrackingAreaArrayGetCount( &_trackingAreas));
+   return( UITrackingAreaArrayGetCount( &_trackingAreas));
 }
 
 
-- (struct MulleTrackingArea *) trackingAreaAtIndex:(NSUInteger) i
+- (struct UITrackingArea *) trackingAreaAtIndex:(NSUInteger) i
 {
-   struct MulleTrackingArea   *item;
+   struct UITrackingArea   *item;
 
-   item = MulleTrackingAreaArrayGetItemAtIndex( &_trackingAreas, i);
+   item = UITrackingAreaArrayGetItemAtIndex( &_trackingAreas, i);
    return( item);
 }
 

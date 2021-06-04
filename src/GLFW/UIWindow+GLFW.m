@@ -10,6 +10,7 @@
 #import "import-private.h"
 
 #import "UIWindow+UIEvent.h"
+#include <MulleCG/_MulleCGBackend.h>
 
 
 // Due to the way GLFW is setup,
@@ -163,6 +164,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    glfwSetWindowCloseCallback( _window, windowCloseCallback);
 }
 
+
 - (void *) os_createWindowWithFrame:(CGRect) frame
                        titleCString:(char *) title
                           styleMask:(NSUInteger) styleMask
@@ -171,16 +173,20 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
 
    assert( [NSThread mulleIsMainThread]);
 
-#if MULLE_UI_GLVERSION == MULLE_GLES2
+#ifndef MULLE_CG_GLVERSION
+# error "MULLE_CG_GLVERSION" not defined
+#endif
+
+#if MULLE_CG_GLVERSION == MULLE_GLES2
    glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0);
 #endif
-#if MULLE_UI_GLVERSION == MULLE_GLES3
+#if MULLE_CG_GLVERSION == MULLE_GLES3
    glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2);
    glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
-#if MULLE_UI_GLVERSION == MULLE_GL
+#if MULLE_CG_GLVERSION == MULLE_GL
    glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0);
    glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);

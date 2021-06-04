@@ -9,38 +9,38 @@
 
 typedef enum
 {
-   UIViewContentModeScaleToFill     = MulleLayoutContentModeScaleToFill,
-   UIViewContentModeScaleAspectFit  = MulleLayoutContentModeScaleAspectFit,
-   UIViewContentModeScaleAspectFill = MulleLayoutContentModeScaleAspectFill,
+   UIViewContentModeScaleToFill     = CGContentModeScaleToFill,
+   UIViewContentModeScaleAspectFit  = CGContentModeScaleAspectFit,
+   UIViewContentModeScaleAspectFill = CGContentModeScaleAspectFill,
 
 //   UIViewContentModeRedraw,  // not supported
 
-   UIViewContentModeCenter      = MulleLayoutContentModeCenter,
+   UIViewContentModeCenter      = CGContentModeCenterPoint,
 
-   UIViewContentModeTop         = MulleLayoutContentModeTop,
-   UIViewContentModeBottom      = MulleLayoutContentModeBottom,
-   UIViewContentModeLeft        = MulleLayoutContentModeLeft,
-   UIViewContentModeRight       = MulleLayoutContentModeRight,
+   UIViewContentModeTop         = CGContentModeTop,
+   UIViewContentModeBottom      = CGContentModeBottom,
+   UIViewContentModeLeft        = CGContentModeLeft,
+   UIViewContentModeRight       = CGContentModeRight,
 
-   UIViewContentModeTopLeft     = MulleLayoutContentModeTopLeft,
-   UIViewContentModeTopRight    = MulleLayoutContentModeTopRight,
-   UIViewContentModeBottomLeft  = MulleLayoutContentModeBottomLeft,
-   UIViewContentModeBottomRight = MulleLayoutContentModeBottomRight
+   UIViewContentModeTopLeft     = CGContentModeTopLeft,
+   UIViewContentModeTopRight    = CGContentModeTopRight,
+   UIViewContentModeBottomLeft  = CGContentModeBottomLeft,
+   UIViewContentModeBottomRight = CGContentModeBottomRight
 } UIViewContentMode;
-#define N_UIViewContentModeNames 12
+#define N_UIViewContentModes 12
 
 
-#define UIViewContentModeNames      MulleLayoutContentModeNames
+#define UIViewContentModeNames      CGContentModeNames
 
 static inline char   *UIViewContentModeCStringDescription( UIViewContentMode mode)
 {
-   return( MulleLayoutContentModeCStringDescription( (MulleLayoutContentMode) mode));
+   return( CGContentModeCStringDescription( (CGContentMode) mode));
 }
 
 
 static inline UIViewContentMode  UIViewContentModeParseCString( char *s)
 {
-   return( (UIViewContentMode) MulleLayoutContentModeParseCString( s));
+   return( (UIViewContentMode) CGContentModeParseCString( s));
 }
 
 
@@ -74,8 +74,8 @@ enum UILayoutStrategy
  */
 typedef enum
 {
-   UILayoutConstraintAxisVertical   = MulleVerticalIndex,
-   UILayoutConstraintAxisHorizontal = MulleHorizontalIndex
+   UILayoutConstraintAxisVertical   = CGVerticalAxis,
+   UILayoutConstraintAxisHorizontal = CGHorizontalAxis
 } UILayoutConstraintAxis;
 
 
@@ -107,7 +107,7 @@ typedef enum
 //
 - (void) layoutLayers;
 
-- (void) beginLayoutWithFrameInfo:(struct MulleFrameInfo *) info;
+- (void) beginLayoutWithFrameInfo:(struct CGFrameInfo *) info;
 - (void) endLayout;
 
 - (void) layout;

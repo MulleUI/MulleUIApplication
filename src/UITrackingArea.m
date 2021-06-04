@@ -1,12 +1,12 @@
-#import "MulleTrackingArea.h"
+#import "UITrackingArea.h"
 
 #import "import-private.h"
 
 
-# pragma mark - struct MulleTrackingAreaArray
+# pragma mark - struct UITrackingAreaArray
 
 void
-   MulleTrackingAreaArrayInit( struct MulleTrackingAreaArray *array,
+   UITrackingAreaArrayInit( struct UITrackingAreaArray *array,
                                struct mulle_allocator *allocator)
 {
    assert( array);
@@ -19,10 +19,10 @@ void
 
 
 static void
-   MulleTrackingAreaDoneItems( struct MulleTrackingAreaArray *array)
+   UITrackingAreaDoneItems( struct UITrackingAreaArray *array)
 {
-   struct MulleTrackingArea   *p;
-   struct MulleTrackingArea   *sentinel;
+   struct UITrackingArea   *p;
+   struct UITrackingArea   *sentinel;
 
    assert( array);
 
@@ -30,18 +30,18 @@ static void
    sentinel = &p[ array->n];
    while( p < sentinel)
    {
-      MulleTrackingAreaDone( p);
+      UITrackingAreaDone( p);
       ++p;
    }
 }
 
 
 void
-   MulleTrackingAreaArrayDone( struct MulleTrackingAreaArray *array)
+   UITrackingAreaArrayDone( struct UITrackingAreaArray *array)
 {
    assert( array);
 
-   MulleTrackingAreaDoneItems( array);
+   UITrackingAreaDoneItems( array);
    mulle_allocator_free( array->allocator, array->items);
 
    // this is important
@@ -51,10 +51,10 @@ void
 }
 
 
-struct MulleTrackingArea   *
-   MulleTrackingAreaArrayNewItem( struct MulleTrackingAreaArray *array)
+struct UITrackingArea   *
+   UITrackingAreaArrayNewItem( struct UITrackingAreaArray *array)
 {
-   struct MulleTrackingArea   *p;
+   struct UITrackingArea   *p;
 
    assert( array);
 
@@ -66,21 +66,21 @@ struct MulleTrackingArea   *
 
       array->items = mulle_allocator_realloc( array->allocator,
                                               array->items,
-                                              sizeof( struct MulleTrackingArea) * array->size);
+                                              sizeof( struct UITrackingArea) * array->size);
    }
 
    p = &array->items[ array->n++];
-   memset( p, 0, sizeof( struct MulleTrackingArea));
+   memset( p, 0, sizeof( struct UITrackingArea));
    return( p);
 }
 
 
-struct MulleTrackingArea *
-   MulleTrackingAreaArrayGetItemWithRect( struct MulleTrackingAreaArray *array,
+struct UITrackingArea *
+   UITrackingAreaArrayGetItemWithRect( struct UITrackingAreaArray *array,
                                           CGRect rect)
 {
-   struct MulleTrackingArea   *p;
-   struct MulleTrackingArea   *sentinel;
+   struct UITrackingArea   *p;
+   struct UITrackingArea   *sentinel;
 
    assert( array);
 
@@ -89,7 +89,7 @@ struct MulleTrackingArea *
 
    while( p < sentinel)
    {
-      if( CGRectEqualToRect( MulleTrackingAreaGetRect( p), rect))
+      if( CGRectEqualToRect( UITrackingAreaGetRect( p), rect))
       {
          return( p);
       }
@@ -101,8 +101,8 @@ struct MulleTrackingArea *
 
 
 void
-   MulleTrackingAreaArrayRemoveItem( struct MulleTrackingAreaArray *array,
-                                     struct MulleTrackingArea *item)
+   UITrackingAreaArrayRemoveItem( struct UITrackingAreaArray *array,
+                                     struct UITrackingArea *item)
 {
    ptrdiff_t   index;
    int         tocopy;
@@ -115,7 +115,7 @@ void
    index = item - array->items;
    assert( index >= 0 && index < array->n);
 
-   MulleTrackingAreaDone( item);
+   UITrackingAreaDone( item);
 
    //
    // assume: 4 entries (0,1,2,3), removing entry 2, have to compact 1 from behind
@@ -125,7 +125,7 @@ void
    {
       memmove( &array->items[ index],
                &array->items[ index + 1],
-               tocopy * sizeof( struct MulleTrackingArea));
+               tocopy * sizeof( struct UITrackingArea));
    }
    --array->n;
 }

@@ -1,15 +1,23 @@
 #import "UIView.h"
 
 
-struct MulleFrameInfo;
+struct CGFrameInfo;
 
-typedef UIView   MulleWindowPlane;
+typedef UIView   UIWindowPlane;
 
 @class UIPasteboard;
 @class UIEvent;
 @class UIApplication;
 
 
+
+// values for frameRate
+#define UIWindowFrameRateUnsynced   0.0        // as fast as possible
+#define UIWindowFrameRateAsync      INFINITY   // wait until an event hits
+#define UIWindowFrameRateSynced     -INFINITY  // tied to monitor frame rate (or 1/60.0 if not available)
+
+
+// mulle addition
 enum MulleWindowStyleMask
 {
 //  MulleWindowStyleMaskClosable        = 0x1,
@@ -26,6 +34,23 @@ enum MulleWindowStyleMask
 #define ui_window_pointer_fifo_done   _mulle__pointerfifo128_done
 #define ui_window_pointer_fifo_write  _mulle__pointerfifo128_write
 #define ui_window_pointer_fifo_read_barrier   _mulle__pointerfifo128_read_barrier
+
+
+// mulle addition
+@protocol UIWindowRenderDelegate
+
+// none of these are optional, implement them all
+// call before beginRender
+- (void) windowWillBeginRender:(UIWindow *) window;
+
+// cabll before endRender
+- (void) windowWillEndRender:(UIWindow *) window;
+
+// call after endRender
+- (void) windowDidEndRender:(UIWindow *) window;
+
+@end
+
 
 //
 // TODO: firstResponder needed for UITextField to gain keyboard
@@ -66,6 +91,8 @@ enum MulleWindowStyleMask
    NSConditionLock   *_needsDisplayLock;
    BOOL               _resizing;
    CAAbsoluteTime     _lastResizeEventTimestamp;
+   CAAbsoluteTime     _lastDidFramebufferSwapTimestamp;
+   CAAbsoluteTime     _lastDidProcessEventsTimestamp;
    BOOL               _shouldClose;
 
    struct mulle_pointerarray   _renderQueue; // layers to render
@@ -93,6 +120,12 @@ enum MulleWindowStyleMask
 // we keep a shadow, that gets updated by glfw window events
 @property( assign, readonly) CGSize     framebufferSize;
 
+// used for MulleUIPerformance
+@property( assign) id <UIWindowRenderDelegate>   renderDelegate;
+
+@property( assign) CGFloat              frameRate;
+@property( assign) NSUInteger           swapInterval;
+
 // nanovg will be done here, here is good time to do plain
 // OpenGL calls, endRender won't have happened yet
 
@@ -106,40 +139,33 @@ enum MulleWindowStyleMask
 // be the same through all callbacks.
 //
 @property void   (*willRenderCallback)( UIWindow *window,
-                                        struct MulleFrameInfo *info,
-                                        CAAbsoluteTime now);
+                                        struct CGFrameInfo *info);
 @property void   (*willLayoutCallback)( UIWindow *window,
-                                        struct MulleFrameInfo *info,
-                                        CAAbsoluteTime now);
+                                        struct CGFrameInfo *info);
 @property void   (*didLayoutCallback)( UIWindow *window,
-                                       struct MulleFrameInfo *info,
-                                       CAAbsoluteTime now);
+                                       struct CGFrameInfo *info);
 @property void   (*didCreateRenderQueueCallback)( UIWindow *window,
-                                       struct MulleFrameInfo *info,
-                                       CAAbsoluteTime now);
+                                       struct CGFrameInfo *info);
 
 @property void   (*didAnimateCallback)( UIWindow *window,
-                                        struct MulleFrameInfo *info,
-                                        CAAbsoluteTime now);
+                                        struct CGFrameInfo *info);
 //
 // useful to add custom drawing stuff on top. There is no willRenderCallback
 // as anything draw in it would be clobbered by the window clearing itself
 //
 @property void   (*didRenderCallback)( UIWindow *window,
-                                       struct MulleFrameInfo *info,
-                                       CAAbsoluteTime now);
+                                       struct CGFrameInfo *info);
 @property void   (*didSwapCallback)( UIWindow *window,
-                                     struct MulleFrameInfo *info);
+                                     struct CGFrameInfo *info);
 
-// TODO: hmm
-@property UIEvent  *(*keyEventCallback)( UIWindow *window,
-                                         UIEvent *event);
 
-@property( readonly, assign) MulleWindowPlane   *alertPlane;
-@property( readonly, assign) MulleWindowPlane   *dragAndDropPlane;
-@property( readonly, assign) MulleWindowPlane   *menuPlane;
-@property( readonly, assign) MulleWindowPlane   *toolTipPlane;
-@property( readonly, assign) MulleWindowPlane   *contentPlane;
+@property UIEvent  *(*eventCallback)( UIWindow *window, UIEvent *event);
+
+@property( readonly, assign) UIWindowPlane   *alertPlane;
+@property( readonly, assign) UIWindowPlane   *dragAndDropPlane;
+@property( readonly, assign) UIWindowPlane   *menuPlane;
+@property( readonly, assign) UIWindowPlane   *toolTipPlane;
+@property( readonly, assign) UIWindowPlane   *contentPlane;
 
 - (instancetype) initWithFrame:(CGRect) frame;
 // default visible: closable, non-resizable, non-maximizable
@@ -160,6 +186,9 @@ enum MulleWindowStyleMask
 - (BOOL) isWindowThread;
 
 - (void) runInApplication:(UIApplication *) application;
+
+- (void) setFrameRateHz:(CGFloat) hz;
+- (CGFloat) frameRateHz;
 
 @end
 
@@ -216,7 +245,7 @@ enum MulleWindowStyleMask
 
 - (void) renderLoop;
 - (BOOL) renderUpToNumberOfFrames:(NSUInteger) maxFrames;
-- (void) renderFrameWithFrameInfo:(struct MulleFrameInfo *) info;
+- (void) renderFrame:(struct CGFrameInfo *) info;
 - (BOOL) renderFrameWaitForNeedsDisplay;
 
 - (void) addToDelegateViews:(UIView *) view;
@@ -224,7 +253,7 @@ enum MulleWindowStyleMask
 
 - (void) requestClose;
 
-- (void) getFrameInfo:(struct MulleFrameInfo *) info;
+- (void) getFrameInfo:(struct CGFrameInfo *) info;
 
 - (CGContext *) context;
 

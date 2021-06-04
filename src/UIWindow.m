@@ -165,14 +165,18 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    return( [[[self alloc] initWithFrame:frame] autorelease]);
 }
 
+
 - (void) finalize
 {
    [self discardPendingEvents];
 
-   // get rid of textures possibly or so
-   [self os_startRender];
-   [_context mullePerformFinalize];
-   [self os_endRender];
+   if( _context)
+   {
+      // get rid of textures possibly or so
+      [self os_startRender];
+      [_context mullePerformFinalize];
+      [self os_endRender];
+   }
 
    // TODO: delete window ?
    //       remove from screen ?
@@ -203,6 +207,23 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    // TODO: delete window ?
    [super dealloc];
+}
+
+
+- (void) setFrameRateHz:(CGFloat) hz
+{
+   assert( hz > 0.0);
+   if( hz != 0.0)
+      _frameRate = 1.0f / hz;
+}
+
+
+- (CGFloat) frameRateHz
+{
+   if( _frameRate == INFINITY ||
+       _frameRate <= 0.0f)
+      return( 0.0f);
+   return( 1.0f / _frameRate);
 }
 
 

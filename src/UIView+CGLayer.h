@@ -15,7 +15,7 @@
 @interface UIView( CGLayer)
 
 - (CGLayer *) textureImageWithContext:(CGContext *) context
-                            frameInfo:(struct MulleFrameInfo *) info
+                            frameInfo:(struct CGFrameInfo *) info
                               options:(NSUInteger) options;
 
 @end
