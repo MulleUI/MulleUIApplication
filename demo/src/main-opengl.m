@@ -268,7 +268,7 @@ static void   setupSceneInView( UIView *contentPlane)
    frame = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 10, 10, 10, 10));
 
    view  = [[[UIView alloc] initWithFrame:frame] autorelease];
-   [view setBackgroundColor:CGColorCreateGenericRGB( 0.5, 0.5, 0.5, 0.5)];
+   [view setBackgroundColor:CGColorMakeRGBA( 0.5, 0.5, 0.5, 0.5)];
 
    // for "fun" add the OpenGL layer on top of our regular CALayer
    layer = [CAOpenGLLayer layerWithFrame:[view contentRect]];
@@ -290,7 +290,7 @@ int   main( int argc, char *argv[])
       window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
       assert( window);
 
-      [window setBackgroundColor:CGColorCreateGenericRGB( 1.0, 1.0, 1.0, 1.0)];
+      [window setBackgroundColor:CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)];
 
       setupSceneInView( [window contentPlane]);
 

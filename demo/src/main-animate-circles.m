@@ -1,77 +1,109 @@
 #import <MulleUICore/MulleUICore.h>
 
-
-#define BLAU   CGColorCreateGenericRGB( 0.1, 0.1, 0.4, 1.0)
-#define WEISS  CGColorCreateGenericRGB( 1.0, 1.0, 1.0, 1.0)
+#import <string.h>
 
 
-//
-// This is the same as main-demo.m, but here we let the drawing adjust to the
-// window size. Resize the window to see the difference.
-//
-// We use the [UIView autoresizingMask] for this. The window
-// resizes its planes, which ask their views to resize. The view with the
-// proper resize settings will take up the given room and propagate it to
-// the layer. If the layers canvas is set to track the frame, which it is
-// by default, then the drawing will cover the space.
-//
-// drawStuff and main are left unchanged.
-//
-static void  drawStuff( CALayer *layer, CGContext *context)
+@interface CircleLayer : CALayer
+
+@property( observable) CGFloat     scale;
+@property( observable) CGColorRef  color;
+@property( observable) CGRect      box;
+
+@end
+
+
+@implementation CircleLayer
+
+- (instancetype) initWithFrame:(CGRect) frame
 {
+   [super initWithFrame:frame];
+
+   _scale = 1;
+   _color = MulleColorMake( 0x000000FF);
+   _box   = [self canvas];
+
+   return( self);
+}
+
+@end
+
+
+static void   drawStuff( CALayer *aLayer, CGContext *context)
+{
+   CircleLayer         *layer = (CircleLayer *) aLayer;
    CGFloat             radius;
-   CGFloat             strokeWidth;
-   CGFont              *font;
+   CGRect              box;
    CGRect              canvas;
    struct NVGcontext   *vg;
 
-   canvas      = [layer canvas];
-   strokeWidth = 20.0;
-   radius      = (CGFloatMinimum( CGRectGetWidth( canvas),
-                                  CGRectGetHeight( canvas)) - strokeWidth) / 2;
+   canvas = [layer canvas];
+   vg     = CGContextGetNVGContext( context);
 
-   // draw circle
-   vg = CGContextGetNVGContext( context);
    nvgBeginPath( vg);
    {
+      radius  = CGFloatMinimum( CGRectGetWidth( canvas), CGRectGetHeight( canvas)) / 2 - 10;
+      radius *= [layer scale];
+
       nvgCircle( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), radius);
-      nvgStrokeColor( vg, WEISS);
-      nvgStrokeWidth( vg, strokeWidth);
+      nvgStrokeColor( vg, [layer color]);
+      nvgStrokeWidth( vg, 3.5);
    }
    nvgStroke( vg);
 
-   // draw text
-   // load in font first, this will be efficient on subsequent frames
-   font = [context fontWithNameCString:"sans"];
-   [context setFont:font];
-
-   nvgFontSize( vg, strokeWidth * 8.0);
-   nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-   nvgTextColor( vg, WEISS, BLAU);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
+   nvgBeginPath( vg);
+   {
+      box = [layer box];
+      nvgRect( vg, CGRectGetMinX( box), CGRectGetMinY( box), CGRectGetWidth( box), CGRectGetHeight( box));
+      nvgStrokeColor( vg, [layer color]);
+      nvgStrokeWidth( vg, 3.5);
+   }
+   nvgStroke( vg);
 }
 
 
-static void   setupSceneInView( UIView *contentPlane)
+void  setupAnimation( UIWindow *window, CircleLayer *layer)
 {
-   UIView   *view;
-   CGRect   frame;
+   CAAnimationGroup   *group;
 
-   frame = [contentPlane contentRect];
+   // UIView -> CAAnimation
+   [UIView beginAnimations:"animation"
+                    context:NULL];
+   {
+      [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+      [UIView setAnimationDelay:2];
+      [UIView setAnimationDuration:2];
+      [UIView setAnimationRepeatCount:20];
 
-   view  = [UIView viewWithFrame:frame];
-   [view setBackgroundColor:BLAU];
+      [layer setScale:-1.0];
+      [layer setColor:MulleColorMake( 0x0000FFFF)];
+      [layer setBox:CGRectMake( 100, 100, 100, 100)];
+   }
+   group = [UIView commitAnimations];
 
-   // The view will cover all space given by the parent "contentPlane",
-   // with the exception of margins.
-   [view setAutoresizingMask:UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth];
-   //
-   // To keep the border effect use margins.
-   //
-   [view setMargins:UIEdgeInsetsMake( 10, 10, 10, 10)];
+   [[window postLayoutAnimator] addAnimation:group];
+}
 
-   [[view layer] setDrawCallback:drawStuff];
-   [contentPlane addSubview:view];
+
+void   setupSceneAndAnimation( UIWindow *window)
+{
+   UIView         *view;
+   CGRect         frame;
+   UIEdgeInsets   insets;
+   CircleLayer    *layer;
+
+   frame  = [[window contentPlane] contentRect];
+   insets = UIEdgeInsetsMake( 8, 8, 8, 8);
+   frame  = UIEdgeInsetsInsetRect( frame, insets);
+
+   layer = [CircleLayer layerWithFrame:frame];
+   [layer setColor:MulleColorMake( 0xFF0000FF)];
+   [layer setDrawCallback:drawStuff];
+
+   view  = [UIView viewWithLayer:layer];
+   [[window contentPlane] addSubview:view];
+
+   // UIView -> CAAnimation
+   setupAnimation( window, layer);
 }
 
 
@@ -79,22 +111,24 @@ int   main( int argc, char *argv[])
 {
    UIWindow        *window;
    UIApplication   *app;
+   /*
+    * window and app
+    */
+   app    = [UIApplication sharedInstance];
+   window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
+   assert( window);
 
-   app = [UIApplication sharedInstance];
-   {
-      window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
-      assert( window);
+   [window setBackgroundColor:CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)];
 
-      [window setBackgroundColor:WEISS];
+   setupSceneAndAnimation( window);
 
-      setupSceneInView( [window contentPlane]);
+   [window dump];
 
-      [app addWindow:window];
-      [window renderLoop];
-   }
+   [app addWindow:window];
+   [window renderLoop];
+
    return( [app terminate]);
 }
-
 
 
 //

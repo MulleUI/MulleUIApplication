@@ -88,9 +88,10 @@ If these are regular C libraries, be sure, that they are marked as
 ")
       endif()
 
-      if( ALL_LOAD_DEPENDENCY_FRAMEWORKS)
-         message( FATAL_ERROR "ALL_LOAD_DEPENDENCY_FRAMEWORKS \
-\"${ALL_LOAD_DEPENDENCY_FRAMEWORKS}\" are not linked to ${EXECUTABLE_NAME}.")
+      if( FORCE_ALL_LOAD_DEPENDENCY_FRAMEWORKS)
+         message( FATAL_ERROR "FORCE_ALL_LOAD_DEPENDENCY_FRAMEWORKS \
+\"${FORCE_ALL_LOAD_DEPENDENCY_FRAMEWORKS}\" are not linked to ${EXECUTABLE_NAME}.
+Frameworks aren't force loaded.")
       endif()
 
 
@@ -104,9 +105,10 @@ If these are regular C libraries, be sure, that they are marked as
 ")
       endif()
 
-      if( ALL_LOAD_OPTIONAL_DEPENDENCY_FRAMEWORKS)
-         message( FATAL_ERROR "ALL_LOAD_OPTIONAL_DEPENDENCY_FRAMEWORKS \
-\"${ALL_LOAD_OPTIONAL_DEPENDENCY_FRAMEWORKS}\" are not linked to ${EXECUTABLE_NAME}.")
+      if( FORCE_ALL_LOAD_OPTIONAL_DEPENDENCY_FRAMEWORKS)
+         message( FATAL_ERROR "FORCE_ALL_LOAD_OPTIONAL_DEPENDENCY_FRAMEWORKS \
+\"${FORCE_ALL_LOAD_OPTIONAL_DEPENDENCY_FRAMEWORKS}\" are not linked to ${EXECUTABLE_NAME}.
+Frameworks aren't force loaded.")
       endif()
 
 
@@ -120,9 +122,10 @@ If these are regular C libraries, be sure, that they are marked as
 ")
       endif()
 
-      if( ALL_LOAD_OS_SPECIFIC_FRAMEWORKS)
-         message( FATAL_ERROR "ALL_LOAD_OS_SPECIFIC_FRAMEWORKS \
-\"${ALL_LOAD_OS_SPECIFIC_FRAMEWORKS}\" are not linked to ${EXECUTABLE_NAME}.")
+      if( FORCE_ALL_LOAD_OS_SPECIFIC_FRAMEWORKS)
+         message( FATAL_ERROR "FORCE_ALL_LOAD_OS_SPECIFIC_FRAMEWORKS \
+\"${FORCE_ALL_LOAD_OS_SPECIFIC_FRAMEWORKS}\" are not linked to ${EXECUTABLE_NAME}.
+Frameworks aren't force loaded.")
       endif()
 
 
@@ -133,36 +136,35 @@ STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES is an Objective-C feature, but this
 project is seemingly not setup for Objective-C.")
       endif()
 
-      if( STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS)
-         message( FATAL_ERROR "STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS \
-\"${STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS}\" are not linked to ${EXECUTABLE_NAME}.
-STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS is an Objective-C feature, but this
-project is seemingly not setup for Objective-C.")
+      if( FORCE_STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS)
+         message( FATAL_ERROR "FORCE_STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS \
+\"${FORCE_STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS}\" are not linked to ${EXECUTABLE_NAME}.
+Frameworks aren't force loaded.")
 
       endif()
 
       # MEMO: some of these definitions may not exist like
-      #       FORCE_STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS we just keep them
+      #       STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS we just keep them
       #       for orthogonality
-      #
+      #       Frameworks aren't forced and can't be forced
       set( EXECUTABLE_LIBRARY_LIST
          ${FORCE_ALL_LOAD_DEPENDENCY_LIBRARIES}
-         ${FORCE_ALL_LOAD_DEPENDENCY_FRAMEWORKS}
+         ${ALL_LOAD_DEPENDENCY_FRAMEWORKS}
          ${DEPENDENCY_LIBRARIES}
          ${DEPENDENCY_FRAMEWORKS}
 
          ${FORCE_ALL_LOAD_OPTIONAL_DEPENDENCY_LIBRARIES}
-         ${FORCE_ALL_LOAD_OPTIONAL_DEPENDENCY_FRAMEWORKS}
+         ${ALL_LOAD_OPTIONAL_DEPENDENCY_FRAMEWORKS}
          ${OPTIONAL_DEPENDENCY_LIBRARIES}
          ${OPTIONAL_DEPENDENCY_FRAMEWORKS}
 
          ${FORCE_STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES}
-         ${FORCE_STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS}
+         ${STARTUP_ALL_LOAD_DEPENDENCY_FRAMEWORKS}
          ${STARTUP_DEPENDENCY_LIBRARIES}
          ${STARTUP_DEPENDENCY_FRAMEWORKS}
 
          ${FORCE_ALL_LOAD_OS_SPECIFIC_LIBRARIES}
-         ${FORCE_ALL_LOAD_OS_SPECIFIC_FRAMEWORKS}
+         ${ALL_LOAD_OS_SPECIFIC_FRAMEWORKS}
          ${OS_SPECIFIC_LIBRARIES}
          ${OS_SPECIFIC_FRAMEWORKS}
       )

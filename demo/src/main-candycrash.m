@@ -15,6 +15,7 @@
 #define      numBalls        32
 #define      maxVec          15
 #define      overlapFactor   0.015  // bounce back over framerate 66.6 Hz ?
+#define      smoothness      1.5      // > 0 < min radius
 
 static id    balls[ numBalls];
 
@@ -49,7 +50,7 @@ static id    balls[ numBalls];
    _radius          = r;
    _point           = p;
    _vector          = v;
-   _numSegment      = (NSUInteger) floorf(r / 3) + 2;
+   _numSegment      = (NSUInteger) floorf( r / smoothness) + 2;
 
    _boundOffset     = mulle_calloc( _numSegment, sizeof( CGFloat));
    _boundOffsetBuff = mulle_calloc( _numSegment, sizeof( CGFloat));
@@ -65,7 +66,7 @@ static id    balls[ numBalls];
       _boundOffsetBuff[ i] = r;
 //      _path.add(new Point());
       rad                  = CAAngleDegreesToRadians( 360.0 / _numSegment * i);
-      x                    = CAPolarPointMake( rad, 1.0);
+      x                    = CAPolarPointMake( 1.0f, rad);
       _sidePoints[ i]      = CAPolarPointAsPoint( x);
    }
    return( self);
@@ -159,8 +160,8 @@ static id    balls[ numBalls];
       overlap = _radius + [b radius] - dist;
 
       diff    = CGPointSubtract( _point, [b point]);
-      direc   = CAPolarPointMake( CGPointGetPolarAngle( diff),
-                                  overlap * overlapFactor);
+      direc   = CAPolarPointMake( overlap * overlapFactor,
+                                  CGPointGetPolarAngle( diff));
 #ifdef DUMP
       fprintf( stdout, "dist=%.2f, overlap=%.2f, direc=%.2f,%2.f vector=%.2f,%2.f\n",
                   dist, overlap, direc.angle, direc.radius, _vector.angle, _vector.radius);
@@ -300,8 +301,8 @@ static void   setupSceneInView( UIView *contentPlane)
    {
       r = CGFloatMakeRandom() * 40 + 40;
       p = CGPointMakeRandomInRect( contentRect);
-      v = CAPolarPointMake( CAAngleDegreesToRadians( CGFloatMakeRandom() * 360),
-                            CGFloatMakeRandom());
+      v = CAPolarPointMake( CGFloatMakeRandom(),
+                            CAAngleDegreesToRadians( CGFloatMakeRandom() * 360));
       balls[ i] = [[Ball alloc] initWithRadius:r
                                       position:p
                                         vector:v];
@@ -309,12 +310,14 @@ static void   setupSceneInView( UIView *contentPlane)
 //
 //      balls[ 0] = [[Ball alloc] initWithRadius:100.0
 //                                      position:CGPointMake( 100, 100.0)
-//                                        vector:CAPolarPointMake( CAAngleHourToRadians( 6.0),
-//                                                                 1.0)];
+//                                        vector:CAPolarPointMake( 1.0,
+//                                                                 CAAngleHourToRadians( 6.0)
+//                                                                 )];
 //      balls[ 1] = [[Ball alloc] initWithRadius:100.0
 //                                      position:CGPointMake( 100.0, 400.0)
-//                                        vector:CAPolarPointMake( CAAngleHourToRadians( 12.0),
-//                                                                 1.0)];
+//                                        vector:CAPolarPointMake( 1.0,
+//                                                                 CAAngleHourToRadians( 12.0)
+//                                                                 )];
 }
 
 
@@ -328,7 +331,7 @@ int   main( int argc, char *argv[])
    {
       window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
       assert( window);
-      //[window setBackgroundColor:CGColorCreateGenericRGB( 0.0, 0.0, 1.0, 1.0)];
+      //[window setBackgroundColor:CGColorMakeRGBA( 0.0, 0.0, 1.0, 1.0)];
 
       perf = [MulleUIPerf object];
       [window setRenderDelegate:perf];

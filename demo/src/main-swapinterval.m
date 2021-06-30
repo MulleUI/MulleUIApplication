@@ -133,7 +133,7 @@ static void   setupSceneInView( UIView *contentPlane)
    frame = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 40, 40, 40, 40));
 
    view  = [[[UIView alloc] initWithFrame:frame] autorelease];
-   [view setBackgroundColor:CGColorCreateGenericRGB( 0.0, 0.0, 0.0, 1.0)];
+   [view setBackgroundColor:CGColorMakeRGBA( 0.0, 0.0, 0.0, 1.0)];
    [[view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
@@ -171,7 +171,7 @@ int   main( int argc, char *argv[])
       window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
       assert( window);
 
-      [window setBackgroundColor:CGColorCreateGenericRGB( 1.0, 1.0, 1.0, 1.0)];
+      [window setBackgroundColor:CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)];
 
       perf = [MulleUIPerf object];
       [window setRenderDelegate:perf];

@@ -33,6 +33,23 @@ void  mulle_pointerarray_copy_all( struct mulle_pointerarray *array, id *dst)
 
    rover = mulle_pointerarray_enumerate( array);
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &obj))
-      *dst++ = obj;;
+      *dst++ = obj;
    mulle_pointerarrayenumerator_done( &rover);
+}
+
+
+void  mulle_pointerarray_copy_range( struct mulle_pointerarray *array,
+                                     id *dst,
+                                     struct mulle_range range)
+{
+   uintptr_t   i;
+   uintptr_t   last;
+
+   i    = range.location;
+   last = range.location + range.length;
+   while( i < last)
+   {
+      *dst++ = mulle_pointerarray_get( array, (unsigned int) i);
+      ++i;
+   }
 }

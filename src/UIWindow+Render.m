@@ -109,7 +109,7 @@
 }
 
 
-- (void) willRenderWithFrameInfo:(struct CGFrameInfo *) info
+- (void) willRender:(struct CGFrameInfo *) info
 {
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
@@ -125,6 +125,7 @@
 }
 
 // UIWindow render chain
+//
 //    Creates a queue of CALayers from the UIView hierarchy. Layers are
 //    setup so they draw themselves into the window coordinate space.
 //
@@ -182,26 +183,34 @@
    printf( "@%ld:%09ld layout start\n", start.tv_sec, start.tv_nsec);
 #endif
 
-
    [_renderDelegate windowWillBeginRender:self];
 
-  /*
+   if( _willRenderCallback)
+      (*_willRenderCallback)( self, info);
+
+   /*
     * Layout
     */
    @autoreleasepool
    {
-      if( _willRenderCallback)
-         (*_willRenderCallback)( self, info);
+      [self willRender:info];
 
-      [self willRenderWithFrameInfo:info];
+      [_preLayoutAnimator animateWithAbsoluteTime:info->renderStart];
+
+      if( _didAnimateCallback)
+         (*_didAnimateCallback)( self, info, 0);
 
       if( _willLayoutCallback)
          (*_willLayoutCallback)( self, info);
 
-      // do layout before the animation step, as this will generate animations
+      //
+      // do layout before the animation step, as this may generate animations
+      //
 #if LAYOUT_ANIMATIONS
-      [self beginLayoutWithFrameInfo:info];
+      [self beginLayout:info];
 #endif
+
+
       [self layoutIfNeeded];
 
 #if LAYOUT_ANIMATIONS
@@ -209,7 +218,13 @@
 #endif
       if( _didLayoutCallback)
          (*_didLayoutCallback)( self, info);
+
+      [_postLayoutAnimator animateWithAbsoluteTime:info->renderStart];
+
    }
+
+   if( _didAnimateCallback)
+      (*_didAnimateCallback)( self, info, 1);
 
    /*
     * Animate
@@ -226,12 +241,9 @@
       if( _didCreateRenderQueueCallback)
          (*_didCreateRenderQueueCallback)( self, info);
 
-
       [CAAnimation animateObjects:&_renderQueue
                      absoluteTime:info->renderStart];
 
-      if( _didAnimateCallback)
-         (*_didAnimateCallback)( self, info);
       //
       // can animations add and subtract layers and views ?
       // they may, but they won't show up this render
@@ -240,6 +252,8 @@
       // with rendering, or but the animation step into the render part ?
       //
    }
+   if( _didAnimateCallback)
+      (*_didAnimateCallback)( self, info, 2);
 
 #ifdef PRINTF_PROFILE_LAYOUT
    clock_gettime( CLOCK_REALTIME, &end);
@@ -262,14 +276,20 @@
       [_context beginRender:info];
       {
          [_context renderObjects:&_renderQueue];
-
-         if( _didRenderCallback)
-            (*_didRenderCallback)( self, info);
       }
 
       [_renderDelegate windowWillEndRender:self];
+
+      if( _willEndRenderCallback)
+         (*_willEndRenderCallback)( self, info);
+
       [_context endRender];
    }
+
+   [_renderDelegate windowDidEndRender:self];
+
+   if( _didEndRenderCallback)
+      (*_didEndRenderCallback)( self, info);
 
    //
    // just don't want to keep dangling stuff here
@@ -287,7 +307,6 @@
                            end.tv_nsec,
                            diff.tv_sec ? 9999.9999 : (diff.tv_nsec / (double) nsperframe) - 1);
 #endif
-   [_renderDelegate windowDidEndRender:self];
 }
 
 
@@ -323,7 +342,6 @@
    rval     = NO;
    for(;;)
    {
-      // TODO: fenster eigenes flag verwenden
       if( _shouldClose)
       {
          rval = YES;
@@ -382,7 +400,10 @@
       @autoreleasepool
       {
          //
-         // TODO: more useful to this when a mouse event hits on demand
+         // TODO: More useful to this when a mouse event hits on demand ?
+         //       But then how can we be sure, that the tree is 100%
+         //       identical to what is shown and that no changes have been
+         //       done inbetween ?
          //
          [self setupQuadtree];
       }

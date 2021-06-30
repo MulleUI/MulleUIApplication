@@ -1,126 +1,54 @@
-#define _GNU_SOURCE
-
 #import <MulleUICore/MulleUICore.h>
-#import <MulleUIPerf/MulleUIPerf.h>
-
-#include <stdio.h>
-#include <time.h>
 
 
-static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, NSUInteger frameNumber)
-{
-   int i;
-   float r0, r1, ax,ay, bx,by, cx,cy, aeps, r;
-   float fummel = fmod( frameNumber / 100.0, NVG_PI * 2.0) == 0.0 ? 1.0 : fmod( frameNumber / 100.0, NVG_PI * 2.0);
-   float hue = sinf( fummel * 0.12);
-   float rot;
-   NVGpaint paint;
-
-   // stolen from the nanovg demo and stupedified
-
-   // RING
-   nvgSave(vg);
-   {
-      cx = x + w*0.5f;
-      cy = y + h*0.5f;
-      r1 = (w < h ? w : h) * 0.5f - 5.0f;
-      r0 = r1 - 20.0f;
-      aeps = 0.5f / r1; // half a pixel arc length in radians (2pi cancels out).
-
-      nvgTranslate(vg, cx,cy);
-      rot = -fummel;
-      nvgRotate(vg, rot);
-      nvgTranslate(vg, -cx,-cy);
-
-      for (i = 0; i < 6; i++) {
-         float a0 = (float)i / 6.0f * NVG_PI * 2.0f - aeps;
-         float a1 = (float)(i+1.0f) / 6.0f * NVG_PI * 2.0f + aeps;
-         nvgBeginPath(vg);
-         nvgArc(vg, cx,cy, r0, a0, a1, NVG_CW);
-         nvgArc(vg, cx,cy, r1, a1, a0, NVG_CCW);
-         nvgClosePath(vg);
-         ax = cx + cosf(a0) * (r0+r1)*0.5f;
-         ay = cy + sinf(a0) * (r0+r1)*0.5f;
-         bx = cx + cosf(a1) * (r0+r1)*0.5f;
-         by = cy + sinf(a1) * (r0+r1)*0.5f;
-         paint = nvgLinearGradient(vg, ax,ay, bx,by, nvgHSLA(a0/(NVG_PI*2),1.0f,0.55f,255), nvgHSLA(a1/(NVG_PI*2),1.0f,0.55f,255));
-         nvgFillPaint(vg, paint);
-         nvgFill(vg);
-      }
-
-      nvgBeginPath(vg);
-      nvgCircle(vg, cx,cy, r0-0.5f);
-      nvgCircle(vg, cx,cy, r1+0.5f);
-      nvgStrokeColor(vg, nvgRGBA(0,0,0,64));
-      nvgStrokeWidth(vg, 1.0f);
-      nvgStroke(vg);
-   }
-   nvgRestore(vg);
-
-   // TRIANGLE
-   nvgSave(vg);
-   {
-      nvgTranslate(vg, cx,cy);
-      rot = fummel;
-      nvgRotate(vg, rot);
-
-      r = r0 - 6;
-      ax = cosf(120.0f/180.0f*NVG_PI) * r;
-      ay = sinf(120.0f/180.0f*NVG_PI) * r;
-      bx = cosf(-120.0f/180.0f*NVG_PI) * r;
-      by = sinf(-120.0f/180.0f*NVG_PI) * r;
-      nvgBeginPath(vg);
-      nvgMoveTo(vg, r,0);
-      nvgLineTo(vg, ax,ay);
-      nvgLineTo(vg, bx,by);
-      nvgClosePath(vg);
-      paint = nvgLinearGradient(vg, r,0, ax,ay, nvgHSLA(hue,1.0f,0.5f,255), nvgRGBA(255,255,255,255));
-
-      nvgFillPaint(vg, paint);
-      nvgFill(vg);
-      paint = nvgLinearGradient(vg, (r+ax)*0.5f,(0+ay)*0.5f, bx,by, nvgRGBA(0,0,0,0), nvgRGBA(0,0,0,255));
-      nvgFillPaint(vg, paint);
-      nvgFill(vg);
-      nvgStrokeColor(vg, nvgRGBA(0,0,0,64));
-      nvgStroke(vg);
-   }
-   nvgRestore(vg);
-}
+#define BLAU   CGColorMakeRGBA( 0.1, 0.1, 0.4, 1.0)
+#define WEISS  CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)
 
 
+//
+// This is the same as main-demo.m, but here we let the drawing adjust to the
+// window size. Resize the window to see the difference.
+//
+// We use the [UIView autoresizingMask] for this. The window
+// resizes its planes, which ask their views to resize. The view with the
+// proper resize settings will take up the given room and propagate it to
+// the layer. If the layers canvas is set to track the frame, which it is
+// by default, then the drawing will cover the space.
+//
+// drawStuff and main are left unchanged.
+//
 static void  drawStuff( CALayer *layer, CGContext *context)
 {
-   CGFloat                diameter;
-   CGRect                 canvas;
-   CGRect                 rect;
-   CGPoint                a;
-   CGPoint                b;
-   struct CGFrameInfo  *info;
+   CGFloat             radius;
+   CGFloat             strokeWidth;
+   CGFont              *font;
+   CGRect              canvas;
+   struct NVGcontext   *vg;
 
    canvas      = [layer canvas];
-   rect        = UIEdgeInsetsInsetRect( canvas, UIEdgeInsetsMake( 50, 50, 50, 50));
-   diameter    = CGFloatMinimum( CGRectGetWidth( rect), CGRectGetHeight( rect));
-   rect.origin = CGSizeGetCenterPointInRect( CGSizeMake( diameter, diameter), rect);
-   rect.size   = CGSizeMake( diameter, diameter);
-   info        = [context currentFrameInfo];
+   strokeWidth = 20.0;
+   radius      = (CGFloatMinimum( CGRectGetWidth( canvas),
+                                  CGRectGetHeight( canvas)) - strokeWidth) / 2;
 
-   drawColorwheel( CGContextGetNVGContext( context),
-                   rect.origin.x,
-                   rect.origin.y,
-                   diameter,
-                   diameter,
-                   info->frameNumber);
-
-#if 0
+   // draw circle
+   vg = CGContextGetNVGContext( context);
+   nvgBeginPath( vg);
    {
-      struct timespec         sleep;
-
-      sleep.tv_sec  = 0.0;
-      sleep.tv_nsec = 10000 * (rand() % 1000);
-      nanosleep( &sleep, NULL);
-
+      nvgCircle( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), radius);
+      nvgStrokeColor( vg, WEISS);
+      nvgStrokeWidth( vg, strokeWidth);
    }
-#endif
+   nvgStroke( vg);
+
+   // draw text
+   // load in font first, this will be efficient on subsequent frames
+   font = [context fontWithNameCString:"sans"];
+   [context setFont:font];
+
+   nvgFontSize( vg, strokeWidth * 8.0);
+   nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+   nvgTextColor( vg, WEISS, BLAU);
+   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
 }
 
 
@@ -130,59 +58,35 @@ static void   setupSceneInView( UIView *contentPlane)
    CGRect   frame;
 
    frame = [contentPlane contentRect];
-   frame = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 40, 40, 40, 40));
 
-   view  = [[[UIView alloc] initWithFrame:frame] autorelease];
-   [view setBackgroundColor:CGColorCreateGenericRGB( 0.0, 0.0, 0.0, 1.0)];
+   view  = [UIView viewWithFrame:frame];
+   [view setBackgroundColor:BLAU];
+
+   // The view will cover all space given by the parent "contentPlane",
+   // with the exception of margins.
+   [view setAutoresizingMask:UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth];
+   //
+   // To keep the border effect use margins.
+   //
+   [view setMargins:UIEdgeInsetsMake( 10, 10, 10, 10)];
+
    [[view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
 
 
-static void  usage( void)
-{
-   fprintf( stderr, "Usage: fps <refresh rate>\n"
-"Refresh rate can be a floating point refresh rate in HZ or one of the\n"
-"following words:\n"
-"   synced   : synced to (primary) monitor refresh rate\n"
-"   unsynced : runs as fast as possible\n"
-"   variable : waits for events (like mouse movemens)\n");
-   exit( 1);
-}
-
 int   main( int argc, char *argv[])
 {
    UIWindow        *window;
    UIApplication   *app;
-   MulleUIPerf     *perf;
-   CGFloat         rate;
-
-   if( argc > 2)
-      usage();
-
-   rate = UIWindowFrameRateSynced;
-   if( argc > 1)
-      switch( argv[ 1][ 0])
-      {
-      case 'a' : rate = UIWindowFrameRateAsync; break;
-      case 's' : rate = UIWindowFrameRateSynced; break;
-      case 'u' : rate = UIWindowFrameRateUnsynced; break;
-      default  : rate = atof( argv[ 1]);
-                 if( rate == 0.0)
-                    usage();
-                 rate = 1.0/rate;
-      }
 
    app = [UIApplication sharedInstance];
    {
       window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
       assert( window);
 
-      [window setBackgroundColor:CGColorCreateGenericRGB( 1.0, 1.0, 1.0, 1.0)];
+      [window setBackgroundColor:WEISS];
 
-      perf = [MulleUIPerf object];
-      [window setRenderDelegate:perf];
-      [window setFrameRate:rate];
       setupSceneInView( [window contentPlane]);
 
       [app addWindow:window];

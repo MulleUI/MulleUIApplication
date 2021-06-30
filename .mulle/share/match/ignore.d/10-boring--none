@@ -1,4 +1,5 @@
 *.old
+*.old/
 old/
 
 # certain old nibs :)

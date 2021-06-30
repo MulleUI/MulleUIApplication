@@ -20,11 +20,16 @@ enum UIViewAnimationCurve
 //
 // TODO: outsource this into CATransaction ?
 //
-@interface UIView ( CAAnimation)
+@interface UIView ( CAAnimation) <CAImplicitlyAnimatableObject>
 
 + (void) beginAnimations:(char *) animationID
                  context:(void *) context;
-+ (void) commitAnimations;
+
+//
+// this is different to UIView, you get a CAAnimationGroup and have to
+// add it to the window of your choice
+//
++ (CAAnimationGroup *) commitAnimations;
 
 + (BOOL) areAnimationsEnabled;
 
@@ -46,6 +51,9 @@ enum UIViewAnimationCurve
 
 + (BOOL) animationRepeatAutoreverses;
 + (void) setAnimationRepeatAutoreverses:(BOOL) flag;
+
++ (BOOL) animationIsAdditive;
++ (void) setAnimationIsAdditive:(BOOL) flag;
 
 // incompatible, this like setAnimationRepeatCount:-1 (YES)
 // or setAnimationRepeatCount:0

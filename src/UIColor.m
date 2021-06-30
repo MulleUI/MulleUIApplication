@@ -30,6 +30,12 @@
 + (CGColorRef) lightGrayColor { return( getNVGColor( 0xBFBFBFFF)); }
 + (CGColorRef) yellowColor    { return( getNVGColor( 0xFFFF00FF)); }
 
++ (CGColorRef) magentaColor   { return( getNVGColor( 0xFF00FFFF)); }
++ (CGColorRef) brownColor     { return( getNVGColor( 0x8F5F2FFF)); }
++ (CGColorRef) cyanColor      { return( getNVGColor( 0x00FFFFFF)); }
++ (CGColorRef) orangeColor    { return( getNVGColor( 0xFF7F00FF)); }
++ (CGColorRef) purpleColor    { return( getNVGColor( 0x7F007FFF)); }
+
 // maus grau :) -> Loriot Eheberatung
 + (CGColorRef) underPageBackgroundColor  { return( getNVGColor( 0x6b716fFF)); }
 + (CGColorRef ) colorWithCGColor:(CGColorRef) cgColor  { return( cgColor); }

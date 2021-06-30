@@ -82,9 +82,15 @@ set_target_properties( "${FRAMEWORK_NAME}" PROPERTIES
   # XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
 )
 
+#
 # -ObjC to force link all static libraries with Objective-C code in them
+# and dynamic_lookup to keep those symbols "open" to later linking from
+# executable. Especially with multiple Frameworks you don't want the static
+# libraries duplicated in all of them, so you mark them "no-link".
+#
 target_link_options( "${FRAMEWORK_NAME}" PRIVATE
 -ObjC
+-undefined dynamic_lookup
 )
 
 
