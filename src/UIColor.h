@@ -18,8 +18,16 @@
 + (CGColorRef) yellowColor;
 + (CGColorRef) darkGrayColor;
 + (CGColorRef) lightGrayColor;
+
++ (CGColorRef) magentaColor;
++ (CGColorRef) brownColor;
++ (CGColorRef) cyanColor;
++ (CGColorRef) orangeColor;
++ (CGColorRef) purpleColor;
+
 + (CGColorRef) underPageBackgroundColor;
 + (CGColorRef) colorWithCGColor:(CGColorRef) cgColor;
+
 
 @end
 

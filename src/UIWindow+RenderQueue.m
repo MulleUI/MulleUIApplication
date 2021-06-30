@@ -11,44 +11,66 @@
 
 @implementation UIView ( RenderQueue)
 
+struct RenderQueueContext
+{
+   CGAffineTransform   xform;
+   CGRect              clipRect;
+   CGFloat             alpha;
+};
+
+
+static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
+                                   CALayer *layer,
+                                   struct RenderQueueContext *v)
+{
+   [layer setTransform:v->xform];
+   [layer setAlpha:v->alpha];
+
+//   if( v->clipRect.size.width != INFINITY)
+//      fprintf( stderr, "%p setClipRect: %s  transform: %s\n", 
+//               layer, 
+//               CGRectCStringDescription( v->clipRect),
+//               CGAffineTransformCStringDescription( v->xform));
+   [layer setClipRect:v->clipRect];
+
+   mulle_pointerarray_add( renderQueue, layer);
+}
+
+
 //
 // the transform is the concatenation of the superviews transforms
 // the clipRect is in window space (window bounds)
 //
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
-                 transform:(CGAffineTransform) inheritedXform
-                  clipRect:(CGRect) clipRect
-                     alpha:(CGFloat) inheritedAlpha
+                    context:(struct RenderQueueContext *) ctx
 {
-   struct mulle_pointerarrayenumerator   rover;
-   UIView                                *view;
    CALayer                               *layer;
-   CGAffineTransform                     xform;
-   CGAffineTransform                     inverseXform;
    CGAffineTransform                     projection;
-   CGFloat                               alpha;
-   CGRect                                transformedClipRect;
-   CGRect                                subClipRect;
-   CGRect                                transformedRect;
+   CGRect                                bounds;
    CGRect                                frame;
    CGRect                                screenRect;
+   CGRect                                transformedRect;
+   struct mulle_pointerarrayenumerator   rover;
+   struct RenderQueueContext             v;
+   UIView                                *view;
 
    if( [self isCulledByLayout])
       return;
 
-   alpha = _alpha * inheritedAlpha;
-   if( MulleAlphaIsTransparent( alpha))
+   v.alpha = _alpha * ctx->alpha;
+   if( MulleAlphaIsTransparent( v.alpha))
       return;
 
-   projection = CGAffineTransformMakeProjection( _frame, [self bounds]);
-   xform      = CGAffineTransformConcat( inheritedXform, projection);
+   bounds     = [self bounds];
+   projection = CGAffineTransformMakeProjection( _frame, bounds);
+   v.xform    = CGAffineTransformConcat( ctx->xform, projection);
 
-   subClipRect = clipRect;
+   v.clipRect = ctx->clipRect;
    if( _clipsToBounds)
    {
       // actually clips to frame... sorta...
-      transformedRect = CGRectApplyAffineTransform( [self frame], inheritedXform);
-      subClipRect     = CGRectIntersection( clipRect, transformedRect);
+      transformedRect = CGRectApplyAffineTransform( _frame, ctx->xform);
+      v.clipRect      = CGRectIntersection( ctx->clipRect, transformedRect);
    }
 
    //
@@ -56,16 +78,14 @@
    // we use 0.1 for FP errors. An invalid intersetion also produces
    // inf origins, which apparently is bad later on. This should implicitly
    // catch this too
-   if( subClipRect.size.width < 0.1 || subClipRect.size.height < 0.1)
+   //
+   if( v.clipRect.size.width < 0.1 || v.clipRect.size.height < 0.1)
       return;
 
 #ifdef HAVE_RENDER_CACHE
    if( _cacheLayer)
    {
-      [_cacheLayer setTransform:xform];
-      [_cacheLayer setAlpha:alpha];
-      [_cacheLayer setClipRect:subClipRect];
-      mulle_pointerarray_add( renderQueue, _cacheLayer);
+      renderQueueAddLayer( renderQueue, _cacheLayer, &v);
    }
    else
 #endif
@@ -73,21 +93,16 @@
       /*
       * Layers
       */
-      [_mainLayer setTransform:xform];
-      [_mainLayer setAlpha:alpha];
-      [_mainLayer setClipRect:subClipRect];
-      mulle_pointerarray_add( renderQueue, _mainLayer);
+      renderQueueAddLayer( renderQueue, _mainLayer, &v);
 
       rover = mulle_pointerarray_enumerate( _layers);
       while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
       {
-         [layer setTransform:xform];
-         [layer setAlpha:alpha];
-         [layer setClipRect:subClipRect];
-         mulle_pointerarray_add( renderQueue, layer);
+         renderQueueAddLayer( renderQueue, layer, &v);
       }
       mulle_pointerarrayenumerator_done( &rover);
    }
+
    /*
     * Subviews
     */
@@ -95,12 +110,11 @@
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
    {
       // we cull clipped views completely here
-      screenRect = CGRectApplyAffineTransform( [view frame], xform);
-      if( CGRectIntersectsRect( subClipRect, screenRect))
+      frame      = [view frame];
+      screenRect = CGRectApplyAffineTransform( frame, v.xform);
+      if( CGRectIntersectsRect( v.clipRect, screenRect))
          [view createRenderQueue:renderQueue
-                       transform:xform
-                        clipRect:subClipRect
-                           alpha:alpha];
+                         context:&v];
    }
    mulle_pointerarrayenumerator_done( &rover);
 }
@@ -120,14 +134,17 @@
 {
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
+   struct RenderQueueContext             v;
+
+   v.xform    = CGAffineTransformMakeIdentity();
+   v.clipRect = CGRectMake( -INFINITY, -INFINITY, INFINITY, INFINITY);
+   v.alpha    = 1.0;
 
    rover = mulle_pointerarray_enumerate( _subviews);
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
    {
       [view createRenderQueue:renderQueue
-                    transform:CGAffineTransformMakeIdentity()
-                     clipRect:CGRectMake( -INFINITY, -INFINITY, INFINITY, INFINITY)
-                        alpha:1.0];
+                      context:&v];
    }
    mulle_pointerarrayenumerator_done( &rover);
 }

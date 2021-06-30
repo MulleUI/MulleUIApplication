@@ -73,32 +73,52 @@ struct MulleClickDragDifferentiator
 
 //
 // This is restricted to h/v resizing to indicate flexibility
-// The MulleUIViewAutoresizingStop preempts recursive autoresize by
+// The UIViewAutoresizingStop preempts recursive autoresize by
 // the layouter.
 //
 enum UIViewAutoresizing
 {
-   UIViewAutoresizingNone               = 0x00,
-   UIViewAutoresizingFlexibleWidth      = 0x10,
-   UIViewAutoresizingFlexibleHeight     = 0x20,
-   MulleUIViewAutoresizingFlexible      = 0x30,
-   MulleUIViewAutoresizingStickToTop    = 0x100,
-   MulleUIViewAutoresizingStickToBottom = 0x200,
-   MulleUIViewAutoresizingStickToMiddle = 0x300,   // v center
-   MulleUIViewAutoresizingStickToLeft   = 0x400,
-   MulleUIViewAutoresizingStickToRight  = 0x800,
-   MulleUIViewAutoresizingStickToCenter = 0xC00,   // h center
+   UIViewAutoresizingNone           = 0x00,
+   UIViewAutoresizingFlexibleWidth  = 0x10,
+   UIViewAutoresizingFlexibleHeight = 0x20,
+   UIViewAutoresizingFlexible       = 0x30,
+   UIViewAutoresizingStickToTop     = 0x100,
+   UIViewAutoresizingStickToBottom  = 0x200,
+   UIViewAutoresizingStickToMiddle  = 0x300,   // v center
+   UIViewAutoresizingStickToLeft    = 0x400,
+   UIViewAutoresizingStickToRight   = 0x800,
+   UIViewAutoresizingStickToCenter  = 0xC00,   // h center
 
    // some special bits
-   MulleUIViewAutoresizingClipToBounds  = 0x1000,    // size to fit into bounds if smaller
-   MulleUIViewAutoresizingCullAtBounds  = 0x2000,    // set to size 0.0 if exceeds bounds
+   UIViewAutoresizingClipToBounds   = 0x1000,    // size to fit into bounds if smaller
+   UIViewAutoresizingCullAtBounds   = 0x2000,    // set to size 0.0 if exceeds bounds
 };
 
 typedef NSUInteger   UIViewAutoresizing;
 
 
+//
+// There is only a fixed set of properties a UIView can animate. For all
+// other animation purposes use CALayer. (Many properties that appeast as if
+// they are animtable on UIView, are really forward to the mainLayer.
+//
+#define UI_VIEW_ANIMATABLE_PROPERTIES             \
+   @property( observable) UIEdgeInsets   padding; \
+   @property( observable) UIEdgeInsets   margins; \
+   @property( observable) CGRect         frame;   \
+   @property( observable) CGRect         bounds;  \
+   @property( observable) CGFloat        alpha
 
-@interface UIView : NSObject
+
+
+@protocol UIAnimatableViewProperties
+
+UI_VIEW_ANIMATABLE_PROPERTIES;
+
+@end
+
+
+@interface UIView : NSObject <UIAnimatableViewProperties, CAAnimationStorageObject>
 {
    UIView                                *_superview;
    CALayer                               *_mainLayer;
@@ -106,41 +126,46 @@ typedef NSUInteger   UIViewAutoresizing;
    struct mulle_pointerarray             *_layers;     // todo why no inline ?
    struct mulle_pointerarray             *_subviews;
 
-   struct UITrackingAreaArray         _trackingAreas;
+   struct UITrackingAreaArray            _trackingAreas;
 
    CGLayer                               *_cacheLayer;
 
    struct MulleClickDragDifferentiator   _clickOrDrag;
+
+   NSObject <UIAnimatableViewProperties> *_snapshot;
+   struct CAAnimationStorage             _animationStorage;
 }
 
 @property( getter=isHidden)                 BOOL   hidden;                  // default: NO
 @property( getter=isUserInteractionEnabled) BOOL   userInteractionEnabled;  // default: YES
 
-@property BOOL   clipsToBounds;  // default: YES
-@property BOOL   needsLayout;   // use setNeedsLayout for marking
+@property BOOL   clipsToBounds;   // default: YES
+@property BOOL   needsLayout;     // use setNeedsLayout for marking
 @property BOOL   needsCaching;
+
+// user info, for finding views (subviewWithTag:)
+@property NSInteger   tag;
 
 // On UIView this does nothing
 //@property BOOL   needsDisplay;  // used by UIWindow only currently
+
 
 //
 // This is used during layout of subviews to restrict the size of the bounds,
 // where subviews can be placed. Use -layoutRect in layout code, which takes
 // padding into account
 //
-@property UIEdgeInsets         padding;
+@property( observable) UIEdgeInsets   padding;
 
 //
-// Margins are used during subview layout. Its the distance of the view to other
-// views. What is conventionally though of as "padding" is really just a
+// Margins are used during subview layout. Its the distance of the view to
+// otherviews. What is conventionally though of as "padding" is really just a
 //
-@property UIEdgeInsets         margins;
+@property( observable) UIEdgeInsets   margins;
 // this gets inherited down to all layers and subviews
-@property CGFloat              alpha;
-@property UIViewAutoresizing   autoresizingMask;
 
 // frame is the position and size relative to the superview
-@property CGRect               frame;
+@property( observable) CGRect         frame;
 
 //
 // bounds is the used to place the layers and subviews in, their frames
@@ -155,8 +180,9 @@ typedef NSUInteger   UIViewAutoresizing;
 //
 // Use layoutRect if you are asking for bounds during layout
 //
-@property CGRect               bounds;
+@property( observable) CGRect         bounds;
 
+@property( observable) CGFloat        alpha;
 //
 // tyically, contentRect is { CGPointZero, bounds.size }. It's the playground
 // for the subviews to be placed in (via subview frame). Padding is added by
@@ -168,15 +194,29 @@ typedef NSUInteger   UIViewAutoresizing;
 // by UIView during layout
 - (CGRect) layoutRect;
 
+@property( assign) UIViewAutoresizing   autoresizingMask;
 //
 // When autoresizing is used the original frame is stored here on the first
 // layout and then used as the frame to layout in subsequent layout steps
 // this protects us from accumulated fp errors
 //
-@property CGRect   originalFrame;
+@property( assign) CGRect   originalFrame;
 
 // abused by UIStackView, will be moved away later
-@property CGSize   mulleLayoutSize;
+@property( assign) CGSize   mulleLayoutSize;
+
+// return NO, if default layoutSubviews code should not run
+@property BOOL  (*willLayoutSubviews)( UIView *view);
+
+// called after layoutSubviews default code, not if willLayoutSubviews returns NO
+@property void  (*didLayoutSubviews)( UIView *view);
+
+// return NO, if default layoutLayers code should not run
+@property BOOL  (*willLayoutLayers)( UIView *view);
+
+// called after layoutLayers default code, not if willLayoutLayers returns NO
+@property void  (*didLayoutLayers)( UIView *view);
+
 
 - (void) setNeedsCaching;  // wipes the _cacheLayer and asks for a new one to be drawn
 
@@ -216,9 +256,12 @@ typedef NSUInteger   UIViewAutoresizing;
 
 
 - (NSInteger) getLayers:(CALayer **) buf
-                 length:(NSUInteger) length;
+                  range:(NSRange) range;
 - (NSInteger) getSubviews:(UIView **) buf
-                   length:(NSUInteger) length;
+                    range:(NSRange) range;
+
+// this isn't deep
+- (UIView *) subviewWithTag:(NSInteger) tag;
 
 - (UIWindow *) window;
 - (UIView *) mulleWindowPlane; // window plane a view resides in
@@ -241,6 +284,8 @@ typedef NSUInteger   UIViewAutoresizing;
 - (struct UITrackingArea *) trackingAreaAtIndex:(NSUInteger) i;
 
 - (BOOL) mulleIsEffectivelyHidden;  // recursive test the hierarchy up
+
+- (struct CAAnimationStorage *) animationStorage;
 
 @end
 

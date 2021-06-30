@@ -107,7 +107,7 @@ typedef enum
 //
 - (void) layoutLayers;
 
-- (void) beginLayoutWithFrameInfo:(struct CGFrameInfo *) info;
+- (void) beginLayout:(struct CGFrameInfo *) info;
 - (void) endLayout;
 
 - (void) layout;

@@ -5,6 +5,7 @@
       { @selector( CALayer), @selector( CGGeometry) },      // 55df8726;CALayer;3ab12270;CGGeometry
       { @selector( CALayer), @selector( UIView) },      // 55df8726;CALayer;155b6ee8;UIView
       { @selector( MulleKeyboardEventConsumer), MULLE_OBJC_NO_CATEGORYID },      // c33175dd;MulleKeyboardEventConsumer;;
+      { @selector( UIAnimatableViewPropertiesSnapshot), MULLE_OBJC_NO_CATEGORYID },      // d500f939;UIAnimatableViewPropertiesSnapshot;;
       { @selector( UIApplication), @selector( GLFW) },      // 48c8c9b2;UIApplication;79b5a4d7;GLFW
       { @selector( UIApplication), MULLE_OBJC_NO_CATEGORYID },      // 48c8c9b2;UIApplication;;
       { @selector( UIColor), MULLE_OBJC_NO_CATEGORYID },      // 43644baa;UIColor;;

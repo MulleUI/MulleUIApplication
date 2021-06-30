@@ -190,6 +190,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 - (void) dealloc
 {
+   [_postLayoutAnimator release];
+   [_preLayoutAnimator release];
+
    mulle_pointerarray_release_all( &_trackingViews);
    mulle_pointerarray_done( &_trackingViews);
    mulle_pointerarray_release_all( &_enteredViews);
@@ -347,6 +350,22 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    // defined in UIView
    mulle_pointerarray_remove( &_delegateViews, view);
+}
+
+
+- (CAAnimator *) preLayoutAnimator
+{
+   if( ! _preLayoutAnimator)
+      _preLayoutAnimator = [CAAnimator new];
+   return( _preLayoutAnimator);
+}
+
+
+- (CAAnimator *) postLayoutAnimator
+{
+   if( ! _postLayoutAnimator)
+      _postLayoutAnimator = [CAAnimator new];
+   return( _postLayoutAnimator);
 }
 
 

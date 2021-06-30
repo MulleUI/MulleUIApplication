@@ -12,6 +12,7 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+src/main-animate-circles.m
 src/main-candycrash.m
 src/main-demo.m
 src/main-demo-resizable.m

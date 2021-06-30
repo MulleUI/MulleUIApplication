@@ -32,8 +32,6 @@
 }
 
 
-
-
 // designated initializer
 - (instancetype) initWithLayer:(CALayer *) layer
                          frame:(CGRect) frame
@@ -110,6 +108,12 @@
 }
 
 
+- (struct CAAnimationStorage *) animationStorage
+{
+   return( &_animationStorage);
+}
+
+
 - (CALayer *) layer
 {
    return( _mainLayer);
@@ -127,6 +131,7 @@ static inline CGRect   getBounds( UIView *self)
    return( bounds);
 }
 
+
 //
 // for layers bounds are inherited directly, so the layer "sticks"
 // (and need to be panned by its bounds)
@@ -139,6 +144,8 @@ static inline CGRect   getBounds( UIView *self)
 
 - (void) setBounds:(CGRect) bounds
 {
+   [self willChange];
+
    _bounds.origin = bounds.origin;
    if( CGSizeEqualToSize( _frame.size, bounds.size))
       _bounds.size.width = INFINITY;
@@ -257,42 +264,43 @@ static inline CGRect   getBounds( UIView *self)
 
 
 - (NSInteger) getLayers:(CALayer **) buf
-                 length:(NSUInteger) length
+                  range:(NSRange) range
 {
    NSUInteger   n;
+
+   if( ! buf)
+      return( -1);
 
    if( ! _mainLayer)
       return( 0);
 
-   n = 1;
-   if( _layers)
-      n += mulle_pointerarray_get_count( _layers);
+   n  = 1;
+   n += mulle_pointerarray_get_count( _layers);
 
-   if( n > length)
-      return( n);
-   if( ! buf)
+   if( range.location + range.length > n)
       return( -1);
 
-   mulle_pointerarray_copy_all( _layers, buf);
+   mulle_pointerarray_copy_range( _layers, buf, range);
 
-   buf[ n - 1] = _mainLayer;
+   buf[ n - 1] = _mainLayer; // why last ?
 
    return( n);
 }
 
 
 - (NSInteger) getSubviews:(UIView **) buf
-                   length:(NSUInteger) length
+                    range:(NSRange) range
 {
    NSUInteger   n;
 
-   n = _subviews ? mulle_pointerarray_get_count( _subviews) : 0;
-   if( n > length)
-      return( n);
    if( ! buf)
       return( -1);
 
-   mulle_pointerarray_copy_all( _subviews, buf);
+   n = mulle_pointerarray_get_count( _subviews);
+   if( range.location + range.length > n)
+      return( -1);
+
+   mulle_pointerarray_copy_range( _subviews, buf, range);
 
    return( n);
 }
@@ -349,6 +357,21 @@ static inline CGRect   getBounds( UIView *self)
       if( CGRectIntersectsRect( [view frame], rect) == flag)
          mulle_pointerarray_add( array, view);
    mulle_pointerarrayenumerator_done( &rover);
+}
+
+
+- (UIView *) subviewWithTag:(NSInteger) tag
+{
+   struct mulle_pointerarrayenumerator   rover;
+   UIView                                *view;
+
+   rover = mulle_pointerarray_enumerate( _subviews);
+   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+      if( [view tag] == tag)
+         break;
+   mulle_pointerarrayenumerator_done( &rover);
+
+   return( view);
 }
 
 

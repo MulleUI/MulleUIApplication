@@ -66,9 +66,9 @@ enum MulleWindowStyleMask
    id                 _firstResponder;
    void               *_quadtree;
 
-   struct mulle_pointerarray   _trackingViews; // views with tracking areas
-   struct mulle_pointerarray   _enteredViews;  // views with mouseEntered: sent
-   struct mulle_pointerarray   _delegateViews; // views with need willRender: sent
+   struct mulle_pointerarray   _trackingViews;   // views with tracking areas
+   struct mulle_pointerarray   _enteredViews;    // views with mouseEntered: sent
+   struct mulle_pointerarray   _delegateViews;   // views with need willRender: sent
 
    CGRect             _originalRect;
    CGRect             _subdivideRect;
@@ -76,6 +76,9 @@ enum MulleWindowStyleMask
    NSUInteger         _nDividedRects;
    NSUInteger         _nTest;
    NSLock             *_renderContextLock;
+
+   CAAnimator         *_preLayoutAnimator;
+   CAAnimator         *_postLayoutAnimator;
 
    //
    // 8Khz at 60fps = 133 events, 256 should be ample
@@ -88,7 +91,7 @@ enum MulleWindowStyleMask
    // the render. The _renderContextLock still needs to be observed when
    // attempting to modify the view hierarchy ?
 
-   NSConditionLock   *_needsDisplayLock;
+   NSConditionLock    *_needsDisplayLock;
    BOOL               _resizing;
    CAAbsoluteTime     _lastResizeEventTimestamp;
    CAAbsoluteTime     _lastDidFramebufferSwapTimestamp;
@@ -147,14 +150,31 @@ enum MulleWindowStyleMask
 @property void   (*didCreateRenderQueueCallback)( UIWindow *window,
                                        struct CGFrameInfo *info);
 
+//
+// stage #0: after _preLayoutAnimator
+// stage #1: after _postLayoutAnimator
+// stage #2: after CALayer "privat" animations
+//
 @property void   (*didAnimateCallback)( UIWindow *window,
-                                        struct CGFrameInfo *info);
+                                        struct CGFrameInfo *info,
+                                        NSInteger stage);
+
+// There is no willRenderCallback
+// as anything draw in it would be clobbered by the window clearing itself.
+
 //
-// useful to add custom drawing stuff on top. There is no willRenderCallback
-// as anything draw in it would be clobbered by the window clearing itself
+// These are useful to add custom drawing stuff on top. 
+// Before flush of nanovg
+@property void   (*willEndRenderCallback)( UIWindow *window,
+                                           struct CGFrameInfo *info);
+
 //
-@property void   (*didRenderCallback)( UIWindow *window,
-                                       struct CGFrameInfo *info);
+// At the time "didEndRenderCallback" is called, all nanovg drawing calls will
+// have been flushed. And the graphics context is not usable anymore without
+// another setup. 
+//
+@property void   (*didEndRenderCallback)( UIWindow *window,
+                                         struct CGFrameInfo *info);
 @property void   (*didSwapCallback)( UIWindow *window,
                                      struct CGFrameInfo *info);
 
@@ -189,6 +209,9 @@ enum MulleWindowStyleMask
 
 - (void) setFrameRateHz:(CGFloat) hz;
 - (CGFloat) frameRateHz;
+
+- (CAAnimator *) preLayoutAnimator;
+- (CAAnimator *) postLayoutAnimator;
 
 @end
 

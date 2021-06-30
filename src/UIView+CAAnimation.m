@@ -3,8 +3,96 @@
 #import "import-private.h"
 
 
+//
+// Actually we only want to animate CALayers. But when we do a
+// -[UIView setFrame:] we implicitly change the layers geometry. We do this
+// explicitly, when we call -layout afterwards.
+//
+// Insight: We animate transition from one -layout to another -layout. Which
+//          means that there should be no -layout calls during animation.
+//
+// For implicit animation it would be enough to have the animated UIViews
+// layout and set the layer properties, which are also animatable. And then
+// completely ignore the UIView values. That would work visually but has these
+// problems:
+//
+// * Who changes the initial and UIView values ?
+// * How can be events be handled at the iteration sections ?
+//
+// So view values should be animated as well, BUT, they shouldn't trigger a
+// layout.
+//
+// During the render, animated properties will be copied down to the layers.
+//
+// Problem: animations run on the renderQueue.
+
+@interface UIAnimatableViewPropertiesSnapshot : NSObject <UIAnimatableViewProperties>
+
+UI_VIEW_ANIMATABLE_PROPERTIES;
+
+@end
+
+
+@implementation UIAnimatableViewPropertiesSnapshot
+
+- (void) willChange
+{
+   // nothing
+}
+
+@end
+
 
 @implementation UIView ( CAAnimation)
+
+//
+// This is called very often during animation, it would be good if the
+// animation code could use a different setter that does not call
+// will change..
+//
+- (void) willChange
+{
+   id   manager;
+
+   // this is called frequently so use C
+   manager = CATransactionGetCurrentTransaction();
+   if( ! manager)
+      return;
+   if( _snapshot)
+      return;
+
+   _snapshot = [UIAnimatableViewPropertiesSnapshot new];
+
+   // the only "graphics" properties
+   [_snapshot setAlpha:_alpha];
+
+   // these are all "layout" properties
+   [_snapshot setBounds:[self bounds]]; // need interpreted value
+   [_snapshot setFrame:_frame];
+   [_snapshot setMargins:_margins];
+   [_snapshot setPadding:_padding];
+
+   // add with priority
+   [manager addAnimatableObject:self];
+}
+
+
+
+- (void) commitImplicitAnimations:(CAAnimationGroup *) group
+{
+   if( ! _snapshot)
+      return;
+
+   /** Our animatable properties
+       subclasses might want to add more
+    **/
+   [self animatePropertiesWithSnapshot:_snapshot
+                        animationGroup:group];
+
+   [(NSObject *) _snapshot autorelease];
+   _snapshot = nil;
+}
+
 
 
 + (void) beginAnimations:(char *) animationID
@@ -14,23 +102,27 @@
 
    transaction = [CATransaction new];
 
+   [transaction begin];
+
    [transaction setAnimationID:animationID];
    [transaction setContext:context];
    [transaction setAnimationDuration:2.0];
    [transaction setAnimationRepeatCount:1.0];
    [transaction setAnimationCurve:UIViewAnimationCurveEaseInOut];
-   [transaction begin];
 }
 
 
-+ (void) commitAnimations
++ (CAAnimationGroup *) commitAnimations
 {
-   CATransaction   *transaction;
+   CATransaction      *transaction;
+   CAAnimationGroup   *group;
 
    transaction = CATransactionGetCurrentTransaction();
    assert( transaction);
-   [transaction commit];
+   group = [transaction commit];
    [transaction autorelease];
+
+   return( group);
 }
 
 
@@ -193,7 +285,7 @@
 
    transaction = CATransactionGetCurrentTransaction();
    assert( transaction);
-   [transaction setAnimationTweenFunction:tween];   
+   [transaction setAnimationTweenFunction:tween];
 }
 
 
@@ -234,6 +326,26 @@
    transaction = CATransactionGetCurrentTransaction();
    assert( transaction);
    [transaction setAnimationAutoreverses:flag];
+}
+
+// incompatible
++ (BOOL) animationIsAdditive
+{
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationIsAdditive]);
+}
+
+
++ (void) setAnimationIsAdditive:(BOOL) flag;
+{
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationIsAdditive:flag];
 }
 
 

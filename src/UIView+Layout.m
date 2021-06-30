@@ -30,7 +30,7 @@
 
 # pragma mark -
 
-- (void) beginLayoutWithFrameInfo:(struct CGFrameInfo *) info
+- (void) beginLayout:(struct CGFrameInfo *) info
 {
    [UIView beginAnimations:NULL
                    context:NULL];
@@ -127,7 +127,7 @@
    frame      = [view frame];
    newFrame   = [view originalFrame];
    resizeMask = autoresizingMask & (UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight);
-   stickMask  = autoresizingMask & (MulleUIViewAutoresizingStickToMiddle|MulleUIViewAutoresizingStickToCenter);
+   stickMask  = autoresizingMask & (UIViewAutoresizingStickToMiddle|UIViewAutoresizingStickToCenter);
 
    insets         = [view margins];
    marginalBounds = UIEdgeInsetsInsetRect( bounds, [view margins]);
@@ -155,9 +155,9 @@
       }
    }
 
-   if( stickMask & MulleUIViewAutoresizingStickToTop)
+   if( stickMask & UIViewAutoresizingStickToTop)
    {
-      if( stickMask & MulleUIViewAutoresizingStickToBottom)
+      if( stickMask & UIViewAutoresizingStickToBottom)
       {
          newFrame.origin.y = CGRectGetMidY( marginalBounds) - newFrame.size.height / 2.0;;
       }
@@ -165,7 +165,7 @@
          newFrame.origin.y = marginalBounds.origin.y;
    }
    else
-      if( stickMask & MulleUIViewAutoresizingStickToBottom)
+      if( stickMask & UIViewAutoresizingStickToBottom)
       {
          newFrame.origin.y = CGRectGetMaxY( marginalBounds) - newFrame.size.height;
       }
@@ -173,9 +173,9 @@
          newFrame.origin.y += marginalBounds.origin.y;
 
 
-   if( stickMask & MulleUIViewAutoresizingStickToLeft)
+   if( stickMask & UIViewAutoresizingStickToLeft)
    {
-      if( stickMask & MulleUIViewAutoresizingStickToRight)
+      if( stickMask & UIViewAutoresizingStickToRight)
       {
          newFrame.origin.x = CGRectGetMidX( marginalBounds) - newFrame.size.width / 2.0;
       }
@@ -183,7 +183,7 @@
          newFrame.origin.x = marginalBounds.origin.x;
    }
    else
-      if( stickMask & MulleUIViewAutoresizingStickToRight)
+      if( stickMask & UIViewAutoresizingStickToRight)
       {
          newFrame.origin.x = CGRectGetMaxX( marginalBounds) - newFrame.size.width;
       }
@@ -205,14 +205,14 @@
    //
    // if view doesn't fit into bounds, we do what ?
    // culling is done in the renderQueue step (if clipping is set)
-   // If clipping is not set MulleUIViewAutoresizingCullAtBounds will be useful
+   // If clipping is not set UIViewAutoresizingCullAtBounds will be useful
    // as well
    //
    if( ! CGRectContainsRect( marginalBounds, newFrame))
    {
-      if( autoresizingMask & MulleUIViewAutoresizingCullAtBounds)
+      if( autoresizingMask & UIViewAutoresizingCullAtBounds)
          newFrame.size = CGSizeZero;
-      if( autoresizingMask & MulleUIViewAutoresizingClipToBounds)
+      if( autoresizingMask & UIViewAutoresizingClipToBounds)
          newFrame = CGRectIntersection( marginalBounds, newFrame);
    }
 
@@ -267,14 +267,21 @@
       _cacheLayer = nil;
    }
 #endif
-   [self layoutLayer:_mainLayer
-              inRect:contentRect];
 
-   rover = mulle_pointerarray_enumerate( _layers);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
-      [self layoutLayer:layer
+   if( ! _willLayoutLayers || (*_willLayoutLayers)( self))
+   {
+      [self layoutLayer:_mainLayer
                  inRect:contentRect];
-   mulle_pointerarrayenumerator_done( &rover);
+
+      rover = mulle_pointerarray_enumerate( _layers);
+      while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
+         [self layoutLayer:layer
+                    inRect:contentRect];
+      mulle_pointerarrayenumerator_done( &rover);
+
+      if( _didLayoutLayers)
+         (*_didLayoutLayers)( self);
+   }
 }
 
 
@@ -284,16 +291,23 @@
    UIView                                *view;
    CGRect                                bounds;
 
-   bounds = [self layoutRect];
-   rover = mulle_pointerarray_enumerate( _subviews);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+   if( ! _willLayoutSubviews || (*_willLayoutSubviews)( self))
    {
-      [self layoutSubview:view
-                  inRect:bounds
-         autoresizingMask:[view autoresizingMask]];
+      bounds = [self layoutRect];
+      rover = mulle_pointerarray_enumerate( _subviews);
+      while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+      {
+         [self layoutSubview:view
+                     inRect:bounds
+            autoresizingMask:[view autoresizingMask]];
+      }
+      mulle_pointerarrayenumerator_done( &rover);
+
+      if( _didLayoutSubviews)
+         (*_didLayoutSubviews)( self);
    }
-   mulle_pointerarrayenumerator_done( &rover);
-}
+ 
+ }
 
 //
 // Layouting is strictly top/down. Space is distributed from the top to
@@ -304,6 +318,7 @@
 {
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
+
 
    /*
     * TOP/DOWN
