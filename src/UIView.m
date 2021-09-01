@@ -374,6 +374,29 @@ static inline CGRect   getBounds( UIView *self)
    return( view);
 }
 
+//
+// this is deep, it only searches views contained as subviews
+// "local" views like contentView, won't be found
+//
+- (UIView *) findSubviewWithTag:(NSInteger) tag;
+{
+   struct mulle_pointerarrayenumerator   rover;
+   UIView                                *view;
+
+   rover = mulle_pointerarray_enumerate( _subviews);
+   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+   {
+      if( [view tag] == tag)
+         break;
+      view = [view findSubviewWithTag:tag];
+      if( view)
+         break;
+   }
+   mulle_pointerarrayenumerator_done( &rover);
+
+   return( view);
+}
+
 
 - (CALayer *) mainLayer
 {

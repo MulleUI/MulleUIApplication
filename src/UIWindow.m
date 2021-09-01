@@ -62,6 +62,8 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
       [self release];
       return( nil);
    }
+
+   // not super sure that this makes sense to cache
    _primaryMonitorRefreshRate = [UIWindow os_primaryMonitorRefreshRate];
 
    _window = [self os_createWindowWithFrame:frame
@@ -134,12 +136,14 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    [self os_startRender];
    _context = [[CGContext alloc] initWithEdgeAntialiasing:!(styleMask & MulleWindowStyleMaskNoEdgeAntialias)
                                         useStencilStrokes:!(styleMask & MulleWindowStyleMaskNoStencilStrokes)];
-
+   if( styleMask & MulleWindowStyleMaskInvisible)
+      [_context setRendersOffScreen:YES];
    _framebufferSize = [self os_framebufferSize];
    [self os_endRender];
 
    _scrollWheelSensitivity = 20.0;
    _eventFrequency         = 60.0;
+   _oldSwapInterval        = NSIntegerMax;
 
    // initially dirty with renderer 1, renderer go!
    _needsDisplayLock = [[NSConditionLock alloc] initWithCondition:1];
@@ -168,15 +172,14 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 - (void) finalize
 {
+   CGContext   *context;
+
    [self discardPendingEvents];
 
-   if( _context)
-   {
-      // get rid of textures possibly or so
-      [self os_startRender];
-      [_context mullePerformFinalize];
-      [self os_endRender];
-   }
+   // get rid of textures possibly or so
+   context = [self activateContext];
+   [context mullePerformFinalize];
+   [self deactivateContext:context];
 
    // TODO: delete window ?
    //       remove from screen ?
@@ -230,6 +233,17 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
+- (CGFloat) pixelRatio
+{
+   if( ! _framebufferSize.width)
+      return( 1.0);
+   if( _frame.size.width == 0.0)
+      return( 1.0);
+
+   return( _frame.size.width / _framebufferSize.width);
+}
+
+
 - (void) runInApplication:(UIApplication *) application
 {
    // should be public ?
@@ -274,6 +288,33 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    if( ! _thread)
       return( [NSThread mulleIsMainThread]);
    return( [NSThread currentThread] == _thread);
+}
+
+//
+// lets write a novel here:
+// the problem with resizing is that on resize we need to provide content
+// with in 1/60s
+// Unfortunately, during resize for whatever reason most of the CPU time
+// is already taken up by the window manager ? Or the event comes in the
+// middle of our frame ?
+// If we get isResizing, we should immediately abort, and provide a cheap
+// facade for resizing. The best facade would be a resizable screenshot of
+// out window.
+//
+// Problems: glReadPixels maybe too late (window manager already corrupted
+//           framebuffer ?)
+//           glReadPixels maybe too slow ?
+//
+// Window should re-layout because of size change. Solution: Window renders
+// into a separate framebuffer. Problem: same thread, where we want to draw
+// our screenshot.
+// Solution: Windows creates a hidden window
+// that renders with a separate thread. Problem (getting framebuffer to
+// other window)
+//
+- (BOOL) isResizing
+{
+   return( _isResizing);
 }
 
 /*

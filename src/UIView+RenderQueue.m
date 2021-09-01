@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2020 Nat!, Mulle kybernetiK
 //
-#import "UIWindow+RenderQueue.h"
+#import "UIView+RenderQueue.h"
 
 #import "UIView+CGGeometry.h"
 #import "UIView+Layout.h"
@@ -119,6 +119,26 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
    mulle_pointerarrayenumerator_done( &rover);
 }
 
+- (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
+{
+   abort(); // only UIWindow can do this currently
+}
+
+
+- (void) dumpRenderQueue:(struct mulle_pointerarray *) renderQueue
+{
+   struct mulle_pointerarrayenumerator   rover;
+   CALayer                               *layer;
+
+   rover = mulle_pointerarray_enumerate( renderQueue);
+   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
+   {
+      [layer dumpWithIndent:1];
+   }
+   mulle_pointerarrayenumerator_done( &rover);
+}
+
+
 @end
 
 
@@ -130,6 +150,8 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 }
 
 
+// not UIView because of the clipping rectangle and identity transform
+// start
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
 {
    struct mulle_pointerarrayenumerator   rover;
@@ -145,20 +167,6 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
    {
       [view createRenderQueue:renderQueue
                       context:&v];
-   }
-   mulle_pointerarrayenumerator_done( &rover);
-}
-
-
-- (void) dumpRenderQueue:(struct mulle_pointerarray *) renderQueue
-{
-   struct mulle_pointerarrayenumerator   rover;
-   CALayer                               *layer;
-
-   rover = mulle_pointerarray_enumerate( renderQueue);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
-   {
-      [layer dumpWithIndent:1];
    }
    mulle_pointerarrayenumerator_done( &rover);
 }

@@ -18,6 +18,7 @@
 - (void) queueRetainedEvent:(UIEvent *) event;
 - (void) queueEvent:(UIEvent *) event;
 
+// returns ored bits of handled events
 - (NSUInteger) waitForEvents:(CARelativeTime) timeout
                          now:(CAAbsoluteTime) now
                 returnsEarly:(BOOL) returnsEarly;

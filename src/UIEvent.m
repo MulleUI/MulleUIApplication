@@ -509,8 +509,6 @@ static struct
 {
    return( UIEventTypeWindow);
 }
-
-
 @end
 
 

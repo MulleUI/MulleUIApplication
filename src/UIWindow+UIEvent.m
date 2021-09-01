@@ -13,7 +13,7 @@
 //#define CALLBACK_DEBUG
 //#define MOUSE_MOTION_CALLBACK_DEBUG
 //#define MOUSE_BUTTON_CALLBACK_DEBUG
-#define RESIZE_CALLBACK_DEBUG
+//#define RESIZE_CALLBACK_DEBUG
 #define ABORT_ON_EVENT_OVERFLOW
 
 
@@ -47,58 +47,33 @@
 }
 
 
-- (void) _framebufferResizeCallback:(CGSize) size
+- (void) _framebufferResizeCallback:(struct CGBitmapSize) size
 {
    UIEvent   *event;
 
 #if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s w=%.1f h=%.1f\n",
+   fprintf( stderr, "%s %s w=%ld h=%ld\n",
                      __PRETTY_FUNCTION__,
                      [self cStringDescription],
-                     size.width,
-                     size.height);
+                     (long) size.width,
+                     (long) size.height);
 #endif
    event = [[UIWindowFramebufferResizeEvent alloc] initWithWindow:self
                                                     mouseLocation:self->_mouseLocation
                                                         modifiers:self->_modifiers
-                                                             size:size];
+                                                             size:CGSizeMake( size.width, size.height)];
    [self queueRetainedEvent:event];
 
    // TODO: we should do this atomically
    //
-   _framebufferSize = size;}
-
-
-- (void) _windowCloseCallback
-{
-   UIEvent   *event;
-
-#ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   event = [[UIWindowCloseEvent alloc] initWithWindow:self
-                                        mouseLocation:self->_mouseLocation
-                                            modifiers:self->_modifiers];
-   [self queueRetainedEvent:event];
+   _framebufferSize = size;
 }
 
 
-- (void) _windowRefreshCallback
-{
-   UIEvent   *event;
 
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   event = [[UIWindowRefreshEvent alloc] initWithWindow:self
-                                          mouseLocation:self->_mouseLocation
-                                              modifiers:self->_modifiers];
-   [self queueRetainedEvent:event];
-}
-
-
+//
+// Move callback like refresh callback induces flicker
+//
 - (void) _windowMoveCallback:(CGPoint) position
 {
    UIEvent   *event;
@@ -116,6 +91,37 @@
    [self queueRetainedEvent:event];
 }
 
+
+
+- (void) _windowRefreshCallback
+{
+   UIEvent   *event;
+
+#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
+   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
+#endif
+
+   event = [[UIWindowRefreshEvent alloc] initWithWindow:self
+                                          mouseLocation:self->_mouseLocation
+                                              modifiers:self->_modifiers];
+   [self queueRetainedEvent:event];
+}
+
+
+
+- (void) _windowCloseCallback
+{
+   UIEvent   *event;
+
+#ifdef CALLBACK_DEBUG
+   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
+#endif
+
+   event = [[UIWindowCloseEvent alloc] initWithWindow:self
+                                        mouseLocation:self->_mouseLocation
+                                            modifiers:self->_modifiers];
+   [self queueRetainedEvent:event];
+}
 
 - (void) _keyCallback:(int) key
              scancode:(int) scancode
@@ -465,11 +471,6 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
       _shouldClose = YES;
       return( nil);
 
-   case UIWindowEventTypeMove :
-      _frame.origin = [(UIWindowMoveEvent *) event origin];
-      // delegate method ?
-      return( nil);
-
    case UIWindowEventTypeFramebufferResize :
       // ignore size, polled during next redraw anyway
       // and we are getting a refresh anyway next
@@ -478,13 +479,13 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
                      __PRETTY_FUNCTION__,
                      [self cStringDescription]);
 #endif
-      _resizing = YES;
+      _isResizing = YES;
       [self setNeedsDisplay];
       return( nil);
 
    case UIWindowEventTypeResize :
-      _frame.size  = [(UIWindowResizeEvent *) event size];
-      _resizing = YES;
+      _frame.size = [(UIWindowResizeEvent *) event size];
+      _isResizing = YES;
 
       [self setNeedsLayout:YES];
       [self setNeedsDisplay];
@@ -499,6 +500,16 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    // call this all the time for the other events (which could lead
    // to duplicate redraws)
    case UIWindowEventTypeRefresh :
+      _needsWindowRefresh = YES; // this preempts event processing
+                                 // so we can react as fast as possible
+      [self setNeedsDisplay];
+      return( nil);
+
+   // this necessitates a refresh on Linux, else flicker
+   case UIWindowEventTypeMove :
+      _frame.origin = [(UIWindowMoveEvent *) event origin];
+      _needsWindowRefresh = YES; // this preempts event processing
+                                 // so we can react as fast as possible
       [self setNeedsDisplay];
       return( nil);
    }
@@ -535,15 +546,32 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
          if( [keyEvent action] == GLFW_PRESS)
          {
             // F12 key: 301
-            if( [keyEvent key] == 301)
+            switch( [keyEvent key])
             {
-               [self dump];
-               return( nil);
-            }
-            if( [keyEvent key] == 300)
-            {
-               [self dumpRenderQueue:&_renderQueue];
-               return( nil);
+            case 301 :
+               if( [self respondsToSelector:@selector( dump)])
+               {
+                  [self performSelector:@selector( dump)];
+                  return( nil);
+               }
+               break;
+
+            case 300:
+               if( [self respondsToSelector:@selector( dumpRenderQueue)])
+               {
+                  [self performSelector:@selector( dumpRenderQueue)
+                             withObject:(id) &_renderQueue];
+                  return( nil);
+               }
+               break;
+
+            case 299:
+               if( [self respondsToSelector:@selector( saveScreenshotToDesktop)])
+               {
+                  [self performSelector:@selector( saveScreenshotToDesktop)];
+                  return( nil);
+               }
+               break;
             }
          }
       }
@@ -591,6 +619,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 {
    return( YES);
 }
+
 
 - (BOOL) willDiscardOverflowEvent:(UIEvent *) event
 {
@@ -667,7 +696,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
 //
 // Execute all events in the queue until empty. This has to be called by the
-// Windows thread
+// Windows thread. Returns OR of eventType
 //
 - (NSUInteger) handleEventQueue
 {
@@ -729,10 +758,19 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    then = now + timeout;
    mask = 0;
 
+   //
+   // set this now to NO, if a window refresh events is received we
+   // preempt, even if returnsEarly is NO
+   //
+   _needsWindowRefresh = NO;
+
    for(;;)
    {
       mask |= [self pollEvents];
       if( mask && returnsEarly)
+         break;
+
+      if( _needsWindowRefresh)
          break;
 
       // could also check here, if events took too much time

@@ -139,7 +139,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    assert( [NSThread mulleIsMainThread]);
 
    self = glfwGetWindowUserPointer( window);
-   [self _framebufferResizeCallback:CGSizeMake( width, height)];
+   [self _framebufferResizeCallback:CGBitmapSizeMake( width, height)];
 }
 
 
@@ -164,7 +164,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    glfwSetWindowCloseCallback( _window, windowCloseCallback);
 }
 
-
+// hope for fractional positioning in future ?
 - (void *) os_createWindowWithFrame:(CGRect) frame
                        titleCString:(char *) title
                           styleMask:(NSUInteger) styleMask
@@ -177,6 +177,9 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
 # error "MULLE_CG_GLVERSION" not defined
 #endif
 
+//
+// These function can only be called from main thread (see above)
+//
 #if MULLE_CG_GLVERSION == MULLE_GLES2
    glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -192,10 +195,8 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
 
-   if( styleMask & MulleWindowStyleMaskResizable)
-   	glfwWindowHint( GLFW_RESIZABLE, GL_TRUE);
-   if( styleMask & MulleWindowStyleMaskInvisible)
-   	glfwWindowHint( GLFW_VISIBLE, GL_FALSE);
+	glfwWindowHint( GLFW_RESIZABLE, (styleMask & MulleWindowStyleMaskResizable) ? GL_TRUE : GL_FALSE);
+	glfwWindowHint( GLFW_VISIBLE,   (styleMask & MulleWindowStyleMaskInvisible) ? GL_FALSE : GL_TRUE);
 
    // not super sure about this, but lets try to avoid "old" OpenGL
    // calls. alas, we are doing OpenGLES 2.0 minimum, so I don't know
@@ -215,12 +216,15 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
       fprintf( stderr, "glfwCreateWindow failed us\n");
       return( NULL);
    }
-
    // this is basically the "rendezvous" point where nanoVG latches unto
    // its also the receiver for OpenGL calls. That's why we need a window
    // to draw stuff
    //
    glfwSetWindowUserPointer( window, self);
+
+   // zero origin, let window manager choose
+   if( ! CGPointEqualToPoint( frame.origin, CGPointNull))
+      glfwSetWindowPos( window, (int) frame.origin.x, (int) frame.origin.y);
 
    return( window);
 }
@@ -313,7 +317,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
 }
 
 
-- (CGSize) os_framebufferSize
+- (struct CGBitmapSize) os_framebufferSize
 {
    int   fbWidth;
    int   fbHeight;
@@ -322,7 +326,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    assert( _window);
 
    glfwGetFramebufferSize( _window, &fbWidth, &fbHeight);
-   return( CGSizeMake( fbWidth, fbHeight));
+   return( CGBitmapSizeMake( fbWidth, fbHeight));
 }
 
 

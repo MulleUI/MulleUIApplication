@@ -9,15 +9,25 @@
 
 #import "UIWindow+UIEvent.h"
 #import "UIView+Layout.h"
-#import "UIWindow+RenderQueue.h"
+#import "UIView+RenderQueue.h"
 #import "UIEvent.h"
 
 
-// #define PRINTF_PROFILE_RENDER
-// #define PRINTF_PROFILE_EVENTS
-// #define PRINTF_PROFILE_LAYOUT
 // #define LAYOUT_ANIMATIONS
-// #define SWAP_DEBUG
+//#define SWAP_DEBUG
+//#define HAVE_PANIC_CODE
+
+
+
+@implementation CGContext( UIWindow)
+
+- (void) setActive:(BOOL) flag
+{
+   _isActive = flag;
+}
+
+@end
+
 
 @implementation UIWindow ( RenderingAddAllLayoutsToRenderQueue)
 
@@ -32,6 +42,7 @@
 - (void) getFrameInfo:(struct CGFrameInfo *) info
 {
    float      scale_x, scale_y;
+   CGRect     rect;
 
    assert( info);
 
@@ -45,21 +56,18 @@
    //
    memset( info, 0, sizeof( *info));
 
-   info->size                 = _frame.size;
-   info->viewportFrame.size   = _frame.size;
-   info->framebufferSize      = [self framebufferSize];
+   rect = CGRectIntegral( _frame);
 
-   info->UIScale              = CGVectorMake( scale_x, scale_y);
-	info->pixelRatio           = info->framebufferSize.width / _frame.size.width;
-   info->frameNumber          = _didRender;
-   info->renderStart          = CAAbsoluteTimeNow();
-   // should check the monitor where the window is on really
-   info->monitorRefreshRate   = _primaryMonitorRefreshRate;
+   info->size               = _frame.size;
+   info->framebufferSize    = _framebufferSize;
+   info->viewportFrame.size = info->framebufferSize;
 
-   // does not do refreshRate yet, the renderloop does this
+   info->UIScale            = CGVectorMake( scale_x, scale_y);
+	info->pixelRatio         = info->framebufferSize.width / _frame.size.width;
 }
 
 
+// unused...
 - (void) waitForEndOfResize
 {
    double   waitEnd;
@@ -75,7 +83,7 @@
       if( waitEnd >= glfwGetTime())
       {
          glViewport( 0.0, 0.0, _resizeSize.width, _resizeSize.height);
-         _resizing = NO;
+         _isResizing = NO;
          break;
       }
    }
@@ -83,6 +91,7 @@
 
 
 - (NSUInteger) processEvents:(CAAbsoluteTime) now
+                   frameRate:(CGFloat) frameRate
 {
    CARelativeTime   timeout;
 
@@ -94,22 +103,22 @@
    // UIWindowFrameRateUnsynced: timout == INFINITE, returnsEarly: YES
    // UIWindowFrameRateAsync: timout == 0.0  returnsEarly: YES
    // Else timeout: returnsEarly: NO
-   assert( _frameRate == UIWindowFrameRateUnsynced ||
-           _frameRate == UIWindowFrameRateAsync ||
-           _frameRate == UIWindowFrameRateSynced ||
-           _frameRate <= 1.0);  // why lower than 1fps ??
+   assert( frameRate == UIWindowFrameRateUnsynced ||
+           frameRate == UIWindowFrameRateAsync ||
+           frameRate == UIWindowFrameRateSynced ||
+           frameRate <= 1.0);  // why lower than 1fps ??
 
-   return( [self waitForEvents:_frameRate == UIWindowFrameRateSynced
+   return( [self waitForEvents:frameRate == UIWindowFrameRateSynced
                                  ? 1.0 / _primaryMonitorRefreshRate
-                                 : _frameRate
+                                 : frameRate
                            now:now
-                  returnsEarly:_frameRate == UIWindowFrameRateUnsynced||
-                               _frameRate == UIWindowFrameRateAsync]);
+                  returnsEarly:frameRate == UIWindowFrameRateUnsynced||
+                               frameRate == UIWindowFrameRateAsync]);
 
 }
 
 
-- (void) willRender:(struct CGFrameInfo *) info
+- (void) willRender:(CAAbsoluteTime) renderStart
 {
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
@@ -120,9 +129,10 @@
 
    rover = mulle_pointerarray_enumerate( &_delegateViews);
    while(  mulle_pointerarrayenumerator_next( &rover, (void **) &view))
-      [view willRenderWithAbsoluteTime:info->renderStart];
+      [view willRenderWithAbsoluteTime:renderStart];
    mulle_pointerarrayenumerator_done( &rover);
 }
+
 
 // UIWindow render chain
 //
@@ -169,33 +179,34 @@
 // c) the glitch occurs when there is already drawing on the screen
 // d) the glitch looks like the buffer is cleared and then not swapped
 //
+// With the parameters, you should be able to render into a different
+// context from the window context, with all the delegate calls intact.
+//
+// A window must not run two renderFrames concurrently!
+// A view calling [[self window] context] could get the wrong context
+// though. Maybe need a -renderContext ?
+// Or should
 - (void) renderFrame:(struct CGFrameInfo *) info
+             context:(CGContext *) context
 {
-   struct timespec   diff;
-   struct timespec   start;
-   struct timespec   end;
-   struct timespec   sleep;
    long              nsperframe;
+   CAAbsoluteTime    renderStart;
 
-   clock_gettime( CLOCK_REALTIME, &start);
-
-#ifdef PRINTF_PROFILE_LAYOUT
-   printf( "@%ld:%09ld layout start\n", start.tv_sec, start.tv_nsec);
-#endif
-
-   [_renderDelegate windowWillBeginRender:self];
+   renderStart = CAAbsoluteTimeNow();
 
    if( _willRenderCallback)
       (*_willRenderCallback)( self, info);
+
+   [_renderDelegate windowWillBeginRender:self];
 
    /*
     * Layout
     */
    @autoreleasepool
    {
-      [self willRender:info];
+      [self willRender:renderStart];
 
-      [_preLayoutAnimator animateWithAbsoluteTime:info->renderStart];
+      [_preLayoutAnimator animateWithAbsoluteTime:renderStart];
 
       if( _didAnimateCallback)
          (*_didAnimateCallback)( self, info, 0);
@@ -209,22 +220,19 @@
 #if LAYOUT_ANIMATIONS
       [self beginLayout:info];
 #endif
-
-
       [self layoutIfNeeded];
-
 #if LAYOUT_ANIMATIONS
       [self endLayout];
 #endif
       if( _didLayoutCallback)
          (*_didLayoutCallback)( self, info);
 
-      [_postLayoutAnimator animateWithAbsoluteTime:info->renderStart];
+      [_postLayoutAnimator animateWithAbsoluteTime:renderStart];
 
+      if( _didAnimateCallback)
+         (*_didAnimateCallback)( self, info, 1);
    }
 
-   if( _didAnimateCallback)
-      (*_didAnimateCallback)( self, info, 1);
 
    /*
     * Animate
@@ -242,7 +250,7 @@
          (*_didCreateRenderQueueCallback)( self, info);
 
       [CAAnimation animateObjects:&_renderQueue
-                     absoluteTime:info->renderStart];
+                     absoluteTime:renderStart];
 
       //
       // can animations add and subtract layers and views ?
@@ -251,31 +259,19 @@
       // have no didAnimate callback, because we would like to pipeline
       // with rendering, or but the animation step into the render part ?
       //
+      if( _didAnimateCallback)
+         (*_didAnimateCallback)( self, info, 2);
    }
-   if( _didAnimateCallback)
-      (*_didAnimateCallback)( self, info, 2);
-
-#ifdef PRINTF_PROFILE_LAYOUT
-   clock_gettime( CLOCK_REALTIME, &end);
-   diff = timespec_sub( end, start);
-   printf( "@%ld:%09ld lavout end, elapsed : %09ld\n", end.tv_sec, end.tv_nsec,
-                                                  diff.tv_sec ? 999999999 : diff.tv_nsec);
-#endif
-
-#ifdef PRINTF_PROFILE_RENDER
-   clock_gettime( CLOCK_REALTIME, &start);
-   printf( "@%ld:%09ld render start\n", start.tv_sec, start.tv_nsec);
-#endif
 
    /*
     * Render
     */
    @autoreleasepool
    {
-      [_context clearFramebuffer];
-      [_context beginRender:info];
+      [context beginRender:info];
+      [context clearFramebuffer];
       {
-         [_context renderObjects:&_renderQueue];
+         [context renderObjects:&_renderQueue];
       }
 
       [_renderDelegate windowWillEndRender:self];
@@ -283,7 +279,7 @@
       if( _willEndRenderCallback)
          (*_willEndRenderCallback)( self, info);
 
-      [_context endRender];
+      [context endRender];
    }
 
    [_renderDelegate windowDidEndRender:self];
@@ -295,52 +291,62 @@
    // just don't want to keep dangling stuff here
    // It's nice to see the renderQueue wthe F11 though
    //mulle_pointerarray_reset( &_renderQueue);
+}
 
-#ifdef PRINTF_PROFILE_RENDER
-   clock_gettime( CLOCK_REALTIME, &end);
-   diff = timespec_diff( start, end);
-   nsperframe = (1000000000L + (info.monitorRefreshRate - 1)) / info.monitorRefreshRate;
-   if( diff.tv_sec > 0 || diff.tv_nsec >= nsperframe)
-      fprintf( stderr, "frame #%ld: @%ld:%09ld render end, OVERFLW %.4f frames\n",
-                           _didRender,
-                           end.tv_sec,
-                           end.tv_nsec,
-                           diff.tv_sec ? 9999.9999 : (diff.tv_nsec / (double) nsperframe) - 1);
-#endif
+
+- (CGContext *) activateContext
+{
+   // take renderlock here, relinquish later when wating for events
+   // or when someone closes the window
+   [self os_startRender];
+   [_context setActive:YES];
+
+   if( ! [_context rendersOffScreen])
+   {
+      if( _swapInterval != _oldSwapInterval)
+      {
+         [UIWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
+         _oldSwapInterval = _swapInterval;
+      }
+   }
+   return( _context);
+}
+
+
+- (void) deactivateContext:(CGContext *) context
+{
+   [context setActive:NO];
+   [self os_endRender];
 }
 
 
 // 0 is forever
 - (BOOL) renderUpToNumberOfFrames:(NSUInteger) maxFrames
 {
-   struct CGFrameInfo   info;
-   struct timespec         diff;
-   struct timespec         start;
-   struct timespec         end;
-   struct timespec         sleep;
-   long                    nsperframe;
-   CGRect                  oldFrame;
-   NSUInteger              frames;
-   BOOL                    rval;
+   struct CGFrameInfo          info;
+   struct timespec             diff;
+   struct timespec             start;
+   struct timespec             end;
+   struct timespec             sleep;
+   CAAbsoluteTime              timestamp;
+   CGContext                   *context;
+   CGDrawableOptions           options;
+   CGFloat                     frameRate;
+   CGImage                     *image;
+   NSUInteger                  eventTypes;
+   NSUInteger                  frames;
+   struct CGFramebufferBitmap  fb;
+   BOOL                        isPanicking;
+   BOOL                        rval;
+   BOOL                        wasPanicking;
 
-#ifdef PRINTF_PROFILE_RENDER
-      clock_gettime( CLOCK_REALTIME, &start);
-      nsperframe = (1000000000L + (info.monitorRefreshRate - 1)) / info.monitorRefreshRate;
-      fprintf( stderr, "Refresh: %d (%09ld ns/frame)\n", info.monitorRefreshRate, nsperframe);
-#endif
+   isPanicking = NO;
+   frames      = 0;
+   image       = nil;
+   rval        = NO;
+   context     = nil;
 
-   // take renderlock here, relinquish later when wating for events
-   // or when someone closes the window
-   [self os_startRender];
-
-   // put elsewhere
-   [UIWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
-
-
-   oldFrame = _frame;
-   frames   = 0;
-   rval     = NO;
-   for(;;)
+   for( frames = 0; ! maxFrames || frames != maxFrames; frames++)
    {
       if( _shouldClose)
       {
@@ -348,54 +354,51 @@
          break;
       }
 
-      if( maxFrames && frames == maxFrames)
-         break;
-      ++frames;
+      /*
+       * Rendering
+       */
+      @autoreleasepool
+      {
+         context = [self activateContext];
 
-      [self getFrameInfo:&info];  // retrieve newest geometry
-      [self renderFrame:&info];
+         [self getFrameInfo:&info];  // retrieve newest geometry
+#ifdef HAVE_PANIC_CODE
+         if( isPanicking)
+         {
+            [context beginRender:&info];
+            options = CGDrawableOptionsMake( 0.0, 1.0, 0.0, YES);
+            [image drawRect:[self contentRect]
+                    options:&options
+                    context:context];
+            [context endRender];
+         }
+         else
+#endif
+         {
+            [self renderFrame:&info
+                      context:context];
+         }
 
 #ifdef SWAP_DEBUG
-      fprintf( stderr, "%s %s swaps framebuffer (frame: %s, buffer: %s)\n",
-                     __PRETTY_FUNCTION__,
-                     [self cStringDescription],
-                     CGRectCStringDescription( info.frame),
-                     CGSizeCStringDescription( info.framebufferSize));
+         fprintf( stderr, "%s %s swaps framebuffer (frame: %s, buffer: %ld, %ld)\n",
+                        __PRETTY_FUNCTION__,
+                        [self cStringDescription],
+                        CGSizeCStringDescription( info.size),
+                        info.framebufferSize.width, info.framebufferSize.height);
 #endif
-      [self os_swapBuffers];
-      _lastDidFramebufferSwapTimestamp = CAAbsoluteTimeNow();
-      if( _didSwapCallback)
-         (_didSwapCallback)( self, &info);
-      _didRender++;
-      [self os_endRender];
-
-#ifdef PRINTF_PROFILE_RENDER
-      clock_gettime( CLOCK_REALTIME, &end);
-      diff = timespec_sub( end, start);
-      printf( "@%ld:%09ld render end, elapsed : %09ld\n", end.tv_sec, end.tv_nsec,
-                                                  diff.tv_sec ? 999999999 : diff.tv_nsec);
-#endif
-
-#ifdef ADD_RANDOM_LAG
-      sleep.tv_sec  = 0.0;
-      sleep.tv_nsec = nsperframe / 10 * (rand() % 100);
-      nanosleep( &sleep, NULL);
-#endif
-
-#if 0 && defined( DEBUG)
-      if( ! CGRectEqualToRect( _frame, oldFrame))
-      {
-         [self dump];
-         oldFrame = _frame;
+         [self os_swapBuffers];
+         _lastDidFramebufferSwapTimestamp = CAAbsoluteTimeNow();
+         if( _didSwapCallback)
+            (_didSwapCallback)( self, &info);
+         [self deactivateContext:context];
+         context = nil;
       }
-#endif
 
-#ifdef PRINTF_PROFILE_EVENTS
-      clock_gettime( CLOCK_REALTIME, &start);
-      printf( "@%ld:%09ld events start\n", start.tv_sec, start.tv_nsec);
-#endif
+      // now no openGL or CGContext calls should happen
+      // as the context has been detached from this thread
+
       /*
-       * Event handling
+       * Event handling.
        */
       @autoreleasepool
       {
@@ -406,32 +409,61 @@
          //       done inbetween ?
          //
          [self setupQuadtree];
-      }
 
-      if( maxFrames == 1)
-         return( NO);  // don't break!
-
-      @autoreleasepool
-      {
          // we can get to 29.98 fps when we feed it the last timestamp
          // but is it desirable ?
-         [self processEvents:_lastDidProcessEventsTimestamp ? _lastDidProcessEventsTimestamp : info.renderStart];
+         timestamp = _lastDidProcessEventsTimestamp
+                        ? _lastDidProcessEventsTimestamp
+                        : _lastDidFramebufferSwapTimestamp;
+         frameRate = _frameRate;
+
+         // just push next one through ASAP or ?
+         if( _isResizing)
+         {
+            _isResizing = NO;
+            frameRate   = UIWindowFrameRateUnsynced;
+         }
+
+         eventTypes = [self processEvents:timestamp
+                                frameRate:frameRate];
          _lastDidProcessEventsTimestamp = CAAbsoluteTimeNow();
+
+         // this is either a move or a refresh or a close
+         // in any case it's time to panic, which means we
+         // have to redraw fast or get out of here
+#ifdef HAVE_PANIC_CODE
+         wasPanicking = isPanicking;  // NO: we have a valid framebuffer swapped to front
+         isPanicking  = (eventTypes & UIEventTypeWindow) ? YES : NO;
+         if( isPanicking)
+         {
+            if( ! wasPanicking)
+            {
+               [image release];
+               image = nil;
+
+               context = [self activateContext];
+
+               fb    = [context grabLastRenderedFramebuffer:NULL];
+               image = [[CGImage alloc] initWithRGBABytes:fb.data.bytes
+                                               bitmapSize:fb.info.size
+                                               imageFlags:0
+                                                  context:context];
+               [self deactivateContext:context];
+               context = nil;
+            }
+            // else keep image
+         }
+         else
+         {
+            [image release];
+            image = nil;
+         }
+#endif
       }
-
-#ifdef PRINTF_PROFILE_EVENTS
-      clock_gettime( CLOCK_REALTIME, &end);
-      diff = timespec_sub( end, start);
-      printf( "@%ld:%09ld events end, elapsed : %09ld\n", end.tv_sec, end.tv_nsec,
-                                                  diff.tv_sec ? 999999999 : diff.tv_nsec);
-#endif
-#ifdef PRINTF_PROFILE_START
-      clock_gettime( CLOCK_REALTIME, &start);
-#endif
-      [self os_startRender];
-
    }
-   [self os_endRender];
+
+   [image release];
+
    return( rval);
 }
 
@@ -444,7 +476,7 @@
 
 - (BOOL) renderFrameWaitForNeedsDisplay
 {
-   BOOL    flag;
+   BOOL flag;
 
    [_needsDisplayLock lockWhenCondition:1];
    flag = [self renderUpToNumberOfFrames:1];

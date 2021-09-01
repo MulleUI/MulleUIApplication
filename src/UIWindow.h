@@ -24,8 +24,8 @@ enum MulleWindowStyleMask
 //  MulleWindowStyleMaskMiniaturizable  = 0x2,
   MulleWindowStyleMaskResizable         = 0x4,
   MulleWindowStyleMaskInvisible         = 0x8,
-  MulleWindowStyleMaskNoEdgeAntialias   = 0x10,
-  MulleWindowStyleMaskNoStencilStrokes  = 0x20
+  MulleWindowStyleMaskNoEdgeAntialias   = 0x10,  // nanvg
+  MulleWindowStyleMaskNoStencilStrokes  = 0x20   // nanovg
 };
 
 #define ui_window_pointer_fifo   mulle__pointerfifo128
@@ -51,6 +51,22 @@ enum MulleWindowStyleMask
 
 @end
 
+// When the window manager (or whoever) sends a window refresh message
+// the window has to act immediately and repaint. If the repaint is too
+// slow there will be bad and ugly flicker.
+//
+// The strategies are
+//   * render        - this is the default and best if fast enrough
+//   * screenshot    - use a screenshot of previous frame scaled or fixed
+//   * hidden render - use a separate window to render into a screenshot
+//
+enum UIWindowRefreshStrategy
+{
+   UIWindowRefreshStrategyRender                  = 0, // default
+   UIWindowRefreshStrategyPresentScreenshot       = 1,
+   UIWindowRefreshStrategyPresentScaledScreenshot = 2,
+   UIWindowRefreshStrategyHiddenRender            = 3
+};
 
 //
 // TODO: firstResponder needed for UITextField to gain keyboard
@@ -60,7 +76,6 @@ enum MulleWindowStyleMask
 {
    void               *_window;            // GLFWwindow
    CGContext          *_context;           //
-	NSUInteger         _didRender;
    CGSize             _resizeSize;
    NSUInteger         _discardEvents;      // bitfield of UIEventtypes ?
    id                 _firstResponder;
@@ -87,17 +102,18 @@ enum MulleWindowStyleMask
    // main thread)
    //
    struct ui_window_pointer_fifo   _eventQueue;
+
    // need to setNeedsDisplay to get the renderer out of the lock and start
    // the render. The _renderContextLock still needs to be observed when
    // attempting to modify the view hierarchy ?
-
    NSConditionLock    *_needsDisplayLock;
-   BOOL               _resizing;
+   BOOL               _isResizing;
    CAAbsoluteTime     _lastResizeEventTimestamp;
    CAAbsoluteTime     _lastDidFramebufferSwapTimestamp;
    CAAbsoluteTime     _lastDidProcessEventsTimestamp;
    BOOL               _shouldClose;
-
+   BOOL               _needsWindowRefresh;
+   NSInteger          _oldSwapInterval;
    struct mulle_pointerarray   _renderQueue; // layers to render
 
 }
@@ -121,13 +137,15 @@ enum MulleWindowStyleMask
 
 // as the framebufferSize via glfw calls can only be done on mainthread
 // we keep a shadow, that gets updated by glfw window events
-@property( assign, readonly) CGSize     framebufferSize;
+@property( assign, readonly) struct CGBitmapSize   framebufferSize;
 
 // used for MulleUIPerformance
 @property( assign) id <UIWindowRenderDelegate>   renderDelegate;
 
 @property( assign) CGFloat              frameRate;
 @property( assign) NSUInteger           swapInterval;
+
+@property( assign) enum UIWindowRefreshStrategy  refreshStrategy;
 
 // nanovg will be done here, here is good time to do plain
 // OpenGL calls, endRender won't have happened yet
@@ -163,7 +181,7 @@ enum MulleWindowStyleMask
 // as anything draw in it would be clobbered by the window clearing itself.
 
 //
-// These are useful to add custom drawing stuff on top. 
+// These are useful to add custom drawing stuff on top.
 // Before flush of nanovg
 @property void   (*willEndRenderCallback)( UIWindow *window,
                                            struct CGFrameInfo *info);
@@ -171,7 +189,7 @@ enum MulleWindowStyleMask
 //
 // At the time "didEndRenderCallback" is called, all nanovg drawing calls will
 // have been flushed. And the graphics context is not usable anymore without
-// another setup. 
+// another setup.
 //
 @property void   (*didEndRenderCallback)( UIWindow *window,
                                          struct CGFrameInfo *info);
@@ -180,6 +198,9 @@ enum MulleWindowStyleMask
 
 
 @property UIEvent  *(*eventCallback)( UIWindow *window, UIEvent *event);
+
+// the resize plane is shown, when the window is resizing
+// the other planes are then not shown
 
 @property( readonly, assign) UIWindowPlane   *alertPlane;
 @property( readonly, assign) UIWindowPlane   *dragAndDropPlane;
@@ -195,6 +216,7 @@ enum MulleWindowStyleMask
 
 + (instancetype) windowWithFrame:(CGRect) frame;
 
+
 // does not deal with focus of events
 //- (void) show;
 //- (void) hide;
@@ -204,11 +226,13 @@ enum MulleWindowStyleMask
 + (CGFloat) primaryMonitorPPI;
 
 - (BOOL) isWindowThread;
+- (BOOL) isResizing;
 
 - (void) runInApplication:(UIApplication *) application;
 
 - (void) setFrameRateHz:(CGFloat) hz;
 - (CGFloat) frameRateHz;
+- (CGFloat) pixelRatio;
 
 - (CAAnimator *) preLayoutAnimator;
 - (CAAnimator *) postLayoutAnimator;
@@ -234,7 +258,7 @@ enum MulleWindowStyleMask
 
 - (void) os_initEvents;
 - (CGSize) os_windowSize;
-- (CGSize) os_framebufferSize;
+- (struct CGBitmapSize) os_framebufferSize;
 - (void) os_requestClose;
 - (BOOL) os_windowShouldClose;
 
@@ -255,7 +279,7 @@ enum MulleWindowStyleMask
 
 @interface UIWindow( OSWindowEvents)
 
-- (void) _framebufferResizeCallback:(CGSize) size;
+- (void) _framebufferResizeCallback:(struct CGBitmapSize) size;
 - (void) _windowResizeCallback:(CGSize) size;
 - (void) _windowCloseCallback;
 - (void) _windowRefreshCallback;
@@ -279,5 +303,8 @@ enum MulleWindowStyleMask
 - (void) getFrameInfo:(struct CGFrameInfo *) info;
 
 - (CGContext *) context;
+
+- (CGContext *) activateContext;
+- (void) deactivateContext:(CGContext *) context;
 
 @end

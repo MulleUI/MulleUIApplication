@@ -90,26 +90,24 @@ static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h,
 
 static void  drawStuff( CALayer *layer, CGContext *context)
 {
-   CGFloat                diameter;
-   CGRect                 canvas;
-   CGRect                 rect;
-   CGPoint                a;
-   CGPoint                b;
-   struct CGFrameInfo  *info;
+   CGFloat   diameter;
+   CGRect    canvas;
+   CGRect    rect;
+   CGPoint   a;
+   CGPoint   b;
 
    canvas      = [layer canvas];
    rect        = UIEdgeInsetsInsetRect( canvas, UIEdgeInsetsMake( 50, 50, 50, 50));
    diameter    = CGFloatMinimum( CGRectGetWidth( rect), CGRectGetHeight( rect));
    rect.origin = CGSizeGetCenterPointInRect( CGSizeMake( diameter, diameter), rect);
    rect.size   = CGSizeMake( diameter, diameter);
-   info        = [context currentFrameInfo];
 
    drawColorwheel( CGContextGetNVGContext( context),
                    rect.origin.x,
                    rect.origin.y,
                    diameter,
                    diameter,
-                   info->frameNumber);
+                   [context numberOfRenderedFrames]);
 
 #if 0
    {
@@ -175,7 +173,7 @@ int   main( int argc, char *argv[])
 
       perf = [MulleUIPerf object];
       [window setRenderDelegate:perf];
-      [window setDesiredFrameRate:UIWindowFrameRateSynced];
+      [window setFrameRate:UIWindowFrameRateSynced];
       [window setSwapInterval:swapInterval];
       setupSceneInView( [window contentPlane]);
 

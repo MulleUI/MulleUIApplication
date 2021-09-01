@@ -63,7 +63,6 @@ typedef enum
 - (instancetype) initWithWindow:(UIWindow *) window
                   mouseLocation:(CGPoint) pos
                       modifiers:(int) mods;
-
 @end
 
 
