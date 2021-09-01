@@ -8,7 +8,7 @@
 #import "import.h"
 
 
-@interface UIWindow( RenderQueue)
+@interface UIView( RenderQueue)
 
 // all layers (are placed into the render queue, the layers get their
 // transform and alpha set
@@ -17,3 +17,4 @@
 - (void) dumpRenderQueue:(struct mulle_pointerarray *) renderQueue;
 
 @end
+

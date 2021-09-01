@@ -13,10 +13,11 @@ endif()
 #
 set( SOURCES
 src/main-animate-circles.m
+src/main-autoresizingmask.m
 src/main-candycrash.m
 src/main-demo.m
 src/main-demo-resizable.m
 src/main-fps.m
-src/main-opengl.m
 src/main-swapinterval.m
+src/main-two-windows.m
 )

@@ -27,20 +27,18 @@
 
    memset( &renderInfo, 0, sizeof( renderInfo));
 
-   renderInfo.size                   = frame.size;
-   renderInfo.viewportFrame.size     = renderInfo.size;
-   renderInfo.framebufferSize.width  = renderInfo.size.width / info->pixelRatio;
-   renderInfo.framebufferSize.height = renderInfo.size.height / info->pixelRatio;
-   renderInfo.UIScale                = info->UIScale;
-   renderInfo.pixelRatio             = info->pixelRatio;
+   renderInfo.size                      = frame.size;
+   renderInfo.framebufferSize.width     = renderInfo.size.width / info->pixelRatio;
+   renderInfo.framebufferSize.height    = renderInfo.size.height / info->pixelRatio;
+   renderInfo.viewportFrame.size        = renderInfo.framebufferSize;
+   renderInfo.UIScale                   = info->UIScale;
+   renderInfo.pixelRatio                = info->pixelRatio;
 
    //
    memset( &bitmapInfo, 0, sizeof( bitmapInfo));
 
-   bitmapInfo.size.width       = (int) (renderInfo.framebufferSize.width + 0.5);
-   bitmapInfo.size.height      = (int) (renderInfo.framebufferSize.height + 0.5);
-   bitmapInfo.nColorComponents = 4;
-   bitmapInfo.encoding         = CGBitmapEncodingRGBABytes;
+   bitmapInfo.size     = renderInfo.framebufferSize;
+   bitmapInfo.encoding = CGBitmapEncodingRGBABytes;
 
    layer = [[[CGLayer alloc] initWithBitmapInfo:bitmapInfo
                                   imageFlags:(int) options

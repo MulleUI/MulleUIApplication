@@ -28,13 +28,14 @@ src/UIView+CALayer.m
 src/UIView+CGGeometry.m
 src/UIView+CGLayer.m
 src/UIView+Layout.m
+src/UIView+RenderQueue.m
 src/UIView+Render.m
 src/UIView+UIEvent.m
 src/UIView+UIResponder.m
 src/UIView+UIViewEditing.m
 src/UIView.m
+src/UIWindow+CAAnimation.m
 src/UIWindow+CGGeometry.m
-src/UIWindow+RenderQueue.m
 src/UIWindow+Render.m
 src/UIWindow+UIEvent.m
 src/UIWindow+UIPasteboard.m

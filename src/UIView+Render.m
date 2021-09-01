@@ -5,6 +5,7 @@
 
 #import "import-private.h"
 
+#import "UIView+RenderQueue.h"
 
 
 @implementation UIView ( Render)
@@ -19,7 +20,7 @@
 
    @autoreleasepool
    {
-      [self createRenderQueue:&renderQueue];
+      [self createRenderQueue:&renderQueue]; // 
       [context renderObjects:&renderQueue];
    }
 

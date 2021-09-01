@@ -71,12 +71,13 @@ src/UIView+CALayer.h
 src/UIView+CGGeometry.h
 src/UIView+CGLayer.h
 src/UIView+Layout.h
+src/UIView+RenderQueue.h
 src/UIView+Render.h
 src/UIView+UIEvent.h
 src/UIView+UIResponder.h
 src/UIView+UIViewEditing.h
 src/UIView.h
-src/UIWindow+RenderQueue.h
+src/UIWindow+CAAnimation.h
 src/UIWindow+UIEvent.h
 src/UIWindow+UIPasteboard.h
 src/UIWindow+UIResponder.h

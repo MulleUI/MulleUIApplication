@@ -263,6 +263,9 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 // this isn't deep
 - (UIView *) subviewWithTag:(NSInteger) tag;
 
+// this is deep,
+- (UIView *) findSubviewWithTag:(NSInteger) tag;
+
 - (UIWindow *) window;
 - (UIView *) mulleWindowPlane; // window plane a view resides in
 - (UIView *) superview;
