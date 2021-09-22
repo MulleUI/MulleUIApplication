@@ -24,7 +24,7 @@
 - (CGSize) sizeThatFits:(CGSize) size
 {
    return( [self sizeThatFits:size
-                      context:[[self window] context]]);
+                      context:nil]);
 }
 
 
@@ -192,15 +192,15 @@
 
 //   fprintf( stderr, "view: %s f=[%s] o=[%s] m=[%s]\n",
 //               [view debugNameCString],
-//               CGRectCStringDescription( [view frame]),
-//               CGRectCStringDescription( [view originalFrame]),
-//               UIEdgeInsetsCStringDescription( [view margins]));
+//               CGRectUTF8String( [view frame]),
+//               CGRectUTF8String( [view originalFrame]),
+//               UIEdgeInsetsUTF8String( [view margins]));
 //
 //   fprintf( stderr, "resizeMask     : 0x%x\n", resizeMask);
 //   fprintf( stderr, "stickMask      : 0x%x\n", stickMask);
-//   fprintf( stderr, "marginalBounds : %s\n", CGRectCStringDescription( marginalBounds));
-//   fprintf( stderr, "newFrame       : %s\n", CGRectCStringDescription( newFrame));
-//   fprintf( stderr, "bounds         : %s\n", CGRectCStringDescription( bounds));
+//   fprintf( stderr, "marginalBounds : %s\n", CGRectUTF8String( marginalBounds));
+//   fprintf( stderr, "newFrame       : %s\n", CGRectUTF8String( newFrame));
+//   fprintf( stderr, "bounds         : %s\n", CGRectUTF8String( bounds));
 
    //
    // if view doesn't fit into bounds, we do what ?

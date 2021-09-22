@@ -148,11 +148,9 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 }
 
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
 {
-   _window            = window;
    _locationInWindow  = pos;
    _timestamp         = CAAbsoluteTimeNow();
    _modifiers         = mods;
@@ -205,8 +203,8 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
                           fromView:NULL];
 #if 0
    fprintf( stderr, "%s -> %s\n",
-               CGPointCStringDescription( _locationInWindow),
-               CGPointCStringDescription( translated));
+               CGPointUTF8String( _locationInWindow),
+               CGPointUTF8String( translated));
 #endif
    return( translated);
 }
@@ -231,7 +229,7 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 }
 
 
-- (char *) cStringDescription
+- (char *) UTF8String
 {
    char   *s;
 
@@ -262,16 +260,14 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 
 
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                            key:(int) key
-                       scanCode:(int) scanCode
-                         action:(int) action
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                                   key:(int) key
+                              scanCode:(int) scanCode
+                                action:(int) action
 {
-   self = [self initWithWindow:window
-                 mouseLocation:pos
-                     modifiers:mods];
+   self = [self initWithMouseLocation:pos
+                            modifiers:mods];
 
    _key       = key;
    _scanCode  = scanCode;
@@ -303,14 +299,12 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 }
 
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                      character:(int) character
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                             character:(int) character
 {
-   self = [self initWithWindow:window
-                 mouseLocation:pos
-                     modifiers:mods];
+   self = [self initWithMouseLocation:pos
+                            modifiers:mods];
 
    _character = character;
 
@@ -346,14 +340,12 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 }
 
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                   buttonStates:(uint64_t) buttonStates
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                          buttonStates:(uint64_t) buttonStates
 {
-   self = [self initWithWindow:window
-                 mouseLocation:pos
-                     modifiers:mods];
+   self = [self initWithMouseLocation:pos
+                            modifiers:mods];
 
    _buttonStates = buttonStates;
 
@@ -376,15 +368,13 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 }
 
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                         button:(int) button
-                         action:(int) action
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                                button:(int) button
+                                action:(int) action
 {
-   self = [self initWithWindow:window
-                 mouseLocation:pos
-                     modifiers:mods];
+   self = [self initWithMouseLocation:pos
+                            modifiers:mods];
    _button = button;
    _action = action;
 
@@ -398,7 +388,7 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 }
 
 
-- (char *) cStringDescription
+- (char *) UTF8String
 {
    char   *s;
 
@@ -438,14 +428,12 @@ static struct
 };
 
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                   scrollOffset:(CGPoint) scrollOffset
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                          scrollOffset:(CGPoint) scrollOffset
 {
-   self = [self initWithWindow:window
-                 mouseLocation:pos
-                     modifiers:mods];
+   self = [self initWithMouseLocation:pos
+                            modifiers:mods];
    _scrollOffset = scrollOffset;
 
    return( self);
@@ -524,14 +512,12 @@ static struct
 
 @implementation UIWindowMoveEvent
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                         origin:(CGPoint) origin
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                                origin:(struct CGBitmapPoint) origin
 {
-   self = [self initWithWindow:window
-                 mouseLocation:pos
-                     modifiers:mods];
+   self = [self initWithMouseLocation:pos
+                            modifiers:mods];
    _origin = origin;
    return( self);
 }
@@ -546,14 +532,12 @@ static struct
 
 @implementation UIWindowResizeEvent : UIWindowEvent
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                           size:(CGSize) size
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                                  size:(struct CGBitmapSize) size
 {
-   self = [self initWithWindow:window
-                 mouseLocation:pos
-                     modifiers:mods];
+   self = [self initWithMouseLocation:pos
+                            modifiers:mods];
    _size = size;
    return( self);
 }

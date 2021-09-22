@@ -3,6 +3,7 @@
 #import "UIWindow.h"
 
 #import "UIWindow+UIEvent.h"
+#import "UIWindow+Render.h"
 
 #import "import-private.h"
 
@@ -11,7 +12,12 @@
 #import "UIView+CGGeometry.h"
 #import "UIView+UIEvent.h"
 #import "UIView+Layout.h"
+#import "GLFWWindow.h"
+#import "GLFWWindow+UIEvent.h"
 #import "mulle-pointerarray+ObjC.h"
+
+@interface UIWindow( GLFWWindowEventReceiver) <GLFWWindowEventReceiver>
+@end 
 
 
 @implementation UIWindow
@@ -26,23 +32,23 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 + (CGFloat) primaryMonitorPPI
 {
-   return( [self os_primaryMonitorPPI]);
+   return( [GLFWWindow os_primaryMonitorPPI]);
 }
 
 
 - (void) requestClose
 {
-   [self os_requestClose];
+   [_os_window os_requestClose];
 }
 
 
 - (void) syncFrameWithWindow
 {
-   [self os_syncFrameWithWindow];
+   _frame = [_os_window os_windowFrame];
 }
 
 //
-// When we a create a window on Linux, the first one usually stays where
+// When we create a window on Linux, the first one usually stays where
 // it's at, and doesn't get a refresh or move notice. But a window manager
 // may reposititon the subsequent window (or even the first), so we get
 // a move and refresh event. The refresh event will hit after the first
@@ -55,7 +61,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 {
    assert( [NSThread mulleIsMainThread]);
 
-   _primaryMonitorPPI = [UIWindow primaryMonitorPPI];
+   _primaryMonitorPPI = [GLFWWindow os_primaryMonitorPPI];
    if( _primaryMonitorPPI == 0.0)
    {
       // no monitor connected, so lets just bail
@@ -64,16 +70,31 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    }
 
    // not super sure that this makes sense to cache
-   _primaryMonitorRefreshRate = [UIWindow os_primaryMonitorRefreshRate];
+   _primaryMonitorRefreshRate = [GLFWWindow os_primaryMonitorRefreshRate];
 
-   _window = [self os_createWindowWithFrame:frame
-                               titleCString:title
-                                  styleMask:styleMask];
-   if( ! _window)
+   _os_window = [[GLFWWindow alloc] initWithFrame:frame
+                                     titleCString:title
+                                        styleMask:styleMask];
+   if( ! _os_window)
    {
       [self release];
       return( nil);
    }
+
+   // buffered with offscreen window is the default, 
+   if( ! (styleMask & UIWindowStyleRenderNonRetainedOnly))
+   {
+      _os_offscreen_window = [[GLFWWindow alloc] initWithFrame:frame
+                                                  titleCString:"OffScreen"
+                                                     styleMask:styleMask|UIWindowStyleInvisible];
+      if( ! _os_offscreen_window)
+      {
+         [self release];
+         return( nil);
+      }
+   }
+   else
+      _backingStore = UIWindowBackingStoreNonRetained;
 
    [super initWithFrame:frame];
 
@@ -83,11 +104,10 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    assert( frame.size.height == _frame.size.height);
    assert( frame.size.width == _frame.size.width);
 
-   _mouseLocation = CGPointMake( -1.0, -1.0);
-
    // initialize various plane for the future, currently only
    // _contentPlane can be used
-   frame.origin = CGPointZero;
+   frame.origin     = CGPointZero;
+   _framebufferSize = [_os_window os_framebufferSize];
 
    // its kinda pointless to inherit clipRects down for views, that are full
    // window size
@@ -130,18 +150,6 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    _mulle_pointerarray_init( &_renderQueue, 128, MulleObjCInstanceGetAllocator( self));
    _mulle_pointerarray_init( &_delegateViews, 8, MulleObjCInstanceGetAllocator( self));
 
-   _renderContextLock = [NSLock new];
-
-   // rename to bind context to thread ?
-   [self os_startRender];
-   _context = [[CGContext alloc] initWithEdgeAntialiasing:!(styleMask & MulleWindowStyleMaskNoEdgeAntialias)
-                                        useStencilStrokes:!(styleMask & MulleWindowStyleMaskNoStencilStrokes)];
-   if( styleMask & MulleWindowStyleMaskInvisible)
-      [_context setRendersOffScreen:YES];
-   _framebufferSize = [self os_framebufferSize];
-   [self os_endRender];
-
-   _scrollWheelSensitivity = 20.0;
    _eventFrequency         = 60.0;
    _oldSwapInterval        = NSIntegerMax;
 
@@ -150,7 +158,11 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    [self setNeedsLayout:YES];
 
    ui_window_pointer_fifo_init( &_eventQueue);
-   [self os_initEvents];
+
+   // don't initialize offscreen window for events
+   [_os_window os_initEvents];
+   [_os_window setWindowEventsReceiver:self];
+   [_os_window setEventsReceiver:self];
 
    return( self);
 }
@@ -160,7 +172,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 {
    return( [self initWithFrame:frame
                   titleCString:"Demo"
-                     styleMask:0]);
+                     styleMask:UIWindowStyleResizable]);
 }
 
 
@@ -177,14 +189,18 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    [self discardPendingEvents];
 
    // get rid of textures possibly or so
-   context = [self activateContext];
+   context = [self activateRenderContext];
    [context mullePerformFinalize];
-   [self deactivateContext:context];
+   [self deactivateRenderContext:context];
+
+   context = [self activateWindowContext];
+   [context mullePerformFinalize];
+   [self deactivateWindowContext:context];
 
    // TODO: delete window ?
    //       remove from screen ?
-   if( _window)
-      [self os_destroyWindow];
+   [_os_offscreen_window finalize];
+   [_os_window finalize];
 
    _firstResponder = nil;
    [super finalize];
@@ -195,6 +211,8 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 {
    [_postLayoutAnimator release];
    [_preLayoutAnimator release];
+   [_os_offscreen_window release];
+   [_os_window release];
 
    mulle_pointerarray_release_all( &_trackingViews);
    mulle_pointerarray_done( &_trackingViews);
@@ -205,8 +223,6 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    mulle_quadtree_destroy( _quadtree);
 
-   [_context release];
-   [_renderContextLock release];
    [_needsDisplayLock release];
 
    ui_window_pointer_fifo_done( &_eventQueue);
@@ -243,6 +259,21 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    return( _frame.size.width / _framebufferSize.width);
 }
 
+
+- (void) setBackingStore:(NSUInteger) backingStore
+{
+   if( _os_offscreen_window)
+   {
+      _backingStore = backingStore;
+      return;
+   }
+#if DEBUG
+   if( backingStore != UIWindowBackingStoreNonRetained)
+       fprintf( stderr, "Window is not configured with an offscreen. "
+"Only UIWindowBackingStoreNonRetained is possible\n");
+#endif  
+   _backingStore = UIWindowBackingStoreNonRetained;
+}
 
 - (void) runInApplication:(UIApplication *) application
 {
@@ -330,17 +361,6 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 - (CGFloat) alpha
 {
    return( 1.0);
-}
-
-
-- (CGColorRef) backgroundColor
-{
-   return( [_context backgroundColor]);
-}
-
-- (void) setBackgroundColor:(CGColorRef) color
-{
-   return( [_context setBackgroundColor:color]);
 }
 
 

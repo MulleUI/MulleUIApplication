@@ -15,7 +15,7 @@
 {
    if( ! _pasteboard)
    {
-      assert( _window);
+      assert( _os_window);
       _pasteboard = [UIPasteboard new];
       [_pasteboard setWindow:self];
    }

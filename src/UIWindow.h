@@ -1,5 +1,6 @@
 #import "UIView.h"
 
+#import "UIWindowStyle.h"
 
 struct CGFrameInfo;
 
@@ -11,22 +12,13 @@ typedef UIView   UIWindowPlane;
 
 
 
+
+
 // values for frameRate
 #define UIWindowFrameRateUnsynced   0.0        // as fast as possible
 #define UIWindowFrameRateAsync      INFINITY   // wait until an event hits
 #define UIWindowFrameRateSynced     -INFINITY  // tied to monitor frame rate (or 1/60.0 if not available)
 
-
-// mulle addition
-enum MulleWindowStyleMask
-{
-//  MulleWindowStyleMaskClosable        = 0x1,
-//  MulleWindowStyleMaskMiniaturizable  = 0x2,
-  MulleWindowStyleMaskResizable         = 0x4,
-  MulleWindowStyleMaskInvisible         = 0x8,
-  MulleWindowStyleMaskNoEdgeAntialias   = 0x10,  // nanvg
-  MulleWindowStyleMaskNoStencilStrokes  = 0x20   // nanovg
-};
 
 #define ui_window_pointer_fifo   mulle__pointerfifo128
 
@@ -41,10 +33,12 @@ enum MulleWindowStyleMask
 
 // none of these are optional, implement them all
 // call before beginRender
-- (void) windowWillBeginRender:(UIWindow *) window;
+- (void) windowWillBeginRender:(UIWindow *) window
+                       context:(CGContext *) context;
 
 // cabll before endRender
-- (void) windowWillEndRender:(UIWindow *) window;
+- (void) windowWillEndRender:(UIWindow *) window
+                     context:(CGContext *) context;
 
 // call after endRender
 - (void) windowDidEndRender:(UIWindow *) window;
@@ -74,10 +68,10 @@ enum UIWindowRefreshStrategy
 //
 @interface UIWindow : UIView
 {
-   void               *_window;            // GLFWwindow
-   CGContext          *_context;           //
+   id                 _os_window;             // our GLFW Window
+   id                 _os_offscreen_window;   // our drawing Window
+
    CGSize             _resizeSize;
-   NSUInteger         _discardEvents;      // bitfield of UIEventtypes ?
    id                 _firstResponder;
    void               *_quadtree;
 
@@ -90,7 +84,6 @@ enum UIWindowRefreshStrategy
    CGRect             _dividedRects[ 4];
    NSUInteger         _nDividedRects;
    NSUInteger         _nTest;
-   NSLock             *_renderContextLock;
 
    CAAnimator         *_preLayoutAnimator;
    CAAnimator         *_postLayoutAnimator;
@@ -115,22 +108,16 @@ enum UIWindowRefreshStrategy
    BOOL               _needsWindowRefresh;
    NSInteger          _oldSwapInterval;
    struct mulle_pointerarray   _renderQueue; // layers to render
-
 }
 
 @property( retain) id                   userInfo;
 // TODO: pasteboard is a global resource and is on Application ?
 @property( retain) UIPasteboard         *pasteboard;
 @property( assign) NSThread             *thread;
-@property( assign, readonly) CGPoint    mouseLocation;
-@property( assign, readonly) uint64_t   mouseButtonStates;
-@property( assign, readonly) uint64_t   modifiers;
-@property( assign) CGFloat              scrollWheelSensitivity;
 
 @property( assign, readonly) CGFloat    primaryMonitorPPI;
 @property( assign, readonly) CGFloat    primaryMonitorRefreshRate;
 
-@property( assign, getter=isScrollWheelNatural) BOOL scrollWheelNatural;
 @property( assign) CGFloat              eventFrequency;
 
 @property( assign) CGColorRef           backgroundColor;
@@ -142,9 +129,13 @@ enum UIWindowRefreshStrategy
 // used for MulleUIPerformance
 @property( assign) id <UIWindowRenderDelegate>   renderDelegate;
 
-@property( assign) CGFloat              frameRate;
-@property( assign) NSUInteger           swapInterval;
+@property( assign) CGFloat                       frameRate;
+@property( assign) NSUInteger                    swapInterval;
 
+// default is UIWindowBackingStoreBuffered, this is more expensive. If your
+// event/drawing code is very fast (within a frame), you can get by with 
+// UIWindowBackingStoreNonRetained
+@property( assign) UIWindowBackingStoreType      backingStore;
 @property( assign) enum UIWindowRefreshStrategy  refreshStrategy;
 
 // nanovg will be done here, here is good time to do plain
@@ -160,13 +151,17 @@ enum UIWindowRefreshStrategy
 // be the same through all callbacks.
 //
 @property void   (*willRenderCallback)( UIWindow *window,
+                                        CGContext *context,  
                                         struct CGFrameInfo *info);
 @property void   (*willLayoutCallback)( UIWindow *window,
+                                        CGContext *context,  
                                         struct CGFrameInfo *info);
 @property void   (*didLayoutCallback)( UIWindow *window,
+                                       CGContext *context,
                                        struct CGFrameInfo *info);
 @property void   (*didCreateRenderQueueCallback)( UIWindow *window,
-                                       struct CGFrameInfo *info);
+                                                  CGContext *context,
+                                                  struct CGFrameInfo *info);
 
 //
 // stage #0: after _preLayoutAnimator
@@ -174,6 +169,7 @@ enum UIWindowRefreshStrategy
 // stage #2: after CALayer "privat" animations
 //
 @property void   (*didAnimateCallback)( UIWindow *window,
+                                        CGContext *context,
                                         struct CGFrameInfo *info,
                                         NSInteger stage);
 
@@ -183,18 +179,17 @@ enum UIWindowRefreshStrategy
 //
 // These are useful to add custom drawing stuff on top.
 // Before flush of nanovg
-@property void   (*willEndRenderCallback)( UIWindow *window,
-                                           struct CGFrameInfo *info);
+@property void   (*didRenderCallback)( UIWindow *window,
+                                       CGContext *context,
+                                       struct CGFrameInfo *info);
 
 //
-// At the time "didEndRenderCallback" is called, all nanovg drawing calls will
+// At the time "willSwapCallback" is called, all nanovg drawing calls will
 // have been flushed. And the graphics context is not usable anymore without
 // another setup.
 //
-@property void   (*didEndRenderCallback)( UIWindow *window,
-                                         struct CGFrameInfo *info);
-@property void   (*didSwapCallback)( UIWindow *window,
-                                     struct CGFrameInfo *info);
+@property void   (*willSwapCallback)( UIWindow *window);
+@property void   (*didSwapCallback)( UIWindow *window);
 
 
 @property UIEvent  *(*eventCallback)( UIWindow *window, UIEvent *event);
@@ -237,6 +232,8 @@ enum UIWindowRefreshStrategy
 - (CAAnimator *) preLayoutAnimator;
 - (CAAnimator *) postLayoutAnimator;
 
+- (void) requestClose;
+
 @end
 
 
@@ -246,65 +243,3 @@ enum UIWindowRefreshStrategy
 
 @end
 
-@interface UIWindow( OS)
-
-+ (CGFloat) os_primaryMonitorPPI;
-
-- (void) os_syncFrameWithWindow;
-- (void *) os_createWindowWithFrame:(CGRect) frame
-                       titleCString:(char *) title
-                          styleMask:(NSUInteger) styleMask;
-- (void) os_destroyWindow;
-
-- (void) os_initEvents;
-- (CGSize) os_windowSize;
-- (struct CGBitmapSize) os_framebufferSize;
-- (void) os_requestClose;
-- (BOOL) os_windowShouldClose;
-
-// sets and locks the current openGL context
-- (void) os_startRender;
-- (void) os_endRender;
-
-+ (void) os_setSwapInterval:(NSUInteger) value;
-- (void) os_swapBuffers;
-
-- (void) os_show;
-- (void) os_hide;
-
-+ (CGFloat) os_primaryMonitorRefreshRate;
-
-@end
-
-
-@interface UIWindow( OSWindowEvents)
-
-- (void) _framebufferResizeCallback:(struct CGBitmapSize) size;
-- (void) _windowResizeCallback:(CGSize) size;
-- (void) _windowCloseCallback;
-- (void) _windowRefreshCallback;
-- (void) _windowMoveCallback:(CGPoint) position;
-
-@end
-
-
-@interface UIWindow( Render)
-
-- (void) renderLoop;
-- (BOOL) renderUpToNumberOfFrames:(NSUInteger) maxFrames;
-- (void) renderFrame:(struct CGFrameInfo *) info;
-- (BOOL) renderFrameWaitForNeedsDisplay;
-
-- (void) addToDelegateViews:(UIView *) view;
-- (void) removeFromDelegateViews:(UIView *) view;
-
-- (void) requestClose;
-
-- (void) getFrameInfo:(struct CGFrameInfo *) info;
-
-- (CGContext *) context;
-
-- (CGContext *) activateContext;
-- (void) deactivateContext:(CGContext *) context;
-
-@end

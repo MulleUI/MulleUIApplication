@@ -1,13 +1,5 @@
-#import "import-private.h"
-
-#import "CGContext.h"
-#import "UIApplication.h"
-#import "UIWindow.h"
-#import "UIView.h"
-#import "UIView+Layout.h"
-#import "CALayer.h"
+#import <MulleUICore/MulleUICore.h>
 #import <string.h>
-#import "UIEdgeInsets.h"
 
 struct
 {

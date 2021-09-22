@@ -28,7 +28,6 @@ typedef enum
 //
 @interface UIEvent : NSObject
 {
-   UIWindow  *_window;   // assign  ??
    CGPoint   _translatedPoint;
    UIView    *_translatedView; // NOT READONLY!!
 }
@@ -60,9 +59,8 @@ typedef enum
                      forView:(UIView *) view;
 - (CGPoint) _translatedPointForView:(UIView *) view;
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods;
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods;
 @end
 
 
@@ -82,12 +80,11 @@ typedef enum
 @property( assign, readonly) int   scanCode;
 @property( assign, readonly) int   action;
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                            key:(int) key
-                       scanCode:(int) scanCode
-                         action:(int) action;
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                                   key:(int) key
+                              scanCode:(int) scanCode
+                                action:(int) action;
 @end
 
 
@@ -96,10 +93,9 @@ typedef enum
 
 @property( assign, readonly) int   character;
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                      character:(int) key;
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                             character:(int) key;
 
 @end
 
@@ -109,11 +105,10 @@ typedef enum
 @property( assign, readonly) int   button;
 @property( assign, readonly) int   action;
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                         button:(int) button
-                         action:(int) action;
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                                button:(int) button
+                                action:(int) action;
 
 
 @end
@@ -121,10 +116,9 @@ typedef enum
 
 @interface UIMouseMotionEvent : UIEvent
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                   buttonStates:(uint64_t) buttonStates;
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                          buttonStates:(uint64_t) buttonStates;
 
 @property( assign, readonly) int   buttonStates;
 
@@ -133,10 +127,9 @@ typedef enum
 
 @interface UIMouseScrollEvent : UIEvent
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                   scrollOffset:(CGPoint) offset;
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                          scrollOffset:(CGPoint) offset;
 
 @property( assign, readonly) CGPoint   scrollOffset;
 
@@ -171,12 +164,11 @@ enum UIWindowEventType
 
 @interface UIWindowMoveEvent : UIWindowEvent
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                         origin:(CGPoint) pos;
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                                origin:(struct CGBitmapPoint) pos;
 
-@property( assign, readonly) CGPoint   origin;
+@property( assign, readonly) struct CGBitmapPoint   origin;
 
 @end
 
@@ -191,12 +183,11 @@ enum UIWindowEventType
 
 @interface UIWindowResizeEvent : UIWindowEvent
 
-- (instancetype) initWithWindow:(UIWindow *) window
-                  mouseLocation:(CGPoint) pos
-                      modifiers:(int) mods
-                           size:(CGSize) size;
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(int) mods
+                                  size:(struct CGBitmapSize) size;
 
-@property( assign, readonly) CGSize   size;
+@property( assign, readonly) struct CGBitmapSize   size;
 
 @end
 

@@ -4,6 +4,7 @@
 #import "UIWindow.h"
 #import "UIWindow+UIResponder.h"
 #import "UIResponder.h"
+#import "GLFWWindow.h"
 
 
 @interface UIResponder
@@ -48,9 +49,9 @@
 #ifdef HITTEST_DEBUG
    fprintf( stderr, "%s: %s [%s] @%s -> %s\n",
                         __PRETTY_FUNCTION__,
-                        [self cStringDescription],
-                        CGRectCStringDescription( bounds),
-                        CGPointCStringDescription( point),
+                        [self UTF8String],
+                        CGRectUTF8String( bounds),
+                        CGPointUTF8String( point),
                         flag ? "YES" : "NO");
 #endif
    return( flag);
@@ -289,13 +290,13 @@
    if( [self isUserInteractionEnabled] == NO)
    {
 #ifdef EVENT_DEBUG
-       fprintf( stderr, "Disabled view %s ignores event\n", [self cStringDescription]);
+       fprintf( stderr, "Disabled view %s ignores event\n", [self UTF8String]);
 #endif
       return( event);
    }
 
 #ifdef EVENT_DEBUG
-    fprintf( stderr, "Try to handle event %s\n", [self cStringDescription]);
+    fprintf( stderr, "Try to handle event %s\n", [self UTF8String]);
 #endif
 
    switch( [event eventType])
@@ -379,7 +380,7 @@
    if( [self isHidden]) // alpha < 0.01: should we care for events ?
    {
 #ifdef EVENT_DEBUG
-       fprintf( stderr, "Invisible view %s ignores event\n", [self cStringDescription]);
+       fprintf( stderr, "Invisible view %s ignores event\n", [self UTF8String]);
 #endif
       return( event);
    }
@@ -389,16 +390,16 @@
 
 #ifdef HITTEST_DEBUG
   fprintf( stderr, "translated: %s %s -> %s\n",
-               [self cStringDescription],
-               CGPointCStringDescription( position),
-               CGPointCStringDescription( translated));
+               [self UTF8String],
+               CGPointUTF8String( position),
+               CGPointUTF8String( translated));
 #endif
 
    if( ! [self hitTest:translated
              withEvent:event])
    {
 #ifdef EVENT_DEBUG_VERBOSE
-       fprintf( stderr, "Event does not hit view %s\n", [self cStringDescription]);
+       fprintf( stderr, "Event does not hit view %s\n", [self UTF8String]);
 #endif
       return( event);
    }
@@ -409,7 +410,7 @@
    if( view)
    {
 #ifdef EVENT_DEBUG
-      fprintf( stderr, "Subview %s did consume event\n", [view cStringDescription]);
+      fprintf( stderr, "Subview %s did consume event\n", [view UTF8String]);
 #endif
       return( nil);
    }
@@ -418,7 +419,7 @@
    {
       // TODO: check if event type is of type user interaction
 #ifdef EVENT_DEBUG
-      fprintf( stderr, "User interaction disabled on view %s\n", [self cStringDescription]);
+      fprintf( stderr, "User interaction disabled on view %s\n", [self UTF8String]);
 #endif
       return( event);
    }
@@ -436,7 +437,7 @@
             handleEvent:(UIEvent *) event
 {
 #ifdef EVENT_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, (char *) [responder cStringDescription]);
+   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, (char *) [responder UTF8String]);
 #endif
 
    do
@@ -447,12 +448,12 @@
       if( ! event)
       {
 #ifdef EVENT_DEBUG
-         fprintf( stderr, "Responder %s consumed event\n", (char *) [responder cStringDescription]);
+         fprintf( stderr, "Responder %s consumed event\n", (char *) [responder UTF8String]);
 #endif
          break;
       }
 #ifdef EVENT_DEBUG
-      fprintf( stderr, "Responder %s did not consume event, try next\n", (char *) [responder cStringDescription]);
+      fprintf( stderr, "Responder %s did not consume event, try next\n", (char *) [responder UTF8String]);
 #endif
       responder = [responder nextResponder];
    }
@@ -472,8 +473,8 @@
 
 #ifdef EVENT_DEBUG
    fprintf( stderr, "Event start: %s %s\n",
-                        [self cStringDescription],
-                        [event cStringDescription]);
+                        [self UTF8String],
+                        [event UTF8String]);
 #endif
 
    assert( self == [self window]);
@@ -486,7 +487,7 @@
       {
 #ifdef EVENT_DEBUG
          fprintf( stderr, "First Responder handled event: %s\n",
-                        (char *) [responder cStringDescription]);
+                        (char *) [responder UTF8String]);
 #endif
          return( event);
       }

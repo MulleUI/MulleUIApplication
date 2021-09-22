@@ -517,7 +517,7 @@ static inline CGRect   getBounds( UIView *self)
 }
 
 
-- (char *) cStringDescription
+- (char *) UTF8String
 {
    char        *result;
    char        *s;

@@ -19,7 +19,7 @@
 #if DEBUG
    if( responder != _firstResponder)
       fprintf( stderr, "UIWindow: change firstResponder to %s\n", 
-                           responder ? (char *) [responder cStringDescription] 
+                           responder ? (char *) [responder UTF8String] 
                                      : "nil");
 #endif
 
