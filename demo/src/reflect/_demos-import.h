@@ -13,26 +13,26 @@
 
 // You can tweak the following #import with these commands.
 // (Use 2E95F005-47DA-4EB0-A79D-B4113717DF09 instead of MulleUICore if there are duplicate entries)
-//    remove:             `mulle-sourcetree mark MulleUICore no-header`
+//    remove:             `mulle-sde dependency mark MulleUICore no-header`
 //    rename:             `mulle-sde dependency|library set MulleUICore include whatever.h`
-//    reorder:            `mulle-sourcetree move MulleUICore <up|down>`
-//    toggle #import:     `mulle-sourcetree mark MulleUICore [no-]import`
-//    toggle public:      `mulle-sourcetree mark MulleUICore [no-]public`
-//    toggle optional:    `mulle-sourcetree mark MulleUICore [no-]require`
-//    remove for platform:`mulle-sourcetree mark MulleUICore no-platform-<uname>`
-//        (use mulle-sourcetree-to-c --unames for known values)
+//    reorder:            `mulle-sde dependency move MulleUICore <up|down>`
+//    toggle #import:     `mulle-sde dependency mark MulleUICore [no-]import`
+//    toggle public:      `mulle-sde dependency mark MulleUICore [no-]public`
+//    toggle optional:    `mulle-sde dependency mark MulleUICore [no-]require`
+//    remove for platform:`mulle-sde dependency mark MulleUICore no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleUICore/MulleUICore.h>   // MulleUICore
 
 // You can tweak the following #import with these commands.
 // (Use CD9E2749-A72F-44D4-A4E9-6C86DCFD61D4 instead of MulleUIPerf if there are duplicate entries)
-//    remove:             `mulle-sourcetree mark MulleUIPerf no-header`
+//    remove:             `mulle-sde dependency mark MulleUIPerf no-header`
 //    rename:             `mulle-sde dependency|library set MulleUIPerf include whatever.h`
-//    reorder:            `mulle-sourcetree move MulleUIPerf <up|down>`
-//    toggle #import:     `mulle-sourcetree mark MulleUIPerf [no-]import`
-//    toggle public:      `mulle-sourcetree mark MulleUIPerf [no-]public`
-//    toggle optional:    `mulle-sourcetree mark MulleUIPerf [no-]require`
-//    remove for platform:`mulle-sourcetree mark MulleUIPerf no-platform-<uname>`
-//        (use mulle-sourcetree-to-c --unames for known values)
+//    reorder:            `mulle-sde dependency move MulleUIPerf <up|down>`
+//    toggle #import:     `mulle-sde dependency mark MulleUIPerf [no-]import`
+//    toggle public:      `mulle-sde dependency mark MulleUIPerf [no-]public`
+//    toggle optional:    `mulle-sde dependency mark MulleUIPerf [no-]require`
+//    remove for platform:`mulle-sde dependency mark MulleUIPerf no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleUIPerf/MulleUIPerf.h>   // MulleUIPerf
 
 #ifdef __has_include

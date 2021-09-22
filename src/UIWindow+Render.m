@@ -11,11 +11,11 @@
 #import "UIView+Layout.h"
 #import "UIView+RenderQueue.h"
 #import "UIEvent.h"
+#import "GLFWWindow.h"
 
 
 // #define LAYOUT_ANIMATIONS
 //#define SWAP_DEBUG
-//#define HAVE_PANIC_CODE
 
 
 
@@ -30,13 +30,6 @@
 
 
 @implementation UIWindow ( RenderingAddAllLayoutsToRenderQueue)
-
-- (CGContext *) context
-{
-   assert( _context);
-   return( _context);
-}
-
 
 // can only be called from main thread :()
 - (void) getFrameInfo:(struct CGFrameInfo *) info
@@ -65,6 +58,14 @@
    info->UIScale            = CGVectorMake( scale_x, scale_y);
 	info->pixelRatio         = info->framebufferSize.width / _frame.size.width;
 }
+
+
+- (void) syncFrameAndFramebufferSizeWithOSWindow
+{
+   _frame           = [_os_window os_windowFrame];
+   _framebufferSize = [_os_window os_framebufferSize];
+}
+
 
 
 // unused...
@@ -124,7 +125,7 @@
    UIView                                *view;
 
 #ifdef RENDER_VERBOSE_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
+   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self UTF8String]);
 #endif
 
    rover = mulle_pointerarray_enumerate( &_delegateViews);
@@ -132,6 +133,176 @@
       [view willRenderWithAbsoluteTime:renderStart];
    mulle_pointerarrayenumerator_done( &rover);
 }
+
+
+- (CGContext *) activateWindowContext
+{
+   CGContext   *context;
+
+   [_os_window os_startRender];
+
+   context = [_os_window context];
+   [context setActive:YES];
+   [context setBackgroundColor:_backgroundColor];
+
+   return( context);
+}
+
+
+- (void) deactivateWindowContext:(CGContext *) context
+{
+   assert( context);
+   assert( [context os_window] == _os_window);
+
+   [context setActive:NO];
+   [_os_window os_endRender];
+}
+
+
+- (id) draw_os_window
+{
+   if( _backingStore == UIWindowBackingStoreNonRetained)
+      return( _os_window);
+   return( _os_offscreen_window);
+}
+
+
+// TODO: memo, maybe the context triggers os_startRender ?
+- (CGContext *) activateRenderContext
+{
+   CGContext   *context;
+   id          os_render_window;
+
+   // take renderlock here, relinquish later when wating for events
+   // or when someone closes the window
+   os_render_window = [self draw_os_window];
+   assert( os_render_window);
+   [os_render_window os_startRender];
+
+   context = [os_render_window context];
+   [context setActive:YES];                        // just a flag
+   [context setBackgroundColor:_backgroundColor];  // just a value
+
+   return( context);
+}
+
+
+- (void) deactivateRenderContext:(CGContext *) context
+{
+   id   os_render_window;
+
+   assert( context);
+   os_render_window = [context os_window];
+   assert( os_render_window);
+   [context setActive:NO];
+   [os_render_window os_endRender];
+}
+
+
+//
+// Can only swap buffers if we have rendered at least once
+// An early incoming windows refresh request needs to be discarded
+// 
+- (void) swapBuffers
+{
+   CGImage                      *image;
+   struct CGFramebufferBitmap   fb;
+   CGContext                    *context;
+   CGDrawableOptions            options;
+   struct CGFrameInfo           info;
+   CGRect                       rect;
+
+   if( _backingStore == UIWindowBackingStoreBuffered)
+   {
+      context = [self activateRenderContext];
+      {
+        // need to blit from offscreen window to onscreen here
+        // get image of offscreen framebuffer
+        // can do this only, if we have rendered something last frame
+         fb = [context grabLastRenderedOffscreenFramebuffer:NULL];
+      }
+      [self deactivateRenderContext:context];
+
+      // if there has nothing been rendered yet, we decline the swap
+      if( fb.data.length == 0)
+         return;
+
+      // mulle_rgba_dump( fb.data.bytes, fb.info.size.width, fb.info.size.height);
+ 
+      //
+      // draw the image we got from the framebuffer into the window
+      // 
+      context = [self activateWindowContext];
+      {
+         [self syncFrameAndFramebufferSizeWithOSWindow];
+         [self getFrameInfo:&info]; 
+
+         [context beginRender:&info];
+         [context clearFramebuffer];  //?? useful
+
+         //
+         // here we keep the orignal size during resize
+         //
+         rect = CGRectMake( 0, 0, fb.info.size.width, fb.info.size.height);
+         
+         options = CGDrawableOptionsMake( 0.0, 1.0, 0.0, YES);
+         // image has to live until when ? can't delete too soon
+         // but it's not 100% clear then the right time is
+         image = [[[CGImage alloc] initWithRGBABytes:fb.data.bytes
+                                          bitmapSize:fb.info.size
+                                          imageFlags:CGBitmapEncodingIsFlipped( fb.info.encoding) 
+                                                      ? NVG_IMAGE_FLIPY 
+                                                      : 0
+                                             context:context] autorelease];
+         [image drawRect:rect
+                 options:&options
+                 context:context];
+
+         // just for debugging, draws a frame somewhere
+         {
+            struct NVGcontext   *vg;
+
+            vg = CGContextGetNVGContext( context);
+
+            // gray rectangle so we know something is drawn...
+            nvgBeginPath( vg);
+            {
+               rect = CGRectInset( rect, 20, 20);
+               nvgRect( vg, rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
+               nvgStrokeWidth( vg, 8);
+               nvgStrokeColor( vg, MulleColorMake( 0x8020A0FF));
+            }
+            nvgStroke( vg);
+         }
+
+         [context endRender];      
+      }
+      [self deactivateWindowContext:context];
+
+      CGFramebufferBitmapDone( &fb);
+   }
+
+   if( _willSwapCallback)
+      (*_willSwapCallback)( self);
+
+   // context needs to be set here
+   if( _swapInterval != _oldSwapInterval)
+   {
+      context = [self activateWindowContext];
+      {
+         [GLFWWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
+      }
+      [self deactivateWindowContext:context];
+
+      _oldSwapInterval = _swapInterval;
+   }
+
+   [_os_window os_swapBuffers];
+   _lastDidFramebufferSwapTimestamp = CAAbsoluteTimeNow();
+   if( _didSwapCallback)
+      (_didSwapCallback)( self);       
+}
+
 
 
 // UIWindow render chain
@@ -195,9 +366,10 @@
    renderStart = CAAbsoluteTimeNow();
 
    if( _willRenderCallback)
-      (*_willRenderCallback)( self, info);
+      (*_willRenderCallback)( self, context, info);
 
-   [_renderDelegate windowWillBeginRender:self];
+   [_renderDelegate windowWillBeginRender:self
+                                  context:context];
 
    /*
     * Layout
@@ -209,10 +381,10 @@
       [_preLayoutAnimator animateWithAbsoluteTime:renderStart];
 
       if( _didAnimateCallback)
-         (*_didAnimateCallback)( self, info, 0);
+         (*_didAnimateCallback)( self, context, info, 0);
 
       if( _willLayoutCallback)
-         (*_willLayoutCallback)( self, info);
+         (*_willLayoutCallback)( self, context, info);
 
       //
       // do layout before the animation step, as this may generate animations
@@ -225,12 +397,12 @@
       [self endLayout];
 #endif
       if( _didLayoutCallback)
-         (*_didLayoutCallback)( self, info);
+         (*_didLayoutCallback)( self, context, info);
 
       [_postLayoutAnimator animateWithAbsoluteTime:renderStart];
 
       if( _didAnimateCallback)
-         (*_didAnimateCallback)( self, info, 1);
+         (*_didAnimateCallback)( self, context, info, 1);
    }
 
 
@@ -247,7 +419,7 @@
       _mulle_pointerarray_reset( &_renderQueue);
       [self createRenderQueue:&_renderQueue];
       if( _didCreateRenderQueueCallback)
-         (*_didCreateRenderQueueCallback)( self, info);
+         (*_didCreateRenderQueueCallback)( self, context, info);
 
       [CAAnimation animateObjects:&_renderQueue
                      absoluteTime:renderStart];
@@ -260,7 +432,7 @@
       // with rendering, or but the animation step into the render part ?
       //
       if( _didAnimateCallback)
-         (*_didAnimateCallback)( self, info, 2);
+         (*_didAnimateCallback)( self, context, info, 2);
    }
 
    /*
@@ -274,49 +446,21 @@
          [context renderObjects:&_renderQueue];
       }
 
-      [_renderDelegate windowWillEndRender:self];
+      [_renderDelegate windowWillEndRender:self
+                                   context:context];
 
-      if( _willEndRenderCallback)
-         (*_willEndRenderCallback)( self, info);
+      if( _didRenderCallback)
+         (*_didRenderCallback)( self, context, info);
 
       [context endRender];
    }
 
    [_renderDelegate windowDidEndRender:self];
 
-   if( _didEndRenderCallback)
-      (*_didEndRenderCallback)( self, info);
-
    //
    // just don't want to keep dangling stuff here
    // It's nice to see the renderQueue wthe F11 though
    //mulle_pointerarray_reset( &_renderQueue);
-}
-
-
-- (CGContext *) activateContext
-{
-   // take renderlock here, relinquish later when wating for events
-   // or when someone closes the window
-   [self os_startRender];
-   [_context setActive:YES];
-
-   if( ! [_context rendersOffScreen])
-   {
-      if( _swapInterval != _oldSwapInterval)
-      {
-         [UIWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
-         _oldSwapInterval = _swapInterval;
-      }
-   }
-   return( _context);
-}
-
-
-- (void) deactivateContext:(CGContext *) context
-{
-   [context setActive:NO];
-   [self os_endRender];
 }
 
 
@@ -336,11 +480,8 @@
    NSUInteger                  eventTypes;
    NSUInteger                  frames;
    struct CGFramebufferBitmap  fb;
-   BOOL                        isPanicking;
    BOOL                        rval;
-   BOOL                        wasPanicking;
 
-   isPanicking = NO;
    frames      = 0;
    image       = nil;
    rval        = NO;
@@ -359,40 +500,27 @@
        */
       @autoreleasepool
       {
-         context = [self activateContext];
-
-         [self getFrameInfo:&info];  // retrieve newest geometry
-#ifdef HAVE_PANIC_CODE
-         if( isPanicking)
+         context = [self activateRenderContext];
          {
-            [context beginRender:&info];
-            options = CGDrawableOptionsMake( 0.0, 1.0, 0.0, YES);
-            [image drawRect:[self contentRect]
-                    options:&options
-                    context:context];
-            [context endRender];
-         }
-         else
-#endif
-         {
+            [self getFrameInfo:&info];  // retrieve newest geometry
             [self renderFrame:&info
                       context:context];
          }
-
-#ifdef SWAP_DEBUG
-         fprintf( stderr, "%s %s swaps framebuffer (frame: %s, buffer: %ld, %ld)\n",
-                        __PRETTY_FUNCTION__,
-                        [self cStringDescription],
-                        CGSizeCStringDescription( info.size),
-                        info.framebufferSize.width, info.framebufferSize.height);
-#endif
-         [self os_swapBuffers];
-         _lastDidFramebufferSwapTimestamp = CAAbsoluteTimeNow();
-         if( _didSwapCallback)
-            (_didSwapCallback)( self, &info);
-         [self deactivateContext:context];
-         context = nil;
+         [self deactivateRenderContext:context];
+         context = nil;         // idiot protection
       }
+   
+      /* 
+       * swap 
+       */
+#ifdef SWAP_DEBUG
+      fprintf( stderr, "%s %s swaps framebuffer (frame: %s, buffer: %ld, %ld)\n",
+                     __PRETTY_FUNCTION__,
+                     [self UTF8String],
+                     CGSizeUTF8String( info.size),
+                     info.framebufferSize.width, info.framebufferSize.height);
+#endif
+      [self swapBuffers];
 
       // now no openGL or CGContext calls should happen
       // as the context has been detached from this thread
@@ -427,38 +555,6 @@
          eventTypes = [self processEvents:timestamp
                                 frameRate:frameRate];
          _lastDidProcessEventsTimestamp = CAAbsoluteTimeNow();
-
-         // this is either a move or a refresh or a close
-         // in any case it's time to panic, which means we
-         // have to redraw fast or get out of here
-#ifdef HAVE_PANIC_CODE
-         wasPanicking = isPanicking;  // NO: we have a valid framebuffer swapped to front
-         isPanicking  = (eventTypes & UIEventTypeWindow) ? YES : NO;
-         if( isPanicking)
-         {
-            if( ! wasPanicking)
-            {
-               [image release];
-               image = nil;
-
-               context = [self activateContext];
-
-               fb    = [context grabLastRenderedFramebuffer:NULL];
-               image = [[CGImage alloc] initWithRGBABytes:fb.data.bytes
-                                               bitmapSize:fb.info.size
-                                               imageFlags:0
-                                                  context:context];
-               [self deactivateContext:context];
-               context = nil;
-            }
-            // else keep image
-         }
-         else
-         {
-            [image release];
-            image = nil;
-         }
-#endif
       }
    }
 

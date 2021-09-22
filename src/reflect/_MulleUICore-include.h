@@ -16,38 +16,38 @@
 
 // You can tweak the following #include with these commands.
 // (Use 148522C7-9709-4A0B-8D63-AC57AD5E520C instead of mulle-quadtree if there are duplicate entries)
-//    remove:             `mulle-sourcetree mark mulle-quadtree no-header`
+//    remove:             `mulle-sde dependency mark mulle-quadtree no-header`
 //    rename:             `mulle-sde dependency|library set mulle-quadtree include whatever.h`
-//    reorder:            `mulle-sourcetree move mulle-quadtree <up|down>`
-//    toggle #include:    `mulle-sourcetree mark mulle-quadtree [no-]import`
-//    toggle public:      `mulle-sourcetree mark mulle-quadtree [no-]public`
-//    toggle optional:    `mulle-sourcetree mark mulle-quadtree [no-]require`
-//    remove for platform:`mulle-sourcetree mark mulle-quadtree no-platform-<uname>`
-//        (use mulle-sourcetree-to-c --unames for known values)
+//    reorder:            `mulle-sde dependency move mulle-quadtree <up|down>`
+//    toggle #include:    `mulle-sde dependency mark mulle-quadtree [no-]import`
+//    toggle public:      `mulle-sde dependency mark mulle-quadtree [no-]public`
+//    toggle optional:    `mulle-sde dependency mark mulle-quadtree [no-]require`
+//    remove for platform:`mulle-sde dependency mark mulle-quadtree no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <mulle-quadtree/mulle-quadtree.h>   // mulle-quadtree
 
 // You can tweak the following #include with these commands.
 // (Use 554cb551-8992-4382-a794-e5e8c3242817 instead of mulle-fifo if there are duplicate entries)
-//    remove:             `mulle-sourcetree mark mulle-fifo no-header`
+//    remove:             `mulle-sde dependency mark mulle-fifo no-header`
 //    rename:             `mulle-sde dependency|library set mulle-fifo include whatever.h`
-//    reorder:            `mulle-sourcetree move mulle-fifo <up|down>`
-//    toggle #include:    `mulle-sourcetree mark mulle-fifo [no-]import`
-//    toggle public:      `mulle-sourcetree mark mulle-fifo [no-]public`
-//    toggle optional:    `mulle-sourcetree mark mulle-fifo [no-]require`
-//    remove for platform:`mulle-sourcetree mark mulle-fifo no-platform-<uname>`
-//        (use mulle-sourcetree-to-c --unames for known values)
+//    reorder:            `mulle-sde dependency move mulle-fifo <up|down>`
+//    toggle #include:    `mulle-sde dependency mark mulle-fifo [no-]import`
+//    toggle public:      `mulle-sde dependency mark mulle-fifo [no-]public`
+//    toggle optional:    `mulle-sde dependency mark mulle-fifo [no-]require`
+//    remove for platform:`mulle-sde dependency mark mulle-fifo no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <mulle-fifo/mulle-fifo.h>   // mulle-fifo
 
 // You can tweak the following #include with these commands.
 // (Use 83270b01-d35c-4b2e-8b74-7b87855d7c30 instead of glfw if there are duplicate entries)
-//    remove:             `mulle-sourcetree mark glfw no-header`
+//    remove:             `mulle-sde dependency mark glfw no-header`
 //    rename:             `mulle-sde dependency|library set glfw include whatever.h`
-//    reorder:            `mulle-sourcetree move glfw <up|down>`
-//    toggle #include:    `mulle-sourcetree mark glfw [no-]import`
-//    toggle public:      `mulle-sourcetree mark glfw [no-]public`
-//    toggle optional:    `mulle-sourcetree mark glfw [no-]require`
-//    remove for platform:`mulle-sourcetree mark glfw no-platform-<uname>`
-//        (use mulle-sourcetree-to-c --unames for known values)
+//    reorder:            `mulle-sde dependency move glfw <up|down>`
+//    toggle #include:    `mulle-sde dependency mark glfw [no-]import`
+//    toggle public:      `mulle-sde dependency mark glfw [no-]public`
+//    toggle optional:    `mulle-sde dependency mark glfw [no-]require`
+//    remove for platform:`mulle-sde dependency mark glfw no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <GLFW/glfw3.h>   // glfw
 
 #endif

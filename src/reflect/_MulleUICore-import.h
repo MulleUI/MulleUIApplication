@@ -13,26 +13,26 @@
 
 // You can tweak the following #import with these commands.
 // (Use EAEB2BA5-A5F9-467F-A4FA-5C6B7FD63AB4 instead of MulleGraphics if there are duplicate entries)
-//    remove:             `mulle-sourcetree mark MulleGraphics no-header`
+//    remove:             `mulle-sde dependency mark MulleGraphics no-header`
 //    rename:             `mulle-sde dependency|library set MulleGraphics include whatever.h`
-//    reorder:            `mulle-sourcetree move MulleGraphics <up|down>`
-//    toggle #import:     `mulle-sourcetree mark MulleGraphics [no-]import`
-//    toggle public:      `mulle-sourcetree mark MulleGraphics [no-]public`
-//    toggle optional:    `mulle-sourcetree mark MulleGraphics [no-]require`
-//    remove for platform:`mulle-sourcetree mark MulleGraphics no-platform-<uname>`
-//        (use mulle-sourcetree-to-c --unames for known values)
+//    reorder:            `mulle-sde dependency move MulleGraphics <up|down>`
+//    toggle #import:     `mulle-sde dependency mark MulleGraphics [no-]import`
+//    toggle public:      `mulle-sde dependency mark MulleGraphics [no-]public`
+//    toggle optional:    `mulle-sde dependency mark MulleGraphics [no-]require`
+//    remove for platform:`mulle-sde dependency mark MulleGraphics no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleGraphics/MulleGraphics.h>   // MulleGraphics
 
 // You can tweak the following #import with these commands.
 // (Use 35644512-861A-4ED8-8962-20ADD32052E3 instead of MulleObjCLockFoundation if there are duplicate entries)
-//    remove:             `mulle-sourcetree mark MulleObjCLockFoundation no-header`
+//    remove:             `mulle-sde dependency mark MulleObjCLockFoundation no-header`
 //    rename:             `mulle-sde dependency|library set MulleObjCLockFoundation include whatever.h`
-//    reorder:            `mulle-sourcetree move MulleObjCLockFoundation <up|down>`
-//    toggle #import:     `mulle-sourcetree mark MulleObjCLockFoundation [no-]import`
-//    toggle public:      `mulle-sourcetree mark MulleObjCLockFoundation [no-]public`
-//    toggle optional:    `mulle-sourcetree mark MulleObjCLockFoundation [no-]require`
-//    remove for platform:`mulle-sourcetree mark MulleObjCLockFoundation no-platform-<uname>`
-//        (use mulle-sourcetree-to-c --unames for known values)
+//    reorder:            `mulle-sde dependency move MulleObjCLockFoundation <up|down>`
+//    toggle #import:     `mulle-sde dependency mark MulleObjCLockFoundation [no-]import`
+//    toggle public:      `mulle-sde dependency mark MulleObjCLockFoundation [no-]public`
+//    toggle optional:    `mulle-sde dependency mark MulleObjCLockFoundation [no-]require`
+//    remove for platform:`mulle-sde dependency mark MulleObjCLockFoundation no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleObjCLockFoundation/MulleObjCLockFoundation.h>   // MulleObjCLockFoundation
 
 #ifdef __has_include

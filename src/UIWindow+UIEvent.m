@@ -7,6 +7,7 @@
 #import "UIEvent.h"
 #import "UIView+UIEvent.h"
 #import "UIView+CGGeometry.h"
+#import "GLFWWindow+UIEvent.h"
 #import "mulle-pointerarray+ObjC.h"
 
 
@@ -18,258 +19,6 @@
 
 
 @implementation UIWindow( UIEvent)
-
-
-//
-// callbacks from window events (via GLFW). It is NOT known if the event coming
-// in is a direct callback from the host OS or if it has been queued by glfw
-// and released during "waitForEvents" or "pollEvents." (See glfw3 events dox)
-//
-// What is unknown is, if the executing thread of a callback is always the
-// mainThread. It is assumed here, though.
-//
-- (void) _windowResizeCallback:(CGSize) size
-{
-   UIEvent   *event;
-
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s w=%.1f h=%.1f\n",
-                     __PRETTY_FUNCTION__,
-                     [self cStringDescription],
-                     size.width,
-                     size.height);
-#endif
-   event = [[UIWindowResizeEvent alloc] initWithWindow:self
-                                          mouseLocation:self->_mouseLocation
-                                              modifiers:self->_modifiers
-                                                   size:size];
-   [self queueRetainedEvent:event];
-}
-
-
-- (void) _framebufferResizeCallback:(struct CGBitmapSize) size
-{
-   UIEvent   *event;
-
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s w=%ld h=%ld\n",
-                     __PRETTY_FUNCTION__,
-                     [self cStringDescription],
-                     (long) size.width,
-                     (long) size.height);
-#endif
-   event = [[UIWindowFramebufferResizeEvent alloc] initWithWindow:self
-                                                    mouseLocation:self->_mouseLocation
-                                                        modifiers:self->_modifiers
-                                                             size:CGSizeMake( size.width, size.height)];
-   [self queueRetainedEvent:event];
-
-   // TODO: we should do this atomically
-   //
-   _framebufferSize = size;
-}
-
-
-
-//
-// Move callback like refresh callback induces flicker
-//
-- (void) _windowMoveCallback:(CGPoint) position
-{
-   UIEvent   *event;
-
-#ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-//   fprintf( stderr, "%p moved: x=%d y=%d\n", self, xpos, ypos);
-
-   event = [[UIWindowMoveEvent alloc] initWithWindow:self
-                                       mouseLocation:self->_mouseLocation
-                                           modifiers:self->_modifiers
-                                              origin:position];
-   [self queueRetainedEvent:event];
-}
-
-
-
-- (void) _windowRefreshCallback
-{
-   UIEvent   *event;
-
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   event = [[UIWindowRefreshEvent alloc] initWithWindow:self
-                                          mouseLocation:self->_mouseLocation
-                                              modifiers:self->_modifiers];
-   [self queueRetainedEvent:event];
-}
-
-
-
-- (void) _windowCloseCallback
-{
-   UIEvent   *event;
-
-#ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   event = [[UIWindowCloseEvent alloc] initWithWindow:self
-                                        mouseLocation:self->_mouseLocation
-                                            modifiers:self->_modifiers];
-   [self queueRetainedEvent:event];
-}
-
-- (void) _keyCallback:(int) key
-             scancode:(int) scancode
-               action:(int) action
-            modifiers:(int) mods
-{
-   UIEvent   *event;
-
-#ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   self->_modifiers = mods;
-   if( self->_discardEvents & UIEventTypePresses)
-      return;
-
-   event = [[UIKeyboardEvent alloc] initWithWindow:self
-                                     mouseLocation:self->_mouseLocation
-                                         modifiers:mods
-                                               key:key
-                                          scanCode:scancode
-                                            action:action];
-   [self queueRetainedEvent:event];
-}
-
-
-- (void) _charCallback:(unsigned int) codepoint
-{
-   UIEvent    *event;
-
-#ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   if( self->_discardEvents & UIEventTypeUnicode)
-      return;
-
-   event = [[UIUnicodeEvent alloc] initWithWindow:self
-                                    mouseLocation:self->_mouseLocation
-                                        modifiers:self->_modifiers
-                                        character:codepoint];
-   [self queueRetainedEvent:event];
-}
-
-
-- (void) _mouseButtonCallback:(int) button
-                       action:(int) action
-                    modifiers:(int) mods
-{
-   UIEvent    *event;
-   uint64_t   bit;
-
-#if defined( CALLBACK_DEBUG) || defined( MOUSE_BUTTON_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   bit = 1LL << button;
-   self->_mouseButtonStates &= ~bit;
-   if( action == GLFW_PRESS)
-      self->_mouseButtonStates |= bit;
-   self->_modifiers = mods;
-
-   if( self->_discardEvents & UIEventTypeTouches)
-      return;
-
-   event = [[UIMouseButtonEvent alloc] initWithWindow:self
-                                        mouseLocation:self->_mouseLocation
-                                            modifiers:mods
-                                               button:button
-                                               action:action];
-   [self queueRetainedEvent:event];
-
-   // [self dump];
-}
-
-
-- (void) _mouseMotionCallback:(CGPoint) pos
-{
-   UIEvent    *event;
-   CGRect     frame;
-
-#if defined( CALLBACK_DEBUG) || defined( MOUSE_MOTION_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s (%.1f, %.1f)\n", __PRETTY_FUNCTION__, [self cStringDescription], pos.x, pos.y);
-#endif
-
-   //
-   // Observed behaviour on linux: Depending on mouse sensitivity, it may
-   // become obvious that there is a rounding bug in the Linux mouse handling
-   // where certain integer values are never returned. In my case this
-   // turned out to be 200,200. So don't expect the mouse to provide all
-   // possible integer coordinates for every pixel on the screen.
-   //
-   if( self->_discardEvents & UIEventTypeMotion)
-      return;
-
-   //
-   // Coordinates are window relative! So for screen coordinates we'd need
-   // to add the window frame.x/y.
-   //
-   // we get not events for the window title bar
-   // TODO: we might need to scale the values for DPI or ?
-	self->_mouseLocation.x = pos.x;
-	self->_mouseLocation.y = pos.y;
-
-   // TODO: wrap in autorelease pool ?
-   //       + event don't leak if someone throws
-   //       - latency
-   event = [[UIMouseMotionEvent alloc] initWithWindow:self
-                                        mouseLocation:self->_mouseLocation
-                                            modifiers:self->_modifiers
-                                         buttonStates:self->_mouseButtonStates];
-   [self queueRetainedEvent:event];
-}
-
-
-- (void) _mouseScrollCallback:(CGPoint) offset
-{
-   UIEvent    *event;
-   uint64_t   bit;
-   CGPoint    scrollOffset;
-   CGFloat    sensitivity;
-
-#ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self cStringDescription]);
-#endif
-
-   if( self->_discardEvents)
-      return;
-
-   sensitivity = [self scrollWheelSensitivity];
-   if( sensitivity != 0.0)
-   {
-      offset.x *= sensitivity;
-      offset.y *= sensitivity;
-   }
-
-   if( [self isScrollWheelNatural])
-      scrollOffset = CGPointMake( offset.x, offset.y);
-   else
-      scrollOffset = CGPointMake( -offset.x, -offset.y);
-
-   event = [[UIMouseScrollEvent alloc] initWithWindow:self
-                                        mouseLocation:self->_mouseLocation
-                                            modifiers:self->_modifiers
-                                         scrollOffset:scrollOffset];
-   [self queueRetainedEvent:event];
-}
-
 
 - (id) _firstResponder
 {
@@ -459,7 +208,9 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 }
 
 /*
- * Window events
+ * Window events are special. They don't come in over the queue but are
+ * dispatched directly. It's assumed that only the main window (not the
+ * offscreen window) handles these events.
  */
 - (UIEvent *) handleWindowEvent:(UIWindowEvent *) event
 {
@@ -477,14 +228,15 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 #ifdef RESIZE_CALLBACK_DEBUG
    fprintf( stderr, "%s %s handled UIWindowEventTypeFramebufferResize\n",
                      __PRETTY_FUNCTION__,
-                     [self cStringDescription]);
+                     [self UTF8String]);
 #endif
-      _isResizing = YES;
+      _framebufferSize = [(UIWindowFramebufferResizeEvent *) event size];                                                             
+      _isResizing      = YES;
       [self setNeedsDisplay];
       return( nil);
 
    case UIWindowEventTypeResize :
-      _frame.size = [(UIWindowResizeEvent *) event size];
+      _frame.size = CGBitmapSizeGetSize( [(UIWindowResizeEvent *) event size]);
       _isResizing = YES;
 
       [self setNeedsLayout:YES];
@@ -492,8 +244,16 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 #ifdef RESIZE_CALLBACK_DEBUG
    fprintf( stderr, "%s %s handled UIWindowEventTypeResize\n",
                      __PRETTY_FUNCTION__,
-                     [self cStringDescription]);
+                     [self UTF8String]);
 #endif
+      return( nil);
+
+   // this necessitates a refresh on Linux, else flicker
+   case UIWindowEventTypeMove :
+      _frame.origin = CGBitmapPointGetPoint( [(UIWindowMoveEvent *) event origin]);
+      _needsWindowRefresh = YES; // this preempts event processing
+                                 // so we can react as fast as possible
+      [self setNeedsDisplay];
       return( nil);
 
    // on linux we always get refresh event, so it's not necessary to
@@ -503,14 +263,11 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
       _needsWindowRefresh = YES; // this preempts event processing
                                  // so we can react as fast as possible
       [self setNeedsDisplay];
-      return( nil);
 
-   // this necessitates a refresh on Linux, else flicker
-   case UIWindowEventTypeMove :
-      _frame.origin = [(UIWindowMoveEvent *) event origin];
-      _needsWindowRefresh = YES; // this preempts event processing
-                                 // so we can react as fast as possible
-      [self setNeedsDisplay];
+      // we react "fast" to incoming refresh request and swap buffers 
+      // immediately, so that window contents look fine.
+      if( _backingStore == UIWindowBackingStoreBuffered)
+         [self swapBuffers];
       return( nil);
    }
 
@@ -671,8 +428,8 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
    assert( [self isWindowThread]);
 
-   old = _discardEvents;
-   _discardEvents = ~0;  // discard all
+   old = [_os_window discardEventsMask];
+   [_os_window setDiscardEventsMask:~0];  // discard all
    {
       UIEvent   *event;
 
@@ -689,10 +446,8 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
          }
       }
    }
-   _discardEvents = old;
+   [_os_window setDiscardEventsMask:old];
 }
-
-
 
 //
 // Execute all events in the queue until empty. This has to be called by the
@@ -712,11 +467,11 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
       @autoreleasepool
       {
+         [event autorelease];
          // could time event time spent and then complain if it's too long
          [self handleEvent:event];
          mask |= [event eventType];
       }
-      [event release];
    }
    return( mask);
 }
@@ -762,7 +517,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    // set this now to NO, if a window refresh events is received we
    // preempt, even if returnsEarly is NO
    //
-   _needsWindowRefresh = NO;
+   _needsWindowRefresh = NO;  // need this be atomic ?
 
    for(;;)
    {

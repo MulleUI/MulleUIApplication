@@ -29,8 +29,8 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 //   if( v->clipRect.size.width != INFINITY)
 //      fprintf( stderr, "%p setClipRect: %s  transform: %s\n", 
 //               layer, 
-//               CGRectCStringDescription( v->clipRect),
-//               CGAffineTransformCStringDescription( v->xform));
+//               CGRectUTF8String( v->clipRect),
+//               CGAffineTransformUTF8String( v->xform));
    [layer setClipRect:v->clipRect];
 
    mulle_pointerarray_add( renderQueue, layer);

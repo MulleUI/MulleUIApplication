@@ -32,9 +32,9 @@ typedef enum
 
 #define UIViewContentModeNames      CGContentModeNames
 
-static inline char   *UIViewContentModeCStringDescription( UIViewContentMode mode)
+static inline char   *UIViewContentModeUTF8String( UIViewContentMode mode)
 {
-   return( CGContentModeCStringDescription( (CGContentMode) mode));
+   return( CGContentModeUTF8String( (CGContentMode) mode));
 }
 
 
@@ -85,7 +85,7 @@ typedef enum
 - (void) _setNeedsLayout;
 
 
-// calls sizeThatFits:context: with [[self window] context]
+// calls sizeThatFits:context: with nil
 - (CGSize) sizeThatFits:(CGSize) size;
 
 // actual method

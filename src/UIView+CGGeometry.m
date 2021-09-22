@@ -16,10 +16,10 @@
       fputc( ' ', stderr);
 
    fprintf( stderr, "%s: f=[%s] b=[%s] r=[%s]",
-               [self cStringDescription],
-               CGRectCStringDescription( [self frame]),
-               CGRectCStringDescription( [self bounds]),
-               CGRectCStringDescription( [self clipRect]));
+               [self UTF8String],
+               CGRectUTF8String( [self frame]),
+               CGRectUTF8String( [self bounds]),
+               CGRectUTF8String( [self clipRect]));
    if( [self masksToBounds])
       fprintf ( stderr, " masks");
    fprintf( stderr, "\n");
@@ -529,13 +529,13 @@ static CGPoint   convertBoundsPointToFramePoint( UIView *self, CGPoint point, CG
 
    if( [self isHidden])
       fprintf( stderr, "%s: hidden\n",
-                  [self cStringDescription]);
+                  [self UTF8String]);
    else
    {
       fprintf( stderr, "%s: f=[%s] b=[%s]",
-                  [self cStringDescription],
-                  CGRectCStringDescription( [self frame]),
-                  CGRectCStringDescription( [self bounds]));
+                  [self UTF8String],
+                  CGRectUTF8String( [self frame]),
+                  CGRectUTF8String( [self bounds]));
       if( [self clipsToBounds])
          fprintf ( stderr, " clips");
       fprintf( stderr, "\n");
