@@ -17,17 +17,12 @@
 #import "mulle-pointerarray+ObjC.h"
 
 @interface UIWindow( GLFWWindowEventReceiver) <GLFWWindowEventReceiver>
-@end 
+@end
 
 
 @implementation UIWindow
 
 MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
-
-+ (void) initialize
-{
-   [UIApplication os_initialize];
-}
 
 
 + (CGFloat) primaryMonitorPPI
@@ -47,55 +42,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    _frame = [_os_window os_windowFrame];
 }
 
-//
-// When we create a window on Linux, the first one usually stays where
-// it's at, and doesn't get a refresh or move notice. But a window manager
-// may reposititon the subsequent window (or even the first), so we get
-// a move and refresh event. The refresh event will hit after the first
-// render forcing a second render sortof immediately, as the eventloop is
-// positioned byhind the renderloop.
-//
-- (instancetype) initWithFrame:(CGRect) frame
-                  titleCString:(char *) title
-                     styleMask:(NSUInteger) styleMask
+
+- (instancetype) _initWithFrame:(CGRect) frame
 {
-   assert( [NSThread mulleIsMainThread]);
-
-   _primaryMonitorPPI = [GLFWWindow os_primaryMonitorPPI];
-   if( _primaryMonitorPPI == 0.0)
-   {
-      // no monitor connected, so lets just bail
-      [self release];
-      return( nil);
-   }
-
-   // not super sure that this makes sense to cache
-   _primaryMonitorRefreshRate = [GLFWWindow os_primaryMonitorRefreshRate];
-
-   _os_window = [[GLFWWindow alloc] initWithFrame:frame
-                                     titleCString:title
-                                        styleMask:styleMask];
-   if( ! _os_window)
-   {
-      [self release];
-      return( nil);
-   }
-
-   // buffered with offscreen window is the default, 
-   if( ! (styleMask & UIWindowStyleRenderNonRetainedOnly))
-   {
-      _os_offscreen_window = [[GLFWWindow alloc] initWithFrame:frame
-                                                  titleCString:"OffScreen"
-                                                     styleMask:styleMask|UIWindowStyleInvisible];
-      if( ! _os_offscreen_window)
-      {
-         [self release];
-         return( nil);
-      }
-   }
-   else
-      _backingStore = UIWindowBackingStoreNonRetained;
-
    [super initWithFrame:frame];
 
    // assume window has a title bar for contentRect calculation
@@ -113,36 +62,36 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    // window size
    _clipsToBounds = NO;
 
-   _contentPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
-   [_contentPlane setDebugNameCString:"Window/ContentPlane"];
+   _contentPlane = [UIView viewWithFrame:frame];
+   [_contentPlane setDebugNameUTF8String:"Window/ContentPlane"];
    [_contentPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
    [_contentPlane setClipsToBounds:NO];
    [self addSubview:_contentPlane];
 
-   _toolTipPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
-   [_toolTipPlane setDebugNameCString:"Window/ToolTipPlane"];
+   _toolTipPlane = [UIView viewWithFrame:frame];
+   [_toolTipPlane setDebugNameUTF8String:"Window/ToolTipPlane"];
    [_toolTipPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
    [_toolTipPlane setClipsToBounds:NO];
    [self addSubview:_toolTipPlane];
    [_toolTipPlane setHidden:YES];
 
-   _menuPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
+   _menuPlane = [UIView viewWithFrame:frame];
    [_menuPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
-   [_menuPlane setDebugNameCString:"Window/MenuPlane"];
+   [_menuPlane setDebugNameUTF8String:"Window/MenuPlane"];
    [_menuPlane setClipsToBounds:NO];
    [self addSubview:_menuPlane];
    [_menuPlane setHidden:YES];
 
-   _dragAndDropPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
+   _dragAndDropPlane = [UIView viewWithFrame:frame];
    [_dragAndDropPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
-   [_dragAndDropPlane setDebugNameCString:"Window/DragAndDropPlane"];
+   [_dragAndDropPlane setDebugNameUTF8String:"Window/DragAndDropPlane"];
    [_dragAndDropPlane setClipsToBounds:NO];
    [self addSubview:_dragAndDropPlane];
    [_dragAndDropPlane setHidden:YES];
 
-   _alertPlane = [[[UIView alloc] initWithFrame:frame] autorelease];
+   _alertPlane = [UIView viewWithFrame:frame];
    [_alertPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
-   [_alertPlane setDebugNameCString:"Window/AlertPlane"];
+   [_alertPlane setDebugNameUTF8String:"Window/AlertPlane"];
    [_alertPlane setClipsToBounds:NO];
    [_alertPlane setHidden:YES];
    [self addSubview:_alertPlane];
@@ -150,8 +99,8 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    _mulle_pointerarray_init( &_renderQueue, 128, MulleObjCInstanceGetAllocator( self));
    _mulle_pointerarray_init( &_delegateViews, 8, MulleObjCInstanceGetAllocator( self));
 
-   _eventFrequency         = 60.0;
-   _oldSwapInterval        = NSIntegerMax;
+   _eventFrequency  = 60.0;
+   _oldSwapInterval = NSIntegerMax;
 
    // initially dirty with renderer 1, renderer go!
    _needsDisplayLock = [[NSConditionLock alloc] initWithCondition:1];
@@ -168,10 +117,89 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
+- (instancetype) initWithGLFWWindow:(GLFWWindow *) window
+                offscreenGLFWWindow:(GLFWWindow *) offscreenWindow
+{
+   if( ! window)
+   {
+      [self release];
+      return( nil);
+   }
+
+   _primaryMonitorPPI = [GLFWWindow os_primaryMonitorPPI];
+   if( _primaryMonitorPPI == 0.0)
+   {
+      // no monitor connected, so lets just bail
+      [self release];
+      return( nil);
+   }
+
+   // not super sure that this makes sense to cache
+   _primaryMonitorRefreshRate = [GLFWWindow os_primaryMonitorRefreshRate];
+
+   _os_window = [window retain];
+   if( offscreenWindow)
+      _os_offscreen_window = [offscreenWindow retain];
+   else
+      _backingStore = UIWindowBackingStoreNonRetained;
+
+   return( [self _initWithFrame:[window os_windowFrame]]);
+}
+
+
+//
+// When we create a window on Linux, the first one usually stays where
+// it's at, and doesn't get a refresh or move notice. But a window manager
+// may reposititon the subsequent window (or even the first), so we get
+// a move and refresh event. The refresh event will hit after the first
+// render forcing a second render sortof immediately, as the eventloop is
+// positioned byhind the renderloop.
+//
+- (instancetype) initWithFrame:(CGRect) frame
+                  titleUTF8String:(char *) title
+                     styleMask:(NSUInteger) styleMask
+{
+   GLFWWindow    *window;
+   GLFWWindow    *offscreenWindow;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   // if you want to create a "manual" offscreen window, this is not going
+   // to be visible ever. It is kinda wasteful to have this anything else than
+   // UIWindowStyleRenderNonRetainedOnly though or ?
+   if( styleMask & UIWindowStyleOffscreen)
+      styleMask |= UIWindowStyleInvisible;
+
+   offscreenWindow = nil;
+   // buffered with offscreen window is the default,
+   if( ! (styleMask & UIWindowStyleRenderNonRetainedOnly))
+   {
+      // offscreen window can be minimally sized as we use a different
+      // framebuffer
+      offscreenWindow = [[[GLFWWindow alloc] initWithFrame:CGRectMake( 0, 0, 64, 64)
+                                              titleUTF8String:"OffScreen"
+                                                    styleMask:styleMask|UIWindowStyleInvisible|UIWindowStyleOffscreen] autorelease];
+      if( ! offscreenWindow)
+      {
+         [self release];
+         return( nil);
+      }
+   }
+
+   window = [[[GLFWWindow alloc] initWithFrame:frame
+                               titleUTF8String:title
+                                     styleMask:styleMask
+                                 sharingWindow:offscreenWindow] autorelease];
+
+   return( [self initWithGLFWWindow:window
+                offscreenGLFWWindow:offscreenWindow]);
+}
+
+
 - (instancetype) initWithFrame:(CGRect) frame
 {
    return( [self initWithFrame:frame
-                  titleCString:"Demo"
+               titleUTF8String:"Demo"
                      styleMask:UIWindowStyleResizable]);
 }
 
@@ -182,25 +210,83 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
++ (instancetype) windowWithFrame:(CGRect) frame
+                 titleUTF8String:(char *) title
+                       styleMask:(NSUInteger) styleMask
+{
+   return( [[[self alloc] initWithFrame:frame
+                        titleUTF8String:title
+                              styleMask:styleMask] autorelease]);
+}
+
+
+// conveniences for quick hacks
++ (instancetype) windowWithView:(UIView *) view
+                titleUTF8String:(char *) title
+{
+   NSUInteger   styleMask;
+   CGRect       rect;
+   BOOL         change;
+   NSUInteger   autoresizingMask;
+   UIWindow     *window;
+
+   styleMask = 0;
+   autoresizingMask = [view autoresizingMask];
+   if( autoresizingMask & UIViewAutoresizingFlexible)
+      styleMask = UIWindowStyleResizable;
+
+   rect = UIEdgeInsetsExtrudeRect( [view frame], [view margins]);
+   if( rect.size.width < 32)
+      rect.size.width = 32;
+   if( rect.size.height < 32)
+      rect.size.height = 32;
+   if( ! (autoresizingMask & ~UIViewAutoresizingFlexible))
+      [view setAutoresizingMask:autoresizingMask|UIViewAutoresizingStickToCenter];
+
+   rect.origin = CGPointZero;
+   window      = [[[UIWindow alloc] initWithFrame:rect
+                                  titleUTF8String:title ? title : "Demo"
+                                        styleMask:styleMask] autorelease];
+   [[window contentPlane] addSubview:view];
+   return( window);
+
+}
+// conveniences for quick hacks
++ (instancetype) windowWithLayer:(CALayer *) layer
+                 titleUTF8String:(char *) title
+{
+   UIView          *view;
+   CGRect          frame;
+   UIEdgeInsets    margins;
+
+   // convenience
+   frame   = [layer frame];
+   margins = UIEdgeInsetsMake( frame.origin.x, frame.origin.y,
+                               frame.origin.x, frame.origin.y);
+   frame.origin = CGPointZero;
+   [layer setFrame:frame];
+
+   view = [UIView viewWithLayer:layer];
+   [view setMargins:margins];
+   [view setAutoresizingMask:UIViewAutoresizingStickToCenter];
+   return( [self windowWithView:view
+               titleUTF8String:title]);
+}
+
 - (void) finalize
 {
    CGContext   *context;
 
    [self discardPendingEvents];
 
-   // get rid of textures possibly or so
-   context = [self activateRenderContext];
-   [context mullePerformFinalize];
-   [self deactivateRenderContext:context];
-
-   context = [self activateWindowContext];
-   [context mullePerformFinalize];
-   [self deactivateWindowContext:context];
-
    // TODO: delete window ?
    //       remove from screen ?
-   [_os_offscreen_window finalize];
-   [_os_window finalize];
+   [_os_offscreen_window mullePerformFinalize];
+   [_os_offscreen_window autorelease];
+   _os_offscreen_window = nil;
+   [_os_window mullePerformFinalize];
+   [_os_window autorelease];
+   _os_window = nil;
 
    _firstResponder = nil;
    [super finalize];
@@ -211,8 +297,6 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 {
    [_postLayoutAnimator release];
    [_preLayoutAnimator release];
-   [_os_offscreen_window release];
-   [_os_window release];
 
    mulle_pointerarray_release_all( &_trackingViews);
    mulle_pointerarray_done( &_trackingViews);
@@ -271,7 +355,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    if( backingStore != UIWindowBackingStoreNonRetained)
        fprintf( stderr, "Window is not configured with an offscreen. "
 "Only UIWindowBackingStoreNonRetained is possible\n");
-#endif  
+#endif
    _backingStore = UIWindowBackingStoreNonRetained;
 }
 

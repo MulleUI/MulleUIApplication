@@ -6,7 +6,7 @@
 @interface CircleLayer : CALayer
 
 @property( observable) CGFloat     scale;
-@property( observable) CGColorRef  color;
+@property( observable) CGColor  color;
 @property( observable) CGRect      box;
 
 @end
@@ -19,7 +19,7 @@
    [super initWithFrame:frame];
 
    _scale = 1;
-   _color = MulleColorMake( 0x000000FF);
+   _color = CGColorMakeWithUnsignedInteger( 0x000000FF);
    _box   = [self canvas];
 
    return( self);
@@ -75,7 +75,7 @@ void  setupAnimation( UIWindow *window, CircleLayer *layer)
       [UIView setAnimationRepeatCount:20];
 
       [layer setScale:-1.0];
-      [layer setColor:MulleColorMake( 0x0000FFFF)];
+      [layer setColor:CGColorMakeWithUnsignedInteger( 0x0000FFFF)];
       [layer setBox:CGRectMake( 100, 100, 100, 100)];
    }
    group = [UIView commitAnimations];
@@ -96,7 +96,7 @@ void   setupSceneAndAnimation( UIWindow *window)
    frame  = UIEdgeInsetsInsetRect( frame, insets);
 
    layer = [CircleLayer layerWithFrame:frame];
-   [layer setColor:MulleColorMake( 0xFF0000FF)];
+   [layer setColor:CGColorMakeWithUnsignedInteger( 0xFF0000FF)];
    [layer setDrawCallback:drawStuff];
 
    view  = [UIView viewWithLayer:layer];

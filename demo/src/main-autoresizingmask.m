@@ -44,7 +44,7 @@ void   setupScene( UIWindowPlane *contentPlane)
    frame  = UIEdgeInsetsInsetRect( frame, insets);
 
    view  = [UIView viewWithFrame:frame];
-   [view setDebugNameCString:"parent"];
+   [view setDebugNameUTF8String:"parent"];
    [view setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
    [view setBackgroundColor:CGColorMakeRGBA( 0.0, 1.0, 0.0, 1.0)];
    [view setPadding:UIEdgeInsetsMake( 4.0, 4.0, 4.0, 4.0)];
@@ -57,8 +57,8 @@ void   setupScene( UIWindowPlane *contentPlane)
       subview = [UIView viewWithFrame:frame];
 
       sprintf( buf, "child #%ld", (long) i);
-      [subview setDebugNameCString:buf];
-      [subview setBackgroundColor:MulleColorMake( subviewInfo[ i].color)];
+      [subview setDebugNameUTF8String:buf];
+      [subview setBackgroundColor:CGColorMakeWithUnsignedInteger( subviewInfo[ i].color)];
       [subview setAutoresizingMask:subviewInfo[ i].mask];
       [view addSubview:subview];
       [view setNeedsLayout];

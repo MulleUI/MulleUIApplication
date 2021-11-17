@@ -35,6 +35,18 @@
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleUIPerf/MulleUIPerf.h>   // MulleUIPerf
 
+// You can tweak the following #import with these commands.
+// (Use CD4253E3-5A07-4FCC-A3F3-090CAF8294DE instead of MulleUIImage if there are duplicate entries)
+//    remove:             `mulle-sde dependency mark MulleUIImage no-header`
+//    rename:             `mulle-sde dependency|library set MulleUIImage include whatever.h`
+//    reorder:            `mulle-sde dependency move MulleUIImage <up|down>`
+//    toggle #import:     `mulle-sde dependency mark MulleUIImage [no-]import`
+//    toggle public:      `mulle-sde dependency mark MulleUIImage [no-]public`
+//    toggle optional:    `mulle-sde dependency mark MulleUIImage [no-]require`
+//    remove for platform:`mulle-sde dependency mark MulleUIImage no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
+#import <MulleUIImage/MulleUIImage.h>   // MulleUIImage
+
 #ifdef __has_include
 # if __has_include( "_demos-include.h")
 #  include "_demos-include.h"

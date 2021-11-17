@@ -57,6 +57,7 @@
 
    info->UIScale            = CGVectorMake( scale_x, scale_y);
 	info->pixelRatio         = info->framebufferSize.width / _frame.size.width;
+   info->now                = mulle_timeinterval_now();
 }
 
 
@@ -65,7 +66,6 @@
    _frame           = [_os_window os_windowFrame];
    _framebufferSize = [_os_window os_framebufferSize];
 }
-
 
 
 // unused...
@@ -107,7 +107,7 @@
    assert( frameRate == UIWindowFrameRateUnsynced ||
            frameRate == UIWindowFrameRateAsync ||
            frameRate == UIWindowFrameRateSynced ||
-           frameRate <= 1.0);  // why lower than 1fps ??
+           frameRate > 0.0);
 
    return( [self waitForEvents:frameRate == UIWindowFrameRateSynced
                                  ? 1.0 / _primaryMonitorRefreshRate
@@ -199,87 +199,176 @@
 }
 
 
+- (struct CGFramebufferBitmap) grabLastRenderedOffscreenFramebuffer:(struct mulle_allocator *) allocator
+{
+   CGContext                    *context;
+   struct CGFramebufferBitmap   fb;
+
+   context = [self activateRenderContext];
+   {
+     // need to blit from offscreen window to onscreen here
+     // get image of offscreen framebuffer
+     // can do this only, if we have rendered something last frame
+     fb = [context grabLastRenderedOffscreenFramebuffer:allocator];
+   }
+   [self deactivateRenderContext:context];
+
+   return( fb);
+}
+
+
+- (void) drawOffscreenFramebuffer:(struct CGFramebufferBitmap *)  fb
+                          context:(CGContext *) context
+{
+   CGImage              *image;
+   CGDrawableOptions    options;
+   CGRect               rect;
+
+   //
+   // here we keep the orignal size during resize
+   //
+   rect = CGRectMake( 0, 0, fb->info.size.width, fb->info.size.height);
+
+   options = CGDrawableOptionsMake( 0.0, 1.0, 0.0, YES);
+   // image has to live until when ? can't delete too soon
+   // but it's not 100% clear then the right time is
+   image = [[[CGImage alloc] initWithRGBABytes:fb->data.bytes
+                                    bitmapSize:fb->info.size
+                                    imageFlags:CGBitmapEncodingIsFlipped( fb->info.encoding)
+                                                ? NVG_IMAGE_FLIPY
+                                                : 0
+                                       context:context] autorelease];
+   [image drawRect:rect
+           options:&options
+           context:context];
+
+   // just for debugging, draws a frame somewhere
+   {
+      struct NVGcontext   *vg;
+
+      vg = CGContextGetNVGContext( context);
+
+      // gray rectangle so we know something is drawn...
+      nvgBeginPath( vg);
+      {
+         rect = CGRectInset( rect, 20, 20);
+         nvgRect( vg, rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
+         nvgStrokeWidth( vg, 8);
+         nvgStrokeColor( vg, CGColorMakeWithUnsignedInteger( 0x8020A0FF));
+      }
+      nvgStroke( vg);
+   }
+}
+
+
+- (void) copyBackingStore
+{
+   struct CGFramebufferBitmap   fb;
+   CGContext                    *context;
+   struct CGFrameInfo           info;
+
+   fb = [self grabLastRenderedOffscreenFramebuffer:NULL];
+   // if there has nothing been rendered yet, we decline the swap
+   if( fb.data.length == 0)
+      return;
+
+   // mulle_rgba_dump( fb.data.bytes, fb.info.size.width, fb.info.size.height);
+
+   //
+   // draw the image we got from the framebuffer into the window
+   //
+   context = [self activateWindowContext];
+   {
+      [self syncFrameAndFramebufferSizeWithOSWindow];
+      [self getFrameInfo:&info];
+
+      [context beginRender:&info];
+      [context clearFramebuffer];  //?? useful
+
+      [self drawOffscreenFramebuffer:&fb
+                             context:context];
+
+      [context endRender];
+   }
+   [self deactivateWindowContext:context];
+
+   CGFramebufferBitmapDone( &fb);
+}
+
+
+- (void) renderBackingStore
+{
+   CGImage              *image;
+   CGImage              *framebufferImage;
+   CGDrawableOptions    options;
+   CGRect               rect;
+   NVGcontext           *vg;
+   CGContext            *context;
+   struct CGFrameInfo   info;
+
+   // get size of framebuffer
+   context = [self activateRenderContext];
+   {
+     framebufferImage = [context framebufferImage];
+   }
+   [self deactivateRenderContext:context];
+   if( ! framebufferImage)
+      return;
+
+   context = [self activateWindowContext];
+   {
+      [self syncFrameAndFramebufferSizeWithOSWindow];
+      [self getFrameInfo:&info];
+
+      [context beginRender:&info];
+      [context clearFramebuffer];  //?? useful
+
+      image = [framebufferImage shareWithContext:context];
+      assert( image);
+
+      rect.origin = CGPointZero;
+      rect.size   = info.size;
+
+      options = CGDrawableOptionsMake( 0.0, 1.0, 0.0, YES);
+      [image drawRect:rect
+              options:&options
+              context:context];
+
+      // just for debugging, draws a frame somewhere
+      {
+         struct NVGcontext   *vg;
+
+         vg = CGContextGetNVGContext( context);
+
+         // gray rectangle so we know something is drawn...
+         nvgBeginPath( vg);
+         {
+            rect = CGRectInset( rect, 20, 20);
+            nvgRect( vg, rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
+            nvgStrokeWidth( vg, 8);
+            nvgStrokeColor( vg, CGColorMakeWithUnsignedInteger( 0x20A080FF));
+         }
+         nvgStroke( vg);
+      }
+
+      [context endRender];
+   }
+   [self deactivateWindowContext:context];
+}
+
+
 //
 // Can only swap buffers if we have rendered at least once
 // An early incoming windows refresh request needs to be discarded
-// 
+//
 - (void) swapBuffers
 {
-   CGImage                      *image;
-   struct CGFramebufferBitmap   fb;
-   CGContext                    *context;
-   CGDrawableOptions            options;
-   struct CGFrameInfo           info;
-   CGRect                       rect;
+   CGContext   *context;
 
    if( _backingStore == UIWindowBackingStoreBuffered)
    {
-      context = [self activateRenderContext];
-      {
-        // need to blit from offscreen window to onscreen here
-        // get image of offscreen framebuffer
-        // can do this only, if we have rendered something last frame
-         fb = [context grabLastRenderedOffscreenFramebuffer:NULL];
-      }
-      [self deactivateRenderContext:context];
-
-      // if there has nothing been rendered yet, we decline the swap
-      if( fb.data.length == 0)
-         return;
-
-      // mulle_rgba_dump( fb.data.bytes, fb.info.size.width, fb.info.size.height);
- 
-      //
-      // draw the image we got from the framebuffer into the window
-      // 
-      context = [self activateWindowContext];
-      {
-         [self syncFrameAndFramebufferSizeWithOSWindow];
-         [self getFrameInfo:&info]; 
-
-         [context beginRender:&info];
-         [context clearFramebuffer];  //?? useful
-
-         //
-         // here we keep the orignal size during resize
-         //
-         rect = CGRectMake( 0, 0, fb.info.size.width, fb.info.size.height);
-         
-         options = CGDrawableOptionsMake( 0.0, 1.0, 0.0, YES);
-         // image has to live until when ? can't delete too soon
-         // but it's not 100% clear then the right time is
-         image = [[[CGImage alloc] initWithRGBABytes:fb.data.bytes
-                                          bitmapSize:fb.info.size
-                                          imageFlags:CGBitmapEncodingIsFlipped( fb.info.encoding) 
-                                                      ? NVG_IMAGE_FLIPY 
-                                                      : 0
-                                             context:context] autorelease];
-         [image drawRect:rect
-                 options:&options
-                 context:context];
-
-         // just for debugging, draws a frame somewhere
-         {
-            struct NVGcontext   *vg;
-
-            vg = CGContextGetNVGContext( context);
-
-            // gray rectangle so we know something is drawn...
-            nvgBeginPath( vg);
-            {
-               rect = CGRectInset( rect, 20, 20);
-               nvgRect( vg, rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
-               nvgStrokeWidth( vg, 8);
-               nvgStrokeColor( vg, MulleColorMake( 0x8020A0FF));
-            }
-            nvgStroke( vg);
-         }
-
-         [context endRender];      
-      }
-      [self deactivateWindowContext:context];
-
-      CGFramebufferBitmapDone( &fb);
+//      [self copyBackingStore];  // copies pixels from GPU to CPU to GPU
+      [self renderBackingStore];  // uses GPU pixels as texture,
    }
 
    if( _willSwapCallback)
@@ -300,11 +389,19 @@
    [_os_window os_swapBuffers];
    _lastDidFramebufferSwapTimestamp = CAAbsoluteTimeNow();
    if( _didSwapCallback)
-      (_didSwapCallback)( self);       
+      (_didSwapCallback)( self);
+
+   //
+   // from here on CGImages should be safe to be reaped by autorelease pool
+   // or ?
+   //
 }
 
 
-
+//
+// TODO: too much "render" going on. Clearly define the phases and what
+//       evertything is called.
+//
 // UIWindow render chain
 //
 //    Creates a queue of CALayers from the UIView hierarchy. Layers are
@@ -357,106 +454,106 @@
 // A view calling [[self window] context] could get the wrong context
 // though. Maybe need a -renderContext ?
 // Or should
+//
+- (void) layoutFrame:(struct CGFrameInfo *) info
+             context:(CGContext *) context
+{
+   /*
+    * Layout
+    */
+   [self willRender:info->now];
+
+   [_preLayoutAnimator animateWithAbsoluteTime:info->now];
+
+   if( _didAnimateCallback)
+      (*_didAnimateCallback)( self, context, info, 0);
+
+   if( _willLayoutCallback)
+      (*_willLayoutCallback)( self, context, info);
+
+   //
+   // do layout before the animation step, as this may generate animations
+   //
+#if LAYOUT_ANIMATIONS
+   [self beginLayout:info];
+#endif
+   [self layoutIfNeeded];
+#if LAYOUT_ANIMATIONS
+   [self endLayout];
+#endif
+   if( _didLayoutCallback)
+      (*_didLayoutCallback)( self, context, info);
+
+   [_postLayoutAnimator animateWithAbsoluteTime:info->now];
+
+   if( _didAnimateCallback)
+      (*_didAnimateCallback)( self, context, info, 1);
+}
+
+
+- (void) animateFrame:(struct CGFrameInfo *) info
+             context:(CGContext *) context
+{
+   /*
+    * Animate
+    */
+   //
+   // create the renderQueue. This will set the transforms for all
+   // the layer and calculate the actual opacity, which is then stored
+   // in layer transform and layer alpha.
+   //
+   _mulle_pointerarray_reset( &_renderQueue);
+   [self createRenderQueue:&_renderQueue];
+   if( _didCreateRenderQueueCallback)
+      (*_didCreateRenderQueueCallback)( self, context, info);
+
+   [CAAnimation animateObjects:&_renderQueue
+                  absoluteTime:info->now];
+
+   //
+   // can animations add and subtract layers and views ?
+   // they may, but they won't show up this render
+   //
+   // have no didAnimate callback, because we would like to pipeline
+   // with rendering, or but the animation step into the render part ?
+   //
+   if( _didAnimateCallback)
+      (*_didAnimateCallback)( self, context, info, 2);
+}
+
+
 - (void) renderFrame:(struct CGFrameInfo *) info
              context:(CGContext *) context
 {
-   long              nsperframe;
-   CAAbsoluteTime    renderStart;
+   /*
+    * Render
+    */
+    // don't pool this, autoreleased stuff needs to hang on until
+    // swap buffers
 
-   renderStart = CAAbsoluteTimeNow();
+   [context beginRender:info];
+   [context clearFramebuffer];
 
    if( _willRenderCallback)
       (*_willRenderCallback)( self, context, info);
 
-   [_renderDelegate windowWillBeginRender:self
-                                  context:context];
-
-   /*
-    * Layout
-    */
-   @autoreleasepool
    {
-      [self willRender:renderStart];
-
-      [_preLayoutAnimator animateWithAbsoluteTime:renderStart];
-
-      if( _didAnimateCallback)
-         (*_didAnimateCallback)( self, context, info, 0);
-
-      if( _willLayoutCallback)
-         (*_willLayoutCallback)( self, context, info);
-
-      //
-      // do layout before the animation step, as this may generate animations
-      //
-#if LAYOUT_ANIMATIONS
-      [self beginLayout:info];
-#endif
-      [self layoutIfNeeded];
-#if LAYOUT_ANIMATIONS
-      [self endLayout];
-#endif
-      if( _didLayoutCallback)
-         (*_didLayoutCallback)( self, context, info);
-
-      [_postLayoutAnimator animateWithAbsoluteTime:renderStart];
-
-      if( _didAnimateCallback)
-         (*_didAnimateCallback)( self, context, info, 1);
+      [context renderObjects:&_renderQueue];
    }
 
+   [_renderDelegate windowWillEndRender:self
+                                 context:context];
 
-   /*
-    * Animate
-    */
-   @autoreleasepool
-   {
-      //
-      // create the renderQueue. This will set the transforms for all
-      // the layer and calculate the actual opacity, which is then stored
-      // in layer transform and layer alpha.
-      //
-      _mulle_pointerarray_reset( &_renderQueue);
-      [self createRenderQueue:&_renderQueue];
-      if( _didCreateRenderQueueCallback)
-         (*_didCreateRenderQueueCallback)( self, context, info);
+   if( _willEndRenderCallback)
+      (*_willEndRenderCallback)( self, context, info);
 
-      [CAAnimation animateObjects:&_renderQueue
-                     absoluteTime:renderStart];
+   [context suspendRender];
 
-      //
-      // can animations add and subtract layers and views ?
-      // they may, but they won't show up this render
-      //
-      // have no didAnimate callback, because we would like to pipeline
-      // with rendering, or but the animation step into the render part ?
-      //
-      if( _didAnimateCallback)
-         (*_didAnimateCallback)( self, context, info, 2);
-   }
+   if( _didRenderCallback)
+      (*_didRenderCallback)( self, context, info);
 
-   /*
-    * Render
-    */
-   @autoreleasepool
-   {
-      [context beginRender:info];
-      [context clearFramebuffer];
-      {
-         [context renderObjects:&_renderQueue];
-      }
-
-      [_renderDelegate windowWillEndRender:self
-                                   context:context];
-
-      if( _didRenderCallback)
-         (*_didRenderCallback)( self, context, info);
-
-      [context endRender];
-   }
-
-   [_renderDelegate windowDidEndRender:self];
-
+   [context _finishRender];
+   [context _endRender];
    //
    // just don't want to keep dangling stuff here
    // It's nice to see the renderQueue wthe F11 though
@@ -498,29 +595,45 @@
       /*
        * Rendering
        */
+
+      // it's important that autoreleased stuff is kept alive until swap
+      // buffers, so that for example textures aren't accidentally reaped
+      // before their time
+      // After swapBuffer they should be reaped though, so they don't
+      // accumulate.
       @autoreleasepool
       {
          context = [self activateRenderContext];
          {
             [self getFrameInfo:&info];  // retrieve newest geometry
+
+            [_renderDelegate windowWillBeginRender:self
+                                          context:context];
+
+            [self layoutFrame:&info
+                     context:context];
+            [self animateFrame:&info
+                     context:context];
             [self renderFrame:&info
                       context:context];
+
+            [_renderDelegate windowDidEndRender:self];
          }
          [self deactivateRenderContext:context];
          context = nil;         // idiot protection
-      }
-   
-      /* 
-       * swap 
+
+      /*
+       * swap
        */
 #ifdef SWAP_DEBUG
-      fprintf( stderr, "%s %s swaps framebuffer (frame: %s, buffer: %ld, %ld)\n",
-                     __PRETTY_FUNCTION__,
-                     [self UTF8String],
-                     CGSizeUTF8String( info.size),
-                     info.framebufferSize.width, info.framebufferSize.height);
+         fprintf( stderr, "%s %s swaps framebuffer (frame: %s, buffer: %ld, %ld)\n",
+                        __PRETTY_FUNCTION__,
+                        [self UTF8String],
+                        CGSizeUTF8String( info.size),
+                        info.framebufferSize.width, info.framebufferSize.height);
 #endif
-      [self swapBuffers];
+         [self swapBuffers];
+      }
 
       // now no openGL or CGContext calls should happen
       // as the context has been detached from this thread

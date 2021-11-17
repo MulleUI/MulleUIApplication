@@ -31,7 +31,7 @@ export PROJECT_NAME="MulleUICore"
 #
 #
 #
-export PROJECT_TYPE="executable"
+export PROJECT_TYPE="library"
 
 
 #

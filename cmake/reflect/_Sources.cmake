@@ -16,6 +16,7 @@ src/GLFW/GLFWWindow.m
 src/GLFW/UIApplication+GLFW.m
 src/GLFW/UIEvent+GLFW.m
 src/MulleKeyboardEventConsumer.m
+src/UIApplication+UIWindow.m
 src/UIApplication.m
 src/UIColor.m
 src/UIEvent.m
@@ -34,7 +35,6 @@ src/UIView+UIEvent.m
 src/UIView+UIResponder.m
 src/UIView+UIViewEditing.m
 src/UIView.m
-src/UIWindow+CAAnimation.m
 src/UIWindow+CGGeometry.m
 src/UIWindow+Render.m
 src/UIWindow+UIEvent.m

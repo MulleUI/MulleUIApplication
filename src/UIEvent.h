@@ -5,7 +5,7 @@
 
 
 // bits suitable or bitmasking
-typedef enum
+enum
 {                              // leave 0 to nil
    UIEventTypePresses = 0x01,  // Keyboard
    UIEventTypeUnicode = 0x02,  // Unicode char (interpreted Keyboard)
@@ -13,8 +13,9 @@ typedef enum
    UIEventTypeMotion  = 0x08,  // Mouse movemeent
    UIEventTypeScroll  = 0x10,  // Mouse Scrollwheel
    UIEventTypeWindow  = 0x20   // Window event (close, resize, move etc)
-} UIEventType;
+};
 
+typedef NSUInteger   UIEventType;
 //
 // As we are using glfw, the main object queue is in the main thread
 // we retrieve objects from a central growing array of possibly used
@@ -40,7 +41,7 @@ typedef enum
 @property( assign, readonly) CAAbsoluteTime   timestamp;
 
 // current known state of modifier keys
-@property( assign, readonly) uint64_t  modifiers;
+@property( assign, readonly) NSUInteger  modifiers;
 
 + (BOOL) reuseEvents;
 + (void) setReuseEvents:(BOOL) flag;
@@ -60,7 +61,7 @@ typedef enum
 - (CGPoint) _translatedPointForView:(UIView *) view;
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods;
+                             modifiers:(NSUInteger) mods;
 @end
 
 
@@ -76,39 +77,39 @@ typedef enum
 
 @interface UIKeyboardEvent : UIEvent
 
-@property( assign, readonly) int   key;
-@property( assign, readonly) int   scanCode;
-@property( assign, readonly) int   action;
+@property( assign, readonly) NSUInteger   key;
+@property( assign, readonly) NSUInteger   scanCode;
+@property( assign, readonly) NSUInteger   action;
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
-                                   key:(int) key
-                              scanCode:(int) scanCode
-                                action:(int) action;
+                             modifiers:(NSUInteger) mods
+                                   key:(NSUInteger) key
+                              scanCode:(NSUInteger) scanCode
+                                action:(NSUInteger) action;
 @end
 
 
 // Receive a OS unicode character (w/o key press)
 @interface UIUnicodeEvent : UIEvent
 
-@property( assign, readonly) int   character;
+@property( assign, readonly) NSUInteger   character;
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
-                             character:(int) key;
+                             modifiers:(NSUInteger) mods
+                             character:(NSUInteger) key;
 
 @end
 
 
 @interface UIMouseButtonEvent : UIEvent
 
-@property( assign, readonly) int   button;
-@property( assign, readonly) int   action;
+@property( assign, readonly) NSUInteger   button;
+@property( assign, readonly) NSUInteger   action;
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
-                                button:(int) button
-                                action:(int) action;
+                             modifiers:(NSUInteger) mods
+                                button:(NSUInteger) button
+                                action:(NSUInteger) action;
 
 
 @end
@@ -117,10 +118,10 @@ typedef enum
 @interface UIMouseMotionEvent : UIEvent
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
-                          buttonStates:(uint64_t) buttonStates;
+                             modifiers:(NSUInteger) mods
+                          buttonStates:(NSUInteger) buttonStates;
 
-@property( assign, readonly) int   buttonStates;
+@property( assign, readonly) NSUInteger   buttonStates;
 
 @end
 
@@ -128,7 +129,7 @@ typedef enum
 @interface UIMouseScrollEvent : UIEvent
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
+                             modifiers:(NSUInteger) mods
                           scrollOffset:(CGPoint) offset;
 
 @property( assign, readonly) CGPoint   scrollOffset;
@@ -165,7 +166,7 @@ enum UIWindowEventType
 @interface UIWindowMoveEvent : UIWindowEvent
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
+                             modifiers:(NSUInteger) mods
                                 origin:(struct CGBitmapPoint) pos;
 
 @property( assign, readonly) struct CGBitmapPoint   origin;
@@ -184,7 +185,7 @@ enum UIWindowEventType
 @interface UIWindowResizeEvent : UIWindowEvent
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
+                             modifiers:(NSUInteger) mods
                                   size:(struct CGBitmapSize) size;
 
 @property( assign, readonly) struct CGBitmapSize   size;

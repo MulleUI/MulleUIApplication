@@ -8,13 +8,27 @@
 #include <MulleCG/_MulleCGBackend.h>
 
 
+
+@interface CGContext( UIWindow)
+
+- (void) setActive:(BOOL) flag;
+
+@end
+
+
 @implementation GLFWWindow
+
+static struct
+{
+   mulle_atomic_pointer_t   shareIds;
+} Self;
 
 
 // hope for fractional positioning in future ?
 - (instancetype) initWithFrame:(CGRect) frame
-                  titleCString:(char *) title
+                  titleUTF8String:(char *) title
                     styleMask:(NSUInteger) styleMask
+                sharingWindow:(GLFWWindow *) sharingWindow
 {
    assert( [NSThread mulleIsMainThread]);
 
@@ -51,17 +65,33 @@
    //       render call. pro: window won't show up empty for an unknown
    //       amount of time. con: window won't show up at all for an unknown
    //       amount of time.
+   assert( ! sharingWindow  || sharingWindow->_window);
    _window = glfwCreateWindow( (int) frame.size.width,
                                (int) frame.size.height,
                                title ? title : "",
-                               0,
-                               0);
+                               NULL,  // monitor to display
+                               sharingWindow ? sharingWindow->_window : NULL);
    if( ! _window)
    {
-      fprintf( stderr, "glfwCreateWindow failed us\n");
+      const char* description;
+      int code;
+
+      code = glfwGetError( &description);
+      switch( code)
+      {
+      case 65537 :
+         fprintf( stderr, "UIApplication is likely not initialized yet\n");
+      }
+      fprintf( stderr, "error #%d: glfwCreateWindow failed \"%s\"\n", code, description);
       [self release];
       return( nil);
    }
+
+   _sharingWindow = [sharingWindow retain];
+   if( ! _sharingWindow)
+      _shareId = (NSInteger) _mulle_atomic_pointer_increment( &Self.shareIds) + 1;
+
+   fprintf( stderr, "window %p (sharing with %p) created\n", _window, _sharingWindow ? _sharingWindow->_window : NULL);
 
    // this is basically the "rendezvous" point where nanoVG latches unto
    // its also the receiver for OpenGL calls. That's why we need a window
@@ -80,7 +110,8 @@
    _context = [[CGContext alloc] initWithEdgeAntialiasing:!(styleMask & UIWindowStyleNoEdgeAntialias)
                                         useStencilStrokes:!(styleMask & UIWindowStyleNoStencilStrokes)
                                                 os_window:self];
-   if( styleMask & UIWindowStyleInvisible)
+   // TODO: ??? use different window style ?
+   if( styleMask & UIWindowStyleOffscreen)
       [_context setRendersOffScreen:YES];
    [self os_endRender];
 
@@ -88,22 +119,52 @@
 }
 
 
+- (instancetype) initWithFrame:(CGRect) frame
+                  titleUTF8String:(char *) title
+                    styleMask:(NSUInteger) styleMask
+{
+   return( [self initWithFrame:frame
+                  titleUTF8String:title
+                     styleMask:styleMask
+                 sharingWindow:nil]);
+}
+
+
 - (void) finalize
 {
-   [self os_startRender];
-   [_context mullePerformFinalize];
-   [self os_endRender];
+   // keep render context locked. As the window/context will be unusuable
+   // a deadlock seems preferable and easier to debug for misbehavers
+   [_renderContextLock lock];
 
-   [self os_destroyWindow];
+   [_sharingWindow autorelease];
+   _sharingWindow = nil;
+
+   if( _window)
+   {
+      glfwMakeContextCurrent( _window);
+      [_context setActive:YES];
+      [_context mullePerformFinalize];
+      glfwMakeContextCurrent( NULL);
+      [self os_destroyWindow];
+   }
 
    [super finalize];
 }
 
+
 - (void) dealloc
 {
    [_renderContextLock release];
+   _renderContextLock = nil;
+
    [_context release];
    [super dealloc];
+}
+
+
+- (NSInteger) shareId
+{
+   return( _sharingWindow ? [_sharingWindow shareId] : _shareId);
 }
 
 

@@ -42,7 +42,7 @@ static void  drawStuff( CALayer *layer, CGContext *context)
 
    // draw text
    // load in font first, this will be efficient on subsequent frames
-   font = [context fontWithNameCString:"sans"];
+   font = [context fontWithNameUTF8String:"sans"];
    [context setFont:font];
 
    nvgFontSize( vg, strokeWidth * 8.0);

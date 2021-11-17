@@ -46,14 +46,14 @@ static struct
 }
 
 
-static void   releaseAllEventsInQueue( struct mulle__pointerqueue *p)
+static void   deallocateAllEventsInQueue( struct mulle__pointerqueue *p)
 {
    struct mulle__pointerqueueenumerator  rover;
    UIEvent                               *event;
 
    rover = _mulle__pointerqueue_enumerate( p);
    while( _mulle__pointerqueueenumerator_next( &rover, (void **) &event))
-      [event release];
+      NSDeallocateObject( event);
    mulle__pointerqueueenumerator_done(&rover);
 }
 
@@ -70,7 +70,7 @@ static void   releaseAllEventsInQueue( struct mulle__pointerqueue *p)
    allocator = MulleObjCClassGetAllocator( self);
    for( i = 0; i < N_UIEventIndexMax; i++)
    {
-      releaseAllEventsInQueue( &UIEventSelf._reuseEventQueues[ i]);
+      deallocateAllEventsInQueue( &UIEventSelf._reuseEventQueues[ i]);
       _mulle__pointerqueue_done( &UIEventSelf._reuseEventQueues[ i],
                                  allocator);
    }
@@ -149,7 +149,7 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
+                             modifiers:(NSUInteger) mods
 {
    _locationInWindow  = pos;
    _timestamp         = CAAbsoluteTimeNow();
@@ -233,9 +233,9 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 {
    char   *s;
 
-   s = MulleCG_asprintf( "<%p %s @%.1f %.1f t:%.6f>",
+   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f>",
                   self,
-                  MulleObjCClassGetNameCString( NSClassFromObject( self)),
+                  MulleObjCClassGetNameUTF8String( NSClassFromObject( self)),
                   _locationInWindow.x,
                   _locationInWindow.y,
                   _timestamp);
@@ -261,10 +261,10 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
-                                   key:(int) key
-                              scanCode:(int) scanCode
-                                action:(int) action
+                             modifiers:(NSUInteger) mods
+                                   key:(NSUInteger) key
+                              scanCode:(NSUInteger) scanCode
+                                action:(NSUInteger) action
 {
    self = [self initWithMouseLocation:pos
                             modifiers:mods];
@@ -300,8 +300,8 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
-                             character:(int) character
+                             modifiers:(NSUInteger) mods
+                             character:(NSUInteger) character
 {
    self = [self initWithMouseLocation:pos
                             modifiers:mods];
@@ -341,8 +341,8 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
-                          buttonStates:(uint64_t) buttonStates
+                             modifiers:(NSUInteger) mods
+                          buttonStates:(NSUInteger) buttonStates
 {
    self = [self initWithMouseLocation:pos
                             modifiers:mods];
@@ -369,9 +369,9 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
-                                button:(int) button
-                                action:(int) action
+                             modifiers:(NSUInteger) mods
+                                button:(NSUInteger) button
+                                action:(NSUInteger) action
 {
    self = [self initWithMouseLocation:pos
                             modifiers:mods];
@@ -392,9 +392,9 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 {
    char   *s;
 
-   s = MulleCG_asprintf( "<%p %s @%.1f %.1f t:%.6f b:%d a:%d>",
+   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f b:%d a:%d>",
                   self,
-                  MulleObjCClassGetNameCString( NSClassFromObject( self)),
+                  MulleObjCClassGetNameUTF8String( NSClassFromObject( self)),
                   _locationInWindow.x,
                   _locationInWindow.y,
                   _timestamp,
@@ -429,7 +429,7 @@ static struct
 
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
+                             modifiers:(NSUInteger) mods
                           scrollOffset:(CGPoint) scrollOffset
 {
    self = [self initWithMouseLocation:pos
@@ -513,7 +513,7 @@ static struct
 @implementation UIWindowMoveEvent
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
+                             modifiers:(NSUInteger) mods
                                 origin:(struct CGBitmapPoint) origin
 {
    self = [self initWithMouseLocation:pos
@@ -533,11 +533,11 @@ static struct
 @implementation UIWindowResizeEvent : UIWindowEvent
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(int) mods
+                             modifiers:(NSUInteger) mods
                                   size:(struct CGBitmapSize) size
 {
-   self = [self initWithMouseLocation:pos
-                            modifiers:mods];
+   self  = [self initWithMouseLocation:pos
+                             modifiers:mods];
    _size = size;
    return( self);
 }
