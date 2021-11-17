@@ -246,8 +246,8 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 //
 - (CALayer *) layer;
 
-- (void) addSubviewsIntersectingRect:(CGRect) rect
-                      toPointerArray:(struct mulle_pointerarray *) views
+- (void) getSubviewsIntersectingRect:(CGRect) rect
+                    intoPointerArray:(struct mulle_pointerarray *) views
               invertIntersectionTest:(BOOL) flag;
 
 // called for each view, before layouting starts
@@ -267,7 +267,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 - (UIView *) findSubviewWithTag:(NSInteger) tag;
 
 - (UIWindow *) window;
-- (UIView *) mulleWindowPlane; // window plane a view resides in
+- (UIView *) UIWindowPlane; // window plane a view resides in
 - (UIView *) superview;
 
 - (CGFloat) pixelsPerInchOfPrimaryMonitor;
@@ -299,25 +299,25 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 @interface UIView( CALayerForwarding)
 
 /*
-- (void) setBackgroundColor:(CGColorRef) color;
-- (void) setBorderColor:(CGColorRef) color;
+- (void) setBackgroundColor:(CGColor) color;
+- (void) setBorderColor:(CGColor) color;
 - (void) setBorderWidth:(CGFloat) value;
 - (void) setCornerRadius:(CGFloat) color;
-- (CGColorRef) backgroundColor;
-- (CGColorRef) borderColor;
+- (CGColor) backgroundColor;
+- (CGColor) borderColor;
 - (CGFloat) borderWidth;
 - (CGFloat) cornerRadius;
 */
-- (char *) debugNameCString;
-- (void) setDebugNameCString:(char *) s;
+- (char *) debugNameUTF8String;
+- (void) setDebugNameUTF8String:(char *) s;
 
 
 @property void                      (*drawCallback)( CALayer *layer, CGContext *ctxt);
 @property( observable) CGFloat      cornerRadius;
 @property( observable) CGFloat      borderWidth;
 @property( observable) CGFloat      opacity;
-@property( observable) CGColorRef   borderColor;
-@property( observable) CGColorRef   backgroundColor;
+@property( observable) CGColor   borderColor;
+@property( observable) CGColor   backgroundColor;
 @property( observable) CGPoint      pixelCenter;
 @property( observable) BOOL         masksToBounds;
 

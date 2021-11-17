@@ -5,7 +5,7 @@
 
 #import "UIWindow.h"
 #import "UIView+CAAnimation.h"
-#import "UIEdgeInsets+CString.h"
+#import "UIEdgeInsets+UTF8String.h"
 
 #import "import-private.h"
 
@@ -191,7 +191,7 @@
          newFrame.origin.x += marginalBounds.origin.x;
 
 //   fprintf( stderr, "view: %s f=[%s] o=[%s] m=[%s]\n",
-//               [view debugNameCString],
+//               [view debugNameUTF8String],
 //               CGRectUTF8String( [view frame]),
 //               CGRectUTF8String( [view originalFrame]),
 //               UIEdgeInsetsUTF8String( [view margins]));
@@ -306,7 +306,7 @@
       if( _didLayoutSubviews)
          (*_didLayoutSubviews)( self);
    }
- 
+
  }
 
 //

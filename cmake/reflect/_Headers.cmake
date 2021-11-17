@@ -59,9 +59,10 @@ src/GLFW/GLFWWindow.h
 src/MulleKeyboardEventConsumer.h
 src/MulleObjCLoader+MulleUICore.h
 src/MulleUICore.h
+src/UIApplication+UIWindow.h
 src/UIApplication.h
 src/UIColor.h
-src/UIEdgeInsets+CString.h
+src/UIEdgeInsets+UTF8String.h
 src/UIEdgeInsets.h
 src/UIEvent.h
 src/UIFont.h
@@ -79,7 +80,6 @@ src/UIView+UIEvent.h
 src/UIView+UIResponder.h
 src/UIView+UIViewEditing.h
 src/UIView.h
-src/UIWindow+CAAnimation.h
 src/UIWindow+Render.h
 src/UIWindowStyle.h
 src/UIWindow+UIEvent.h

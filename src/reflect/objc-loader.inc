@@ -10,6 +10,7 @@
       { @selector( MulleKeyboardEventConsumer), MULLE_OBJC_NO_CATEGORYID },      // c33175dd;MulleKeyboardEventConsumer;;
       { @selector( UIAnimatableViewPropertiesSnapshot), MULLE_OBJC_NO_CATEGORYID },      // d500f939;UIAnimatableViewPropertiesSnapshot;;
       { @selector( UIApplication), @selector( GLFW) },      // 48c8c9b2;UIApplication;79b5a4d7;GLFW
+      { @selector( UIApplication), @selector( UIWindow) },      // 48c8c9b2;UIApplication;895a123f;UIWindow
       { @selector( UIApplication), MULLE_OBJC_NO_CATEGORYID },      // 48c8c9b2;UIApplication;;
       { @selector( UIColor), MULLE_OBJC_NO_CATEGORYID },      // 43644baa;UIColor;;
       { @selector( UIEvent), @selector( GLFW) },      // f88bf69f;UIEvent;79b5a4d7;GLFW
@@ -33,7 +34,6 @@
       { @selector( UIView), @selector( UIResponder) },      // 155b6ee8;UIView;48335ff7;UIResponder
       { @selector( UIView), @selector( UIViewEditing) },      // 155b6ee8;UIView;ca3588ee;UIViewEditing
       { @selector( UIView), MULLE_OBJC_NO_CATEGORYID },      // 155b6ee8;UIView;;
-      { @selector( UIWindow), @selector( CAAnimation) },      // 895a123f;UIWindow;c85bd814;CAAnimation
       { @selector( UIWindow), @selector( CGGeometry) },      // 895a123f;UIWindow;3ab12270;CGGeometry
       { @selector( UIWindow), @selector( RenderQueue) },      // 895a123f;UIWindow;1cf3a909;RenderQueue
       { @selector( UIWindow), @selector( RenderingAddAllLayoutsToRenderQueue) },      // 895a123f;UIWindow;c2364484;RenderingAddAllLayoutsToRenderQueue

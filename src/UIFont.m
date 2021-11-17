@@ -5,14 +5,14 @@
 @implementation UIFont
 
 
-+ (instancetype) fontWithNameCString:(char *) name
++ (instancetype) fontWithNameUTF8String:(char *) name
 {
-   return( [self fontWithNameCString:name
+   return( [self fontWithNameUTF8String:name
                                 size:12.0]);
 }
 
 
-+ (instancetype) fontWithNameCString:(char *) name
++ (instancetype) fontWithNameUTF8String:(char *) name
                                 size:(CGFloat) pointSize
 {
    UIFont   *font;
@@ -26,7 +26,7 @@
 
 + (instancetype) boldSystemFontOfSize:(CGFloat) pointSize
 {
-   return( [self fontWithNameCString:"sans"
+   return( [self fontWithNameUTF8String:"sans"
                                 size:pointSize]);
 }
 
@@ -43,7 +43,7 @@
 
 - (void) setFontName:(char *) s
 {
-   MulleObjCObjectSetDuplicatedCString( self, &_fontName, s);
+   MulleObjCObjectSetDuplicatedUTF8String( self, &_fontName, s);
 }
 
 @end

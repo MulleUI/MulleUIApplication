@@ -17,6 +17,8 @@ src/main-candycrash.m
 src/main-demo.m
 src/main-demo-resizable.m
 src/main-fps.m
+src/main-glfw-sharing.m
+src/main-shared.m
 src/main-swapinterval.m
 src/main-two-windows.m
 )

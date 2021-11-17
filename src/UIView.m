@@ -36,7 +36,7 @@
 - (instancetype) initWithLayer:(CALayer *) layer
                          frame:(CGRect) frame
 {
-   CGRect     frame;
+   CGRect   frame;
 
    assert( ! layer || [layer isKindOfClass:[CALayer class]]);
 
@@ -344,8 +344,8 @@ static inline CGRect   getBounds( UIView *self)
 }
 
 
-- (void) addSubviewsIntersectingRect:(CGRect) rect
-                      toPointerArray:(struct mulle_pointerarray *) array
+- (void) getSubviewsIntersectingRect:(CGRect) rect
+                      intoPointerArray:(struct mulle_pointerarray *) array
               invertIntersectionTest:(BOOL) flag
 {
    struct mulle_pointerarrayenumerator   rover;
@@ -457,12 +457,12 @@ static inline CGRect   getBounds( UIView *self)
 
 
 //// conveniences
-//- (void) setBackgroundColor:(CGColorRef) color
+//- (void) setBackgroundColor:(CGColor) color
 //{
 //   [_mainLayer setBackgroundColor:color];
 //}
 //
-//- (void) setBorderColor:(CGColorRef) color
+//- (void) setBorderColor:(CGColor) color
 //{
 //   return( [_mainLayer setBorderColor:color]);
 //}
@@ -478,12 +478,12 @@ static inline CGRect   getBounds( UIView *self)
 //}
 //
 //
-//- (CGColorRef) backgroundColor
+//- (CGColor) backgroundColor
 //{
 //   return( [_mainLayer backgroundColor]);
 //}
 //
-//- (CGColorRef) borderColor
+//- (CGColor) borderColor
 //{
 //   return( [_mainLayer borderColor]);
 //}
@@ -526,11 +526,11 @@ static inline CGRect   getBounds( UIView *self)
    char        *format;
    char        *name;
 
-   s = MulleObjCClassGetNameCString( NSClassFromObject( self));
+   s = MulleObjCClassGetNameUTF8String( NSClassFromObject( self));
    sprintf( buf, "%p",  self);
 
    format = "<%s %s>";
-   name   = [_mainLayer debugNameCString];
+   name   = [_mainLayer debugNameUTF8String];
    len    = name ? strlen( name) : 0;
    if( len)
    {
@@ -599,7 +599,7 @@ static inline CGRect   getBounds( UIView *self)
 // look for the plance, the view is part of (if any)
 // a plane will say nil
 //
-- (UIView *) mulleWindowPlane
+- (UIView *) UIWindowPlane
 {
    UIView   *view;
    UIView   *plane;

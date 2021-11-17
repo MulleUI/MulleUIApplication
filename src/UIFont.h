@@ -19,9 +19,9 @@
 
 
 // will be default size 12
-+ (instancetype) fontWithNameCString:(char *) name;
++ (instancetype) fontWithNameUTF8String:(char *) name;
 
-+ (instancetype) fontWithNameCString:(char *) name
++ (instancetype) fontWithNameUTF8String:(char *) name
                                 size:(CGFloat) pointSize;
 
 + (instancetype) boldSystemFontOfSize:(CGFloat) pointSize;

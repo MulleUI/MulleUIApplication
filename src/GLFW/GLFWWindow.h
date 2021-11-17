@@ -16,28 +16,35 @@
 @class CGContext;
 
 
-@protocol GLFWWindowEventReceiver 
+@protocol GLFWWindowEventReceiver
 
 - (void) handleWindowEvent:(UIEvent *) event;
 - (void) queueRetainedEvent:(UIEvent *) event;
 
-@end 
+@end
 
 //
 // The GLFWWindow has the GLFW window handle and implicitly the
-// drawing context. A UIWindow will have possibly two GLFWWindows 
+// drawing context. A UIWindow will have possibly two GLFWWindows
 // associated with it. One for drawing offscreen and one for display onscreen.
 // Events for the window are forwarded from here.
 //
+// If you create GLFWWindow manually, be sure to finalize them before
+// UIApplication terminate, otherwise the context are gone and finalization
+// can't happen.
+//
 @interface GLFWWindow : NSObject
 {
-   void     *_window;   // GLFWwindow
+   void        *_window;   // GLFWwindow
 
-   NSLock   *_renderContextLock;
+   NSLock      *_renderContextLock;
 
-   CGPoint   _mouseLocation;
-   uint64_t  _mouseButtonStates;
-   uint64_t  _modifiers;
+   CGPoint     _mouseLocation;
+   uint64_t    _mouseButtonStates;
+   uint64_t    _modifiers;
+
+   GLFWWindow  *_sharingWindow;
+   NSInteger   _shareId;
 }
 
 // window events are called via -handleEvent:
@@ -52,15 +59,21 @@
 
 @property( retain, readonly) CGContext   *context;
 
+- (NSInteger) shareId;
 
 + (CGFloat) os_primaryMonitorPPI;
 + (void) os_setSwapInterval:(NSUInteger) value;
 + (CGFloat) os_primaryMonitorRefreshRate;
 
 - (instancetype) initWithFrame:(CGRect) frame
-                  titleCString:(char *) title
+                  titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask;
 
+// sharingWindow is retained. We will be able to share textures with it
+- (instancetype) initWithFrame:(CGRect) frame
+                  titleUTF8String:(char *) title
+                    styleMask:(NSUInteger) styleMask
+                sharingWindow:(GLFWWindow *) sharingWindow;
 
 - (void) os_destroyWindow;
 

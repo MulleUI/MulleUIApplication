@@ -9,8 +9,7 @@ typedef UIView   UIWindowPlane;
 @class UIPasteboard;
 @class UIEvent;
 @class UIApplication;
-
-
+@class GLFWWindow;  // move to private some time
 
 
 
@@ -99,14 +98,14 @@ enum UIWindowRefreshStrategy
    // need to setNeedsDisplay to get the renderer out of the lock and start
    // the render. The _renderContextLock still needs to be observed when
    // attempting to modify the view hierarchy ?
-   NSConditionLock    *_needsDisplayLock;
-   BOOL               _isResizing;
-   CAAbsoluteTime     _lastResizeEventTimestamp;
-   CAAbsoluteTime     _lastDidFramebufferSwapTimestamp;
-   CAAbsoluteTime     _lastDidProcessEventsTimestamp;
-   BOOL               _shouldClose;
-   BOOL               _needsWindowRefresh;
-   NSInteger          _oldSwapInterval;
+   NSConditionLock             *_needsDisplayLock;
+   BOOL                        _isResizing;
+   CAAbsoluteTime              _lastResizeEventTimestamp;
+   CAAbsoluteTime              _lastDidFramebufferSwapTimestamp;
+   CAAbsoluteTime              _lastDidProcessEventsTimestamp;
+   BOOL                        _shouldClose;
+   BOOL                        _needsWindowRefresh;
+   NSInteger                   _oldSwapInterval;
    struct mulle_pointerarray   _renderQueue; // layers to render
 }
 
@@ -120,7 +119,7 @@ enum UIWindowRefreshStrategy
 
 @property( assign) CGFloat              eventFrequency;
 
-@property( assign) CGColorRef           backgroundColor;
+@property( assign) CGColor              backgroundColor;
 
 // as the framebufferSize via glfw calls can only be done on mainthread
 // we keep a shadow, that gets updated by glfw window events
@@ -133,7 +132,7 @@ enum UIWindowRefreshStrategy
 @property( assign) NSUInteger                    swapInterval;
 
 // default is UIWindowBackingStoreBuffered, this is more expensive. If your
-// event/drawing code is very fast (within a frame), you can get by with 
+// event/drawing code is very fast (within a frame), you can get by with
 // UIWindowBackingStoreNonRetained
 @property( assign) UIWindowBackingStoreType      backingStore;
 @property( assign) enum UIWindowRefreshStrategy  refreshStrategy;
@@ -150,11 +149,8 @@ enum UIWindowRefreshStrategy
 // and finish ASAP. The CAAbsoluteTime is the time the render started it will
 // be the same through all callbacks.
 //
-@property void   (*willRenderCallback)( UIWindow *window,
-                                        CGContext *context,  
-                                        struct CGFrameInfo *info);
 @property void   (*willLayoutCallback)( UIWindow *window,
-                                        CGContext *context,  
+                                        CGContext *context,
                                         struct CGFrameInfo *info);
 @property void   (*didLayoutCallback)( UIWindow *window,
                                        CGContext *context,
@@ -173,12 +169,23 @@ enum UIWindowRefreshStrategy
                                         struct CGFrameInfo *info,
                                         NSInteger stage);
 
-// There is no willRenderCallback
-// as anything draw in it would be clobbered by the window clearing itself.
 
 //
-// These are useful to add custom drawing stuff on top.
-// Before flush of nanovg
+// This is useful to add custom drawing stuff on the bottom.
+//
+@property void   (*willRenderCallback)( UIWindow *window,
+                                        CGContext *context,
+                                        struct CGFrameInfo *info);
+
+//
+// This is useful to add custom nanovg drawing stuff on top.
+//
+@property void   (*willEndRenderCallback)( UIWindow *window,
+                                           CGContext *context,
+                                           struct CGFrameInfo *info);
+//
+// This is useful to add custom Open GL drawing stuff on top of nanovg.
+//
 @property void   (*didRenderCallback)( UIWindow *window,
                                        CGContext *context,
                                        struct CGFrameInfo *info);
@@ -203,14 +210,33 @@ enum UIWindowRefreshStrategy
 @property( readonly, assign) UIWindowPlane   *toolTipPlane;
 @property( readonly, assign) UIWindowPlane   *contentPlane;
 
++ (instancetype) windowWithFrame:(CGRect) frame;
+
++ (instancetype) windowWithFrame:(CGRect) frame
+                 titleUTF8String:(char *) title
+                       styleMask:(NSUInteger) styleMask;
+
+// Convenience for quick hacks
+// Window will be resizable if the view is resizable
+// margins will be observed to create spacing around the view
+// if any axis is < 32 in size, 32 will be used
+//
++ (instancetype) windowWithView:(UIView *) view
+                 titleUTF8String:(char *) title;
+
+// even more convenient, even less configurable, for even more
+// convenience checkout UIApplication+UIWindow
++ (instancetype) windowWithLayer:(CALayer *) layer
+                 titleUTF8String:(char *) title;
+
+- (instancetype) initWithGLFWWindow:(GLFWWindow *) window
+                offscreenGLFWWindow:(GLFWWindow *) offscreenWindow;
+
 - (instancetype) initWithFrame:(CGRect) frame;
 // default visible: closable, non-resizable, non-maximizable
 - (instancetype) initWithFrame:(CGRect) frame
-                  titleCString:(char *) title
+               titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask;
-
-+ (instancetype) windowWithFrame:(CGRect) frame;
-
 
 // does not deal with focus of events
 //- (void) show;

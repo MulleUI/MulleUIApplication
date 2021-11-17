@@ -26,7 +26,7 @@ static id    balls[ numBalls];
    CGFloat             *_boundOffset;
    CGFloat             *_boundOffsetBuff;
    struct CGPoint      *_sidePoints;
-   CGColorRef          _fillColor;
+   CGColor          _fillColor;
 }
 
 @property( assign) CGPoint       point;
@@ -58,7 +58,7 @@ static id    balls[ numBalls];
 
    hue              = CGFloatMakeRandom();
 //   printf( "hue: %.2f\n", hue);
-   _fillColor       = MulleColorMakeHSL( hue, 1, 0.5);
+   _fillColor       = CGColorMakeHSL( hue, 1, 0.5);
 
    for( i = 0; i < _numSegment; i++)
    {

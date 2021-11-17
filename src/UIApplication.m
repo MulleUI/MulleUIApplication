@@ -34,12 +34,12 @@ static void   object_autorelease( struct mulle_container_keycallback *callback,
    [(id) obj autorelease];
 }
 
-static void   *object_describe( struct mulle_container_keycallback *callback,
+static char   *object_describe( struct mulle_container_keycallback *callback,
                                 void *obj,
                                 struct mulle_allocator **p_allocator)
 {
    *p_allocator = NULL;
-   return( mulle_objc_object_call( (id) obj, @selector( description), (id) obj));
+   return( mulle_objc_object_call( (id) obj, @selector( UTF8String), (id) obj));
 }
 
 
@@ -60,6 +60,13 @@ static const struct mulle_container_keycallback   key_retain_callback =
 
 
 @implementation UIApplication
+
++ (void) initialize
+{
+   [super initialize];  // call singleton initialize ?
+   [UIApplication os_initialize];
+}
+
 
 - (id) init
 {

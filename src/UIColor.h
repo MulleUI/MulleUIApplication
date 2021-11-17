@@ -1,7 +1,7 @@
 #import "import.h"
 
 //
-// UIColor is merely a factory for CGColorRef which is really the
+// UIColor is merely a factory for CGColor which is really the
 // nanovg color struct
 //
 // I think colors wrapped into objects is too heavyweight
@@ -9,24 +9,24 @@
 
 @interface UIColor : NSObject
 
-+ (CGColorRef) blackColor;
-+ (CGColorRef) whiteColor;
-+ (CGColorRef) redColor;
-+ (CGColorRef) blueColor;
-+ (CGColorRef) greenColor;
-+ (CGColorRef) grayColor;
-+ (CGColorRef) yellowColor;
-+ (CGColorRef) darkGrayColor;
-+ (CGColorRef) lightGrayColor;
++ (CGColor) blackColor;
++ (CGColor) whiteColor;
++ (CGColor) redColor;
++ (CGColor) blueColor;
++ (CGColor) greenColor;
++ (CGColor) grayColor;
++ (CGColor) yellowColor;
++ (CGColor) darkGrayColor;
++ (CGColor) lightGrayColor;
 
-+ (CGColorRef) magentaColor;
-+ (CGColorRef) brownColor;
-+ (CGColorRef) cyanColor;
-+ (CGColorRef) orangeColor;
-+ (CGColorRef) purpleColor;
++ (CGColor) magentaColor;
++ (CGColor) brownColor;
++ (CGColor) cyanColor;
++ (CGColor) orangeColor;
++ (CGColor) purpleColor;
 
-+ (CGColorRef) underPageBackgroundColor;
-+ (CGColorRef) colorWithCGColor:(CGColorRef) cgColor;
++ (CGColor) underPageBackgroundColor;
++ (CGColor) colorWithCGColor:(CGColor) cgColor;
 
 
 @end

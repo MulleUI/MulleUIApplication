@@ -13,7 +13,6 @@ struct UITrackingArea
 };
 
 
-
 static inline void    UITrackingAreaInit( struct UITrackingArea *p, CGRect rect, id userInfo)
 {
    p->rect     = rect;

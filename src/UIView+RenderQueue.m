@@ -27,8 +27,8 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
    [layer setAlpha:v->alpha];
 
 //   if( v->clipRect.size.width != INFINITY)
-//      fprintf( stderr, "%p setClipRect: %s  transform: %s\n", 
-//               layer, 
+//      fprintf( stderr, "%p setClipRect: %s  transform: %s\n",
+//               layer,
 //               CGRectUTF8String( v->clipRect),
 //               CGAffineTransformUTF8String( v->xform));
    [layer setClipRect:v->clipRect];
@@ -58,7 +58,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
       return;
 
    v.alpha = _alpha * ctx->alpha;
-   if( MulleAlphaIsTransparent( v.alpha))
+   if( CGAlphaIsTransparent( v.alpha))
       return;
 
    bounds     = [self bounds];

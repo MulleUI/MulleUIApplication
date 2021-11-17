@@ -54,6 +54,11 @@ src/include.h
 #
 set( PUBLIC_HEADERS
 src/demos-version.h
+src/gl.h
+src/khrplatform.h
+src/linmath.h
 src/reflect/_demos-include-public.h
+src/vk_platform.h
+src/vulkan.h
 )
 

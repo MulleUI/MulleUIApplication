@@ -13,7 +13,8 @@ enum UIWindowStyleMask
   UIWindowStyleInvisible             = 0x8,
   UIWindowStyleNoEdgeAntialias       = 0x10,  // nanvg
   UIWindowStyleNoStencilStrokes      = 0x20,  // nanovg
-  UIWindowStyleRenderNonRetainedOnly = 0x40   // backbuffer is always UIWindowBackingStoreNonRetained
+  UIWindowStyleRenderNonRetainedOnly = 0x40,  // backbuffer is always UIWindowBackingStoreNonRetained
+  UIWindowStyleOffscreen             = 0x80
 };
 
 typedef NSUInteger   UIWindowStyleMask;
