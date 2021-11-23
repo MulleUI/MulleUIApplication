@@ -1,4 +1,4 @@
-#include "UIEdgeInsets.h"
+#import "UIEdgeInsets.h"
 
 
 static inline char   *UIEdgeInsetsUTF8String( UIEdgeInsets insets)

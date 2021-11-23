@@ -14,7 +14,7 @@ endif()
 #
 # Generated from sourcetree: 4edeaf88-96fa-49de-a075-3e49d3d939b3;GL;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
 # Disable with : `mulle-sourcetree mark GL `
-# Disable for this platform: `mulle-sourcetree mark GL no-cmake-platform-linux`
+# Disable for this platform: `mulle-sourcetree mark GL no-cmake-platform-${MULLE_UNAME}`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT GL_LIBRARY)
@@ -87,7 +87,7 @@ endif()
 #
 # Generated from sourcetree: 9d1fb7ab-5eb3-4bc0-b08d-55a1608a9a07;GLU;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
 # Disable with : `mulle-sourcetree mark GLU `
-# Disable for this platform: `mulle-sourcetree mark GLU no-cmake-platform-linux`
+# Disable for this platform: `mulle-sourcetree mark GLU no-cmake-platform-${MULLE_UNAME}`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT GLU_LIBRARY)
@@ -160,7 +160,7 @@ endif()
 #
 # Generated from sourcetree: d398f155-a76d-4ed8-ab5d-54d2dbc72c80;X11;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
 # Disable with : `mulle-sourcetree mark X11 `
-# Disable for this platform: `mulle-sourcetree mark X11 no-cmake-platform-linux`
+# Disable for this platform: `mulle-sourcetree mark X11 no-cmake-platform-${MULLE_UNAME}`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT X11_LIBRARY)
@@ -233,7 +233,7 @@ endif()
 #
 # Generated from sourcetree: 7a44004b-d9fa-449c-ab04-5487427b3848;Xrandr;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
 # Disable with : `mulle-sourcetree mark Xrandr `
-# Disable for this platform: `mulle-sourcetree mark Xrandr no-cmake-platform-linux`
+# Disable for this platform: `mulle-sourcetree mark Xrandr no-cmake-platform-${MULLE_UNAME}`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XRANDR_LIBRARY)
@@ -306,7 +306,7 @@ endif()
 #
 # Generated from sourcetree: b104dcf2-8259-4930-83d2-8b85dcdb833e;Xxf86vm;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
 # Disable with : `mulle-sourcetree mark Xxf86vm `
-# Disable for this platform: `mulle-sourcetree mark Xxf86vm no-cmake-platform-linux`
+# Disable for this platform: `mulle-sourcetree mark Xxf86vm no-cmake-platform-${MULLE_UNAME}`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XXF86VM_LIBRARY)
@@ -379,7 +379,7 @@ endif()
 #
 # Generated from sourcetree: f62b1a75-fa78-4cfd-9040-18085a4f631c;Xinerama;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
 # Disable with : `mulle-sourcetree mark Xinerama `
-# Disable for this platform: `mulle-sourcetree mark Xinerama no-cmake-platform-linux`
+# Disable for this platform: `mulle-sourcetree mark Xinerama no-cmake-platform-${MULLE_UNAME}`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XINERAMA_LIBRARY)
@@ -452,7 +452,7 @@ endif()
 #
 # Generated from sourcetree: 2c53a20e-075d-4978-a7ac-f9789d580d68;Xcursor;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
 # Disable with : `mulle-sourcetree mark Xcursor `
-# Disable for this platform: `mulle-sourcetree mark Xcursor no-cmake-platform-linux`
+# Disable for this platform: `mulle-sourcetree mark Xcursor no-cmake-platform-${MULLE_UNAME}`
 #
 if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    if( NOT XCURSOR_LIBRARY)
@@ -525,7 +525,7 @@ endif()
 #
 # Generated from sourcetree: 4f8c9930-b601-4bed-9ef6-59002def0b11;m;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;
 # Disable with : `mulle-sourcetree mark m `
-# Disable for this platform: `mulle-sourcetree mark m no-cmake-platform-linux`
+# Disable for this platform: `mulle-sourcetree mark m no-cmake-platform-${MULLE_UNAME}`
 #
 if( NOT M_LIBRARY)
    find_library( M_LIBRARY NAMES m)

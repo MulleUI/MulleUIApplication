@@ -143,8 +143,8 @@ static void  usage( void)
 "Refresh rate can be a floating point refresh rate in HZ or one of the\n"
 "following words:\n"
 "   synced   : synced to (primary) monitor refresh rate\n"
-"   unsynced : runs as fast as possible\n"
-"   variable : waits for events (like mouse movemens)\n");
+"   async    : runs as fast as possible\n"
+"   unsynced : waits for events (like mouse movements)\n");
    exit( 1);
 }
 

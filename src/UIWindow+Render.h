@@ -24,5 +24,9 @@
 
 - (void) swapBuffers;
 
+- (struct CGFramebufferBitmap)
+   lastRenderedFramebufferBitmapType:(enum CGFramebufferBitmapType) type
+                            inFlight:(BOOL) inFlight
+                           allocator:(struct mulle_allocator *) allocator;
 @end
 

@@ -9,7 +9,7 @@
 #endif
 
 // we want "import.h" always anyway
-#import "UIApplication.h"
+#import "import.h"
 
 
 @class UIView;
@@ -27,6 +27,13 @@
 // the windowSize
 //
 - (void) runWindowForDrawCallback:(CALayerDrawCallback_t) callback
+                       canvasSize:(CGSize) canvasSize
+                       windowSize:(CGSize) windowSize
+                  titleUTF8String:(char *) title
+                      frameRateHz:(CGFloat) hz;
+
+// even more convenient...
++ (void) runWindowForDrawCallback:(CALayerDrawCallback_t) callback
                        canvasSize:(CGSize) canvasSize
                        windowSize:(CGSize) windowSize
                   titleUTF8String:(char *) title

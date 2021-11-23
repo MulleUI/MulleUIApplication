@@ -1,7 +1,5 @@
 #import "UIView.h"
 
-#import "UIWindowStyle.h"
-
 struct CGFrameInfo;
 
 typedef UIView   UIWindowPlane;
@@ -65,10 +63,17 @@ enum UIWindowRefreshStrategy
 // TODO: firstResponder needed for UITextField to gain keyboard
 //       focus immediately
 //
-@interface UIWindow : UIView
+@interface UIWindow : UIView <UIWindow>
 {
    id                 _os_window;             // our GLFW Window
-   id                 _os_offscreen_window;   // our drawing Window
+   id                 _offscreen_os_window;   // our drawing Window
+
+   CGContext          *_context;
+   CGContext          *_offscreenContext;
+
+   // TODO: full "beauty" is only needed for offscreen or ?
+   NSUInteger         _styleMask;
+   NSUInteger         _offscreenStyleMask;
 
    CGSize             _resizeSize;
    id                 _firstResponder;
@@ -96,7 +101,7 @@ enum UIWindowRefreshStrategy
    struct ui_window_pointer_fifo   _eventQueue;
 
    // need to setNeedsDisplay to get the renderer out of the lock and start
-   // the render. The _renderContextLock still needs to be observed when
+   // the render. The _contextLock still needs to be observed when
    // attempting to modify the view hierarchy ?
    NSConditionLock             *_needsDisplayLock;
    BOOL                        _isResizing;
@@ -259,6 +264,7 @@ enum UIWindowRefreshStrategy
 - (CAAnimator *) postLayoutAnimator;
 
 - (void) requestClose;
+- (BOOL) shouldClose;
 
 @end
 

@@ -1,7 +1,5 @@
 #import "UIView.h"
 
-#import "UIEvent.h"
-
 @class UIMouseScrollEvent;
 
 

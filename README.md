@@ -1,6 +1,6 @@
 # 🛸 MulleUICore
 
-#### 🛸 MulleUICore provides event handling and window management
+#### 🛸 MulleUICore provides UIViews and UIWindow
 
 ![](mulle-tiny-logo-255x256.png)
 
