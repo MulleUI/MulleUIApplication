@@ -11,13 +11,13 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
-src/main-animate-circles.m
 src/main-autoresizingmask.m
 src/main-candycrash.m
 src/main-demo.m
 src/main-demo-resizable.m
 src/main-fps.m
 src/main-glfw-sharing.m
+src/main-glfw-texture.m
 src/main-shared.m
 src/main-swapinterval.m
 src/main-two-windows.m

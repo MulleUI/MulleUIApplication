@@ -4,10 +4,9 @@
 
 #import "import-private.h"
 
-#import "UIEvent.h"
+#import "UIWindow+Render.h"
 #import "UIView+UIEvent.h"
 #import "UIView+CGGeometry.h"
-#import "GLFWWindow+UIEvent.h"
 #import "mulle-pointerarray+ObjC.h"
 
 
@@ -230,7 +229,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
                      __PRETTY_FUNCTION__,
                      [self UTF8String]);
 #endif
-      _framebufferSize = [(UIWindowFramebufferResizeEvent *) event size];                                                             
+      _framebufferSize = [(UIWindowFramebufferResizeEvent *) event size];
       _isResizing      = YES;
       [self setNeedsDisplay];
       return( nil);
@@ -264,7 +263,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
                                  // so we can react as fast as possible
       [self setNeedsDisplay];
 
-      // we react "fast" to incoming refresh request and swap buffers 
+      // we react "fast" to incoming refresh request and swap buffers
       // immediately, so that window contents look fine.
       if( _backingStore == UIWindowBackingStoreBuffered)
          [self swapBuffers];
@@ -323,9 +322,11 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
                break;
 
             case 299:
-               if( [self respondsToSelector:@selector( saveScreenshotToDesktop)])
+               if( [self respondsToSelector:@selector( saveScreenshotToFileWithSystemRepresentation:)])
                {
-                  [self performSelector:@selector( saveScreenshotToDesktop)];
+                  if( [self performSelector:@selector( saveScreenshotToFileWithSystemRepresentation:)
+                             withObject:(id) "screenshot.png"])
+                     fprintf( stderr, "Saved \"screenshot.png\"\n");
                   return( nil);
                }
                break;

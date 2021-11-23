@@ -10,15 +10,17 @@
 #import "UIWindow+UIEvent.h"
 #import "UIView+Layout.h"
 #import "UIView+RenderQueue.h"
-#import "UIEvent.h"
-#import "GLFWWindow.h"
 
 
 // #define LAYOUT_ANIMATIONS
 //#define SWAP_DEBUG
 
 
-
+//
+// This needs to be implemented by the context owner. This is not a bug.
+// setActive: is not supposed to be seen outside of the window setting this
+// context active. (Locking is done in GLFWWindow with the implicit context!)
+//
 @implementation CGContext( UIWindow)
 
 - (void) setActive:(BOOL) flag
@@ -101,8 +103,8 @@
    // UIWindowFrameRateSynced (which is the primary monitor refresh rate)
    // or a framerate like 1/60.0 for 60 Hz
    //
-   // UIWindowFrameRateUnsynced: timout == INFINITE, returnsEarly: YES
-   // UIWindowFrameRateAsync: timout == 0.0  returnsEarly: YES
+   // UIWindowFrameRateAsynced:  timout == INFINITE, returnsEarly: YES
+   // UIWindowFrameRateUnsynced: timout == 0.0  returnsEarly: YES
    // Else timeout: returnsEarly: NO
    assert( frameRate == UIWindowFrameRateUnsynced ||
            frameRate == UIWindowFrameRateAsync ||
@@ -137,69 +139,72 @@
 
 - (CGContext *) activateWindowContext
 {
-   CGContext   *context;
+   [_os_window os_activateContext];
 
-   [_os_window os_startRender];
+   if( ! _context)
+      _context = [[CGContext alloc] initWithEdgeAntialiasing:!(_styleMask & UIWindowStyleNoEdgeAntialias)
+                                           useStencilStrokes:!(_styleMask & UIWindowStyleNoStencilStrokes)];
+   [_context setActive:YES];
+   [_context setBackgroundColor:_backgroundColor];
 
-   context = [_os_window context];
-   [context setActive:YES];
-   [context setBackgroundColor:_backgroundColor];
-
-   return( context);
+   return( _context);
 }
 
 
 - (void) deactivateWindowContext:(CGContext *) context
 {
    assert( context);
-   assert( [context os_window] == _os_window);
+   assert( _context == context);
 
    [context setActive:NO];
-   [_os_window os_endRender];
+   [_os_window os_deactivateContext];
 }
 
 
-- (id) draw_os_window
-{
-   if( _backingStore == UIWindowBackingStoreNonRetained)
-      return( _os_window);
-   return( _os_offscreen_window);
-}
 
-
-// TODO: memo, maybe the context triggers os_startRender ?
+// TODO: memo, maybe the context triggers os_activateContext ?
 - (CGContext *) activateRenderContext
 {
    CGContext   *context;
-   id          os_render_window;
 
    // take renderlock here, relinquish later when wating for events
    // or when someone closes the window
-   os_render_window = [self draw_os_window];
-   assert( os_render_window);
-   [os_render_window os_startRender];
 
-   context = [os_render_window context];
-   [context setActive:YES];                        // just a flag
-   [context setBackgroundColor:_backgroundColor];  // just a value
+   if( _backingStore == UIWindowBackingStoreNonRetained)
+      return( [self activateWindowContext]);
 
-   return( context);
+   assert( _offscreen_os_window);
+
+   [_offscreen_os_window os_activateContext];
+   if( ! _offscreenContext)
+   {
+      _offscreenContext = [[CGContext alloc] initWithEdgeAntialiasing:!(_styleMask & UIWindowStyleNoEdgeAntialias)
+                                                    useStencilStrokes:!(_styleMask & UIWindowStyleNoStencilStrokes)];
+      [_offscreenContext setRendersOffScreen:YES];
+   }
+   [_offscreenContext setActive:YES];                        // just a flag
+   [_offscreenContext setBackgroundColor:_backgroundColor];  // just a value
+
+   return( _offscreenContext);
 }
 
 
 - (void) deactivateRenderContext:(CGContext *) context
 {
-   id   os_render_window;
-
    assert( context);
-   os_render_window = [context os_window];
-   assert( os_render_window);
+
    [context setActive:NO];
-   [os_render_window os_endRender];
+   if( context == _offscreenContext)
+      [_offscreen_os_window os_deactivateContext];
+   else
+      [_os_window os_deactivateContext];
 }
 
 
-- (struct CGFramebufferBitmap) grabLastRenderedOffscreenFramebuffer:(struct mulle_allocator *) allocator
+- (struct CGFramebufferBitmap)
+   lastRenderedFramebufferBitmapType:(enum CGFramebufferBitmapType) type
+                            inFlight:(BOOL) inFlight
+                           allocator:(struct mulle_allocator *) allocator
 {
    CGContext                    *context;
    struct CGFramebufferBitmap   fb;
@@ -209,7 +214,9 @@
      // need to blit from offscreen window to onscreen here
      // get image of offscreen framebuffer
      // can do this only, if we have rendered something last frame
-     fb = [context grabLastRenderedOffscreenFramebuffer:allocator];
+     fb = [context lastRenderedFramebufferBitmapType:type
+                                            inFlight:(BOOL) inFlight
+                                           allocator:allocator];
    }
    [self deactivateRenderContext:context];
 
@@ -217,48 +224,41 @@
 }
 
 
-- (void) drawOffscreenFramebuffer:(struct CGFramebufferBitmap *)  fb
-                          context:(CGContext *) context
+- (struct CGFramebufferBitmap) lastRenderedFramebuffer
 {
-   CGImage              *image;
-   CGDrawableOptions    options;
-   CGRect               rect;
-
-   //
-   // here we keep the orignal size during resize
-   //
-   rect = CGRectMake( 0, 0, fb->info.size.width, fb->info.size.height);
-
-   options = CGDrawableOptionsMake( 0.0, 1.0, 0.0, YES);
-   // image has to live until when ? can't delete too soon
-   // but it's not 100% clear then the right time is
-   image = [[[CGImage alloc] initWithRGBABytes:fb->data.bytes
-                                    bitmapSize:fb->info.size
-                                    imageFlags:CGBitmapEncodingIsFlipped( fb->info.encoding)
-                                                ? NVG_IMAGE_FLIPY
-                                                : 0
-                                       context:context] autorelease];
-   [image drawRect:rect
-           options:&options
-           context:context];
-
-   // just for debugging, draws a frame somewhere
-   {
-      struct NVGcontext   *vg;
-
-      vg = CGContextGetNVGContext( context);
-
-      // gray rectangle so we know something is drawn...
-      nvgBeginPath( vg);
-      {
-         rect = CGRectInset( rect, 20, 20);
-         nvgRect( vg, rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
-         nvgStrokeWidth( vg, 8);
-         nvgStrokeColor( vg, CGColorMakeWithUnsignedInteger( 0x8020A0FF));
-      }
-      nvgStroke( vg);
-   }
+   return( [self lastRenderedFramebufferBitmapType:CGFramebufferRGBABytes
+                                          inFlight:NO
+                                         allocator:NULL]);
 }
+
+
+- (struct CGFramebufferBitmap)
+   lastRenderedOffscreenFramebufferBitmapType:(enum CGFramebufferBitmapType) type
+                                    allocator:(struct mulle_allocator *) allocator
+{
+   CGContext                    *context;
+   struct CGFramebufferBitmap   fb;
+
+   context = [self activateRenderContext];
+   {
+     // need to blit from offscreen window to onscreen here
+     // get image of offscreen framebuffer
+     // can do this only, if we have rendered something last frame
+     fb = [context lastRenderedOffscreenFramebufferBitmapType:type
+                                                    allocator:allocator];
+   }
+   [self deactivateRenderContext:context];
+
+   return( fb);
+}
+
+
+- (struct CGFramebufferBitmap) lastRenderedOffscreenFramebuffer
+{
+   return( [self lastRenderedOffscreenFramebufferBitmapType:CGFramebufferRGBABytes
+                                                  allocator:NULL]);
+}
+
 
 
 - (void) copyBackingStore
@@ -267,12 +267,12 @@
    CGContext                    *context;
    struct CGFrameInfo           info;
 
-   fb = [self grabLastRenderedOffscreenFramebuffer:NULL];
+   fb = [self lastRenderedOffscreenFramebuffer];
    // if there has nothing been rendered yet, we decline the swap
-   if( fb.data.length == 0)
+   if( fb.bytes == 0)
       return;
 
-   // mulle_rgba_dump( fb.data.bytes, fb.info.size.width, fb.info.size.height);
+   // mulle_rgba_dump( fb.bytes, fb.info.size.width, fb.info.size.height);
 
    //
    // draw the image we got from the framebuffer into the window
@@ -285,8 +285,7 @@
       [context beginRender:&info];
       [context clearFramebuffer];  //?? useful
 
-      [self drawOffscreenFramebuffer:&fb
-                             context:context];
+      [context drawFramebufferBitmap:&fb];
 
       [context endRender];
    }
@@ -379,7 +378,7 @@
    {
       context = [self activateWindowContext];
       {
-         [GLFWWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
+         [_os_window os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
       }
       [self deactivateWindowContext:context];
 

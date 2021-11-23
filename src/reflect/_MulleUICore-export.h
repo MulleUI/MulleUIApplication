@@ -9,16 +9,13 @@
  *
  *      mulle-sde environment set MULLE_MATCH_TO_C_RUN DISABLE
  */
-#import "GLFWWindow+UIEvent.h"
-#import "GLFWWindow.h"
 #import "MulleKeyboardEventConsumer.h"
 #import "MulleObjCLoader+MulleUICore.h"
 #import "UIApplication+UIWindow.h"
-#import "UIApplication.h"
 #import "UIColor.h"
 #import "UIEdgeInsets+UTF8String.h"
 #import "UIEdgeInsets.h"
-#import "UIEvent.h"
+#import "UIEvent+UIView.h"
 #import "UIFont.h"
 #import "UIPasteboard.h"
 #import "UIResponder.h"
@@ -35,7 +32,6 @@
 #import "UIView+UIViewEditing.h"
 #import "UIView.h"
 #import "UIWindow+Render.h"
-#import "UIWindowStyle.h"
 #import "UIWindow+UIEvent.h"
 #import "UIWindow+UIPasteboard.h"
 #import "UIWindow+UIResponder.h"

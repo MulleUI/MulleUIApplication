@@ -11,15 +11,10 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
-src/GLFW/GLFWWindow+UIEvent.m
-src/GLFW/GLFWWindow.m
-src/GLFW/UIApplication+GLFW.m
-src/GLFW/UIEvent+GLFW.m
 src/MulleKeyboardEventConsumer.m
 src/UIApplication+UIWindow.m
-src/UIApplication.m
 src/UIColor.m
-src/UIEvent.m
+src/UIEvent+UIView.m
 src/UIFont.m
 src/UIPasteboard.m
 src/UIResponder.m

@@ -7,13 +7,9 @@
 
 #import "import-private.h"
 
-#import "UIApplication.h"
-#import "UIEvent.h"
 #import "UIView+CGGeometry.h"
 #import "UIView+UIEvent.h"
 #import "UIView+Layout.h"
-#import "GLFWWindow.h"
-#import "GLFWWindow+UIEvent.h"
 #import "mulle-pointerarray+ObjC.h"
 
 @interface UIWindow( GLFWWindowEventReceiver) <GLFWWindowEventReceiver>
@@ -34,6 +30,12 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 - (void) requestClose
 {
    [_os_window os_requestClose];
+}
+
+
+- (BOOL) shouldClose
+{
+   return( [_os_window os_windowShouldClose] ? YES : NO);
 }
 
 
@@ -139,7 +141,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    _os_window = [window retain];
    if( offscreenWindow)
-      _os_offscreen_window = [offscreenWindow retain];
+      _offscreen_os_window = [offscreenWindow retain];
    else
       _backingStore = UIWindowBackingStoreNonRetained;
 
@@ -159,8 +161,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
                   titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
 {
-   GLFWWindow    *window;
-   GLFWWindow    *offscreenWindow;
+   GLFWWindow               *window;
+   GLFWWindow               *offscreenWindow;
+   enum GLFWGraphicsHints   hints;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -171,25 +174,45 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
       styleMask |= UIWindowStyleInvisible;
 
    offscreenWindow = nil;
+
+   hints = GLFW_DEFAULT_CONTEXT;
+   switch( [CGContext backend])
+   {
+   case CG_GL3   : hints = GLFW_GL3_CONTEXT; break;
+   case CG_GLES2 : hints = GLFW_GLES2_CONTEXT; break;
+   case CG_GLES3 : hints = GLFW_GLES3_CONTEXT; break;
+   }
+
+   _offscreenStyleMask = styleMask;
    // buffered with offscreen window is the default,
    if( ! (styleMask & UIWindowStyleRenderNonRetainedOnly))
    {
       // offscreen window can be minimally sized as we use a different
-      // framebuffer
-      offscreenWindow = [[[GLFWWindow alloc] initWithFrame:CGRectMake( 0, 0, 64, 64)
-                                              titleUTF8String:"OffScreen"
-                                                    styleMask:styleMask|UIWindowStyleInvisible|UIWindowStyleOffscreen] autorelease];
+      // framebuffer. Why ? because we then have it under control and get a
+      // textureID from it.
+      _offscreenStyleMask &= ~UIWindowStyleResizable;
+      _offscreenStyleMask |= UIWindowStyleInvisible|UIWindowStyleOffscreen;
+      offscreenWindow      = [[[GLFWWindow alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
+                                                titleUTF8String:"OffScreen"
+                                                      styleMask:_offscreenStyleMask
+                                                  graphicsHints:hints] autorelease];
+      [offscreenWindow os_setSwapInterval:0];  // no need to double buffer
       if( ! offscreenWindow)
       {
          [self release];
          return( nil);
       }
+
+      // as we just copy we don't need this
+      styleMask |= UIWindowStyleNoEdgeAntialias|UIWindowStyleNoStencilStrokes;
    }
 
-   window = [[[GLFWWindow alloc] initWithFrame:frame
-                               titleUTF8String:title
-                                     styleMask:styleMask
-                                 sharingWindow:offscreenWindow] autorelease];
+   _styleMask = styleMask;
+   window     = [[[GLFWWindow alloc] initWithFrame:frame
+                                   titleUTF8String:title
+                                         styleMask:_styleMask
+                                     graphicsHints:hints
+                                     sharingWindow:offscreenWindow] autorelease];
 
    return( [self initWithGLFWWindow:window
                 offscreenGLFWWindow:offscreenWindow]);
@@ -268,7 +291,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    view = [UIView viewWithLayer:layer];
    [view setMargins:margins];
-   [view setAutoresizingMask:UIViewAutoresizingStickToCenter];
+   [view setAutoresizingMask:UIViewAutoresizingFlexible|UIViewAutoresizingStickToCenter];
    return( [self windowWithView:view
                titleUTF8String:title]);
 }
@@ -281,9 +304,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    // TODO: delete window ?
    //       remove from screen ?
-   [_os_offscreen_window mullePerformFinalize];
-   [_os_offscreen_window autorelease];
-   _os_offscreen_window = nil;
+   [_offscreen_os_window mullePerformFinalize];
+   [_offscreen_os_window autorelease];
+   _offscreen_os_window = nil;
    [_os_window mullePerformFinalize];
    [_os_window autorelease];
    _os_window = nil;
@@ -346,7 +369,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 - (void) setBackingStore:(NSUInteger) backingStore
 {
-   if( _os_offscreen_window)
+   if( _offscreen_os_window)
    {
       _backingStore = backingStore;
       return;

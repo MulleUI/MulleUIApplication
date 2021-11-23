@@ -3,6 +3,8 @@
 //
 #import "UIView+CGLayer.h"
 
+#import "UIView+Render.h"
+
 #import "import-private.h"
 
 

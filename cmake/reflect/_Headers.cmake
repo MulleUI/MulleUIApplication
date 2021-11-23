@@ -12,7 +12,6 @@ endif()
 
 set( INCLUDE_DIRS
 src
-src/GLFW
 src/reflect
 )
 
@@ -54,17 +53,14 @@ src/include.h
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
-src/GLFW/GLFWWindow+UIEvent.h
-src/GLFW/GLFWWindow.h
 src/MulleKeyboardEventConsumer.h
 src/MulleObjCLoader+MulleUICore.h
 src/MulleUICore.h
 src/UIApplication+UIWindow.h
-src/UIApplication.h
 src/UIColor.h
 src/UIEdgeInsets+UTF8String.h
 src/UIEdgeInsets.h
-src/UIEvent.h
+src/UIEvent+UIView.h
 src/UIFont.h
 src/UIPasteboard.h
 src/UIResponder.h
@@ -81,7 +77,6 @@ src/UIView+UIResponder.h
 src/UIView+UIViewEditing.h
 src/UIView.h
 src/UIWindow+Render.h
-src/UIWindowStyle.h
 src/UIWindow+UIEvent.h
 src/UIWindow+UIPasteboard.h
 src/UIWindow+UIResponder.h

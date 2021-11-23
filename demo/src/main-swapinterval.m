@@ -137,17 +137,6 @@ static void   setupSceneInView( UIView *contentPlane)
 }
 
 
-static void  usage( void)
-{
-   fprintf( stderr, "Usage: fps <refresh rate>\n"
-"Refresh rate can be a floating point refresh rate in HZ or one of the\n"
-"following words:\n"
-"   synced   : synced to (primary) monitor refresh rate\n"
-"   unsynced : runs as fast as possible\n"
-"   variable : waits for events (like mouse movemens)\n");
-   exit( 1);
-}
-
 int   main( int argc, char *argv[])
 {
    UIWindow        *window;
@@ -155,9 +144,6 @@ int   main( int argc, char *argv[])
    MulleUIPerf     *perf;
    CGFloat         rate;
    NSUInteger      swapInterval;
-
-   if( argc > 2)
-      usage();
 
    swapInterval = 0;
    rate = UIWindowFrameRateSynced;

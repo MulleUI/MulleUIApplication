@@ -33,4 +33,24 @@
    [window renderLoop];
 }
 
+
++ (void) runWindowForDrawCallback:(CALayerDrawCallback_t) callback
+                       canvasSize:(CGSize) canvasSize
+                       windowSize:(CGSize) windowSize
+                  titleUTF8String:(char *) title
+                      frameRateHz:(CGFloat) hz
+{
+   UIApplication   *app;
+
+   app = [UIApplication sharedInstance];
+   @autoreleasepool
+   {
+      [app runWindowForDrawCallback:callback
+                         canvasSize:canvasSize
+                         windowSize:windowSize
+                    titleUTF8String:title
+                        frameRateHz:hz];
+   }
+   [app terminate];
+
 @end
