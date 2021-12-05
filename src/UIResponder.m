@@ -2,8 +2,6 @@
 
 #import "import-private.h"
 
-#import "UIWindow+UIResponder.h"
-
 
 PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
 
