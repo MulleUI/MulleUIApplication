@@ -5,11 +5,16 @@ int   main( void)
 {
    UIApplication   *app;
    UIWindow        *window;
+   NSUInteger      styleMask;
+
+   styleMask = UIWindowsDefaultStyleMask;
+   styleMask = UIWindowsStyleMaskBySetting( styleMask, UIWindowStyleRetained, NO);
+   styleMask = UIWindowsStyleMaskBySetting( styleMask, UIWindowStyleInvisible, YES);
 
    app    = [UIApplication sharedInstance];
    window = [UIWindow windowWithFrame:CGRectMake( 0, 0, 128, 128)
                       titleUTF8String:"Demo"
-                            styleMask:UIWindowStyleRenderNonRetainedOnly|UIWindowStyleInvisible];
+                            styleMask:styleMask];
    [app addWindow:window];
    [window renderUpToNumberOfFrames:1];
    [app terminate];

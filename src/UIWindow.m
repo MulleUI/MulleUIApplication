@@ -62,7 +62,8 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    // its kinda pointless to inherit clipRects down for views, that are full
    // window size
-   _clipsToBounds = NO;
+   _clipsToBounds    = NO;
+   _clearFramebuffer = YES;
 
    _contentPlane = [UIView viewWithFrame:frame];
    [_contentPlane setDebugNameUTF8String:"Window/ContentPlane"];
@@ -164,8 +165,12 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    GLFWWindow               *window;
    GLFWWindow               *offscreenWindow;
    enum GLFWGraphicsHints   hints;
+   int                      core;
 
    assert( [NSThread mulleIsMainThread]);
+
+   if( ! styleMask)
+      styleMask = UIWindowStyleMaskDefault;
 
    // if you want to create a "manual" offscreen window, this is not going
    // to be visible ever. It is kinda wasteful to have this anything else than
@@ -179,24 +184,27 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    switch( [CGContext backend])
    {
    case CG_GL3   : hints = GLFW_GL3_CONTEXT; break;
+   case CG_GL3_2 : hints = GLFW_GL3_2_CONTEXT; break;
    case CG_GLES2 : hints = GLFW_GLES2_CONTEXT; break;
    case CG_GLES3 : hints = GLFW_GLES3_CONTEXT; break;
    }
 
    _offscreenStyleMask = styleMask;
    // buffered with offscreen window is the default,
-   if( ! (styleMask & UIWindowStyleRenderNonRetainedOnly))
+   if( styleMask & UIWindowStyleRetained)
    {
-      // offscreen window can be minimally sized as we use a different
-      // framebuffer. Why ? because we then have it under control and get a
-      // textureID from it.
+      //
+      // Offscreen window can be minimally sized as we use two different
+      // framebuffers. Why ? Because then we have it under control and get a
+      // textureID.
+      //
       _offscreenStyleMask &= ~UIWindowStyleResizable;
       _offscreenStyleMask |= UIWindowStyleInvisible|UIWindowStyleOffscreen;
+      _offscreenStyleMask |= UIWindowStyleSingleBuffer; // save some memory from bogus buffer
       offscreenWindow      = [[[GLFWWindow alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
                                                 titleUTF8String:"OffScreen"
                                                       styleMask:_offscreenStyleMask
                                                   graphicsHints:hints] autorelease];
-      [offscreenWindow os_setSwapInterval:0];  // no need to double buffer
       if( ! offscreenWindow)
       {
          [self release];
@@ -204,7 +212,8 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
       }
 
       // as we just copy we don't need this
-      styleMask |= UIWindowStyleNoEdgeAntialias|UIWindowStyleNoStencilStrokes;
+      // We also don't need to doublebuffer
+      styleMask &= ~(UIWindowStyleEdgeAntialias|UIWindowStyleStencilStrokes|UIWindowStyleSingleBuffer);
    }
 
    _styleMask = styleMask;

@@ -5,7 +5,7 @@
 
 #import "import-private.h"
 
-#import "UIWindow.h"
+#import "UIWindow+Render.h"
 
 
 @implementation UIApplication ( UIWindow)
@@ -52,5 +52,6 @@
                         frameRateHz:hz];
    }
    [app terminate];
+}
 
 @end
