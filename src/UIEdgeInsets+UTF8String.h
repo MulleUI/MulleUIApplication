@@ -1,8 +1,5 @@
 #import "UIEdgeInsets.h"
 
 
-static inline char   *UIEdgeInsetsUTF8String( UIEdgeInsets insets)
-{
-   return( MulleEdgeInsetsUTF8String( insets));
-}
-
+// same as MulleEdgeInsetsUTF8String, but we don't have MulleGraphics here
+char   *UIEdgeInsetsUTF8String( UIEdgeInsets insets);

@@ -1,18 +1,12 @@
-# 🛸 MulleUICore
+# 🎵 MulleUIBase
 
-#### 🛸 MulleUICore provides UIViews and UIWindow
+#### 🎵 MulleUIBase provides abstract classes like UIColor, UIApplication
 
-![](mulle-tiny-logo-255x256.png)
-
-See live on stream how it progresses: [https://www.twitch.tv/mulle_kybernetik_tv/](). Every Wednesday at 14:00-18:00 CEST.
-
-
-![](demos/candycrash.png)
 
 
 ### You are here
 
-There is no actual "drawing" code in MulleUICore. Use "MulleGraphics" for
+There is no actual "drawing" code in MulleUIBase. Use "MulleGraphics" for
 drawing. See "MulleUIControl" for widgets.
 
 
@@ -24,7 +18,7 @@ drawing. See "MulleUIControl" for widgets.
   | MulleUIControl                          |
   '-----------------------------------------'
   .-----------------. .=====================.
-  | MulleUIImage    | | MulleUICore         |
+  | MulleUIImage    | | MulleUIBase         |
   '-----------------' '==============.======.
   .--------------------------------. | glfw |
   | MulleGraphics                  | | X11  |
@@ -37,4 +31,4 @@ drawing. See "MulleUIControl" for widgets.
   '--------------------------------'
 ```
 
-MulleUICore is only based on [MulleObjCLockFoundation](//github.com/MulleFoundation/MulleObjCFoundation). Foundation datatypes like `NSString` are not available.
+MulleUIBase is only based on [MulleObjCLockFoundation](//github.com/MulleFoundation/MulleObjCFoundation). Foundation datatypes like `NSString` are not available.
