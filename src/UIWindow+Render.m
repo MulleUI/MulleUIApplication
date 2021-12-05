@@ -142,8 +142,8 @@
    [_os_window os_activateContext];
 
    if( ! _context)
-      _context = [[CGContext alloc] initWithEdgeAntialiasing:!(_styleMask & UIWindowStyleNoEdgeAntialias)
-                                           useStencilStrokes:!(_styleMask & UIWindowStyleNoStencilStrokes)];
+      _context = [[CGContext alloc] initWithEdgeAntialiasing:(_styleMask & UIWindowStyleEdgeAntialias)
+                                           useStencilStrokes:(_styleMask & UIWindowStyleStencilStrokes)];
    [_context setActive:YES];
    [_context setBackgroundColor:_backgroundColor];
 
@@ -178,8 +178,8 @@
    [_offscreen_os_window os_activateContext];
    if( ! _offscreenContext)
    {
-      _offscreenContext = [[CGContext alloc] initWithEdgeAntialiasing:!(_styleMask & UIWindowStyleNoEdgeAntialias)
-                                                    useStencilStrokes:!(_styleMask & UIWindowStyleNoStencilStrokes)];
+      _offscreenContext = [[CGContext alloc] initWithEdgeAntialiasing:(_offscreenStyleMask & UIWindowStyleEdgeAntialias)
+                                                    useStencilStrokes:(_offscreenStyleMask & UIWindowStyleStencilStrokes)];
       [_offscreenContext setRendersOffScreen:YES];
    }
    [_offscreenContext setActive:YES];                        // just a flag
@@ -258,7 +258,6 @@
    return( [self lastRenderedOffscreenFramebufferBitmapType:CGFramebufferRGBABytes
                                                   allocator:NULL]);
 }
-
 
 
 - (void) copyBackingStore
@@ -531,10 +530,12 @@
     // swap buffers
 
    [context beginRender:info];
-   [context clearFramebuffer];
 
    if( _willRenderCallback)
       (*_willRenderCallback)( self, context, info);
+
+   if( [self clearsFramebuffer])  // default yes
+      [context clearFramebuffer];
 
    {
       [context renderObjects:&_renderQueue];

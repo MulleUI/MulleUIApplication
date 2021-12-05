@@ -36,18 +36,11 @@
    renderInfo.UIScale                   = info->UIScale;
    renderInfo.pixelRatio                = info->pixelRatio;
 
-   //
-   memset( &bitmapInfo, 0, sizeof( bitmapInfo));
-
-   bitmapInfo.size     = renderInfo.framebufferSize;
-   bitmapInfo.encoding = CGBitmapEncodingRGBABytes;
-
-   layer = [[[CGLayer alloc] initWithBitmapInfo:bitmapInfo
-                                  imageFlags:(int) options
-                                        context:context] autorelease];
+   layer = [CGLayer layerWithBitmapSize:renderInfo.framebufferSize
+                             imageFlags:(int) options
+                                context:context];
    if( ! layer)
       return( layer);
-
 
    [layer beginRender:&renderInfo];
    @autoreleasepool

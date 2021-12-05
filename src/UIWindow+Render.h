@@ -24,6 +24,7 @@
 
 - (void) swapBuffers;
 
+// this will activate the window context!
 - (struct CGFramebufferBitmap)
    lastRenderedFramebufferBitmapType:(enum CGFramebufferBitmapType) type
                             inFlight:(BOOL) inFlight

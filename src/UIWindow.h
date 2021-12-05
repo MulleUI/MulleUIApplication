@@ -10,6 +10,50 @@ typedef UIView   UIWindowPlane;
 @class GLFWWindow;  // move to private some time
 
 
+// UIWindowBackingStoreBuffered
+//
+// The default "retained" configuration gives us one "window" and a dual
+// offscreen buffer. Renders are made into either offscreen and then used as a
+// texture to draw "Window". Offscreen drawing implies use of a second thread.
+//
+//  .------------------------.  .--------------------.---------------------.
+//  | Window                 |  | Offscreen 1        | Offscreen 2         |
+//  |                        |  |                    |                     |
+//  |                        |  |                    |                     |
+//  |                        |  |                    |                     |
+//  |                        |  |                    |                     |
+//  |                        |  |                    |                     |
+//  |                        |  |                    |                     |
+//  |                        |  |                    |                     |
+//  |                        |  |                    |                     |
+//  |                        |  |                    |                     |
+//  |                        |  |                    |                     |
+//  '------------------------'  '--------------------'---------------------'
+//
+// UIWindowBackingStoreNonRetained is just Window (which should be double
+// buffered).
+//
+enum UIWindowBackingStoreType
+{
+   UIWindowBackingStoreBuffered,     // safe default
+   UIWindowBackingStoreNonRetained   // draws to "volatile" window framebuffer only
+                                     // still dual buffered but needs fast code
+                                     // to avoid ugliness during resize
+};
+
+typedef NSUInteger   UIWindowBackingStoreType;
+
+
+// value to use is styleMask is 0
+#define UIWindowStyleMaskDefault \
+   (GLFWWindowStyleMaskDefault\
+    |UIWindowStyleRetained\
+    |UIWindowStyleResizable\
+    |UIWindowStyleEdgeAntialias \
+    |UIWindowStyleStencilStrokes\
+    |UIWindowOpenGLLibraryFallback)
+
+
 
 // values for frameRate
 #define UIWindowFrameRateUnsynced   0.0        // as fast as possible
@@ -17,11 +61,11 @@ typedef UIView   UIWindowPlane;
 #define UIWindowFrameRateSynced     -INFINITY  // tied to monitor frame rate (or 1/60.0 if not available)
 
 
-#define ui_window_pointer_fifo   mulle__pointerfifo128
+#define ui_window_pointer_fifo      mulle__pointerfifo128
 
-#define ui_window_pointer_fifo_init   _mulle__pointerfifo128_init
-#define ui_window_pointer_fifo_done   _mulle__pointerfifo128_done
-#define ui_window_pointer_fifo_write  _mulle__pointerfifo128_write
+#define ui_window_pointer_fifo_init           _mulle__pointerfifo128_init
+#define ui_window_pointer_fifo_done           _mulle__pointerfifo128_done
+#define ui_window_pointer_fifo_write          _mulle__pointerfifo128_write
 #define ui_window_pointer_fifo_read_barrier   _mulle__pointerfifo128_read_barrier
 
 
@@ -42,22 +86,6 @@ typedef UIView   UIWindowPlane;
 
 @end
 
-// When the window manager (or whoever) sends a window refresh message
-// the window has to act immediately and repaint. If the repaint is too
-// slow there will be bad and ugly flicker.
-//
-// The strategies are
-//   * render        - this is the default and best if fast enrough
-//   * screenshot    - use a screenshot of previous frame scaled or fixed
-//   * hidden render - use a separate window to render into a screenshot
-//
-enum UIWindowRefreshStrategy
-{
-   UIWindowRefreshStrategyRender                  = 0, // default
-   UIWindowRefreshStrategyPresentScreenshot       = 1,
-   UIWindowRefreshStrategyPresentScaledScreenshot = 2,
-   UIWindowRefreshStrategyHiddenRender            = 3
-};
 
 //
 // TODO: firstResponder needed for UITextField to gain keyboard
@@ -66,7 +94,7 @@ enum UIWindowRefreshStrategy
 @interface UIWindow : UIView <UIWindow>
 {
    id                 _os_window;             // our GLFW Window
-   id                 _offscreen_os_window;   // our drawing Window
+   id                 _offscreen_os_window;   // our drawing Window if buffered
 
    CGContext          *_context;
    CGContext          *_offscreenContext;
@@ -105,7 +133,6 @@ enum UIWindowRefreshStrategy
    // attempting to modify the view hierarchy ?
    NSConditionLock             *_needsDisplayLock;
    BOOL                        _isResizing;
-   CAAbsoluteTime              _lastResizeEventTimestamp;
    CAAbsoluteTime              _lastDidFramebufferSwapTimestamp;
    CAAbsoluteTime              _lastDidProcessEventsTimestamp;
    BOOL                        _shouldClose;
@@ -129,6 +156,7 @@ enum UIWindowRefreshStrategy
 // as the framebufferSize via glfw calls can only be done on mainthread
 // we keep a shadow, that gets updated by glfw window events
 @property( assign, readonly) struct CGBitmapSize   framebufferSize;
+@property( assign, getter=clearsFramebuffer) BOOL  clearFramebuffer;
 
 // used for MulleUIPerformance
 @property( assign) id <UIWindowRenderDelegate>   renderDelegate;
@@ -140,7 +168,6 @@ enum UIWindowRefreshStrategy
 // event/drawing code is very fast (within a frame), you can get by with
 // UIWindowBackingStoreNonRetained
 @property( assign) UIWindowBackingStoreType      backingStore;
-@property( assign) enum UIWindowRefreshStrategy  refreshStrategy;
 
 // nanovg will be done here, here is good time to do plain
 // OpenGL calls, endRender won't have happened yet
