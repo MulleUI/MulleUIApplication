@@ -15,51 +15,15 @@
 #define _mulle_ui_base_include_h__
 
 // You can tweak the following #include with these commands.
-// (Use 148522C7-9709-4A0B-8D63-AC57AD5E520C instead of mulle-quadtree if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark mulle-quadtree no-header`
-//    rename:             `mulle-sde dependency|library set mulle-quadtree include whatever.h`
-//    reorder:            `mulle-sde dependency move mulle-quadtree <up|down>`
-//    toggle #include:    `mulle-sde dependency mark mulle-quadtree [no-]import`
-//    toggle public:      `mulle-sde dependency mark mulle-quadtree [no-]public`
-//    toggle optional:    `mulle-sde dependency mark mulle-quadtree [no-]require`
-//    remove for platform:`mulle-sde dependency mark mulle-quadtree no-platform-<uname>`
+// (Use 35AA4FF8-F5E2-4935-AA95-801E38567B40 instead of mulle-framebuffer if there are duplicate entries)
+//    remove:             `mulle-sde dependency mark mulle-framebuffer no-header`
+//    rename:             `mulle-sde dependency|library set mulle-framebuffer include whatever.h`
+//    reorder:            `mulle-sde dependency move mulle-framebuffer <up|down>`
+//    toggle #include:    `mulle-sde dependency mark mulle-framebuffer [no-]import`
+//    toggle public:      `mulle-sde dependency mark mulle-framebuffer [no-]public`
+//    toggle optional:    `mulle-sde dependency mark mulle-framebuffer [no-]require`
+//    remove for platform:`mulle-sde dependency mark mulle-framebuffer no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
-#include <mulle-quadtree/mulle-quadtree.h>   // mulle-quadtree
-
-// You can tweak the following #include with these commands.
-// (Use C27CAE06-B1D8-46C0-BEC1-71789A36A679 instead of mulle-layout if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark mulle-layout no-header`
-//    rename:             `mulle-sde dependency|library set mulle-layout include whatever.h`
-//    reorder:            `mulle-sde dependency move mulle-layout <up|down>`
-//    toggle #include:    `mulle-sde dependency mark mulle-layout [no-]import`
-//    toggle public:      `mulle-sde dependency mark mulle-layout [no-]public`
-//    toggle optional:    `mulle-sde dependency mark mulle-layout [no-]require`
-//    remove for platform:`mulle-sde dependency mark mulle-layout no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#include <mulle-layout/mulle-layout.h>   // mulle-layout
-
-// You can tweak the following #include with these commands.
-// (Use 2700AFC9-5AD0-460E-865C-862E272A6A92 instead of mulle-geometry if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark mulle-geometry no-header`
-//    rename:             `mulle-sde dependency|library set mulle-geometry include whatever.h`
-//    reorder:            `mulle-sde dependency move mulle-geometry <up|down>`
-//    toggle #include:    `mulle-sde dependency mark mulle-geometry [no-]import`
-//    toggle public:      `mulle-sde dependency mark mulle-geometry [no-]public`
-//    toggle optional:    `mulle-sde dependency mark mulle-geometry [no-]require`
-//    remove for platform:`mulle-sde dependency mark mulle-geometry no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#include <mulle-geometry/mulle-geometry.h>   // mulle-geometry
-
-// You can tweak the following #include with these commands.
-// (Use F7DD7177-7DC0-47AA-A035-2B55C9B37031 instead of mulle-bitmap if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark mulle-bitmap no-header`
-//    rename:             `mulle-sde dependency|library set mulle-bitmap include whatever.h`
-//    reorder:            `mulle-sde dependency move mulle-bitmap <up|down>`
-//    toggle #include:    `mulle-sde dependency mark mulle-bitmap [no-]import`
-//    toggle public:      `mulle-sde dependency mark mulle-bitmap [no-]public`
-//    toggle optional:    `mulle-sde dependency mark mulle-bitmap [no-]require`
-//    remove for platform:`mulle-sde dependency mark mulle-bitmap no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#include <mulle-bitmap/mulle-bitmap.h>   // mulle-bitmap
+#include <mulle-framebuffer/mulle-framebuffer.h>   // mulle-framebuffer
 
 #endif

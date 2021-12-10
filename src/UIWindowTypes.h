@@ -1,3 +1,5 @@
+#import "import.h"
+
 //
 // Copyright (c) 2021 Nat!, Mulle kybernetiK
 //
@@ -55,7 +57,6 @@ enum UIWindowStyle
    UIWindowOpenGLDeprecated        = 0x1000000  // if this is set, GLES can't be used
 };
 
-#define  GLFWWindowStyleMaskDefault (UIWindowStyleDecorated)
 
 
 static inline NSUInteger   UIWindowsStyleMaskByEnabling( NSUInteger styleMask, enum UIWindowStyle style)
@@ -80,4 +81,110 @@ static inline NSUInteger   UIWindowsStyleMaskBySetting( NSUInteger styleMask, en
 typedef NSUInteger   UIWindowStyleMask;
 
 #define UIWindowOpenGLProfileShift    (5*4)
+
+
+// just like 0x800000FF for middle red, full alpha. Sparingly used...
+typedef NSUInteger   UIHexColor;
+
+
+@class UIEvent;
+
+@protocol UIEventReceiver < NSObject>
+
+- (UIEvent *) handleWindowEvent:(UIEvent *) event;
+- (void) queueRetainedEvent:(UIEvent *) event;
+
+@end
+
+
+@protocol UIOSWindow <NSObject>
+
+- (instancetype) initWithFrame:(CGRect) frame
+               titleUTF8String:(char *) title
+                     styleMask:(NSUInteger) styleMask
+                 graphicsHints:(NSUInteger) hints
+                 sharingWindow:(id <UIOSWindow>) sharingWindow;
+
+@property( assign) id <UIEventReceiver>   windowEventsReceiver;
+@property( assign) id <UIEventReceiver>   eventsReceiver;
+@property( assign) NSUInteger             discardEventsMask;
+
+- (void) os_requestClose;
+- (void) os_destroyWindow;
+
+- (CGSize) os_windowSize;
+- (CGRect) os_windowFrame;
+- (void) os_setSwapInterval:(NSUInteger) value;
+
+// bind GL context of the window to the current thread
+// synonymous with activate
+- (void) os_activateContext;
+- (void) os_deactivateContext;
+- (struct CGBitmapSize) os_framebufferSize;
+- (void) os_swapBuffers;
+
+- (void) os_requestClose;
+- (BOOL) os_windowShouldClose;
+
+- (void) os_show;
+- (void) os_hide;
+
+- (void) os_initEvents;
+
+- (CGFloat) os_primaryMonitorPPI;
+- (CGFloat) os_primaryMonitorRefreshRate;
+
+@end
+
+
+struct mulle_pointerarray;
+
+
+@protocol UIOSGraphicsContext <NSObject>
+
+@property( assign) BOOL   rendersOffScreen;
+
+- (instancetype) initWithEdgeAntialiasing:(BOOL) edgeAntialiasing
+                        useStencilStrokes:(BOOL) stencilStrokes;
+
+- (void) setActive:(BOOL) yes;
+
+- (void) clearFramebufferWithHexColor:(UIHexColor) color;
+
+- (void) beginRender:(struct CGFrameInfo *) info;
+- (void) renderObjects:(struct mulle_pointerarray *) array;
+- (void) suspendRender;
+- (void) resumeRender;
+- (void) _endRender;
+- (void) endRender;  // calls suspendRender then endRender
+
+- (id) framebufferImage;
+
+- (struct CGFramebufferBitmap)
+   lastRenderedFramebufferBitmapType:(enum CGFramebufferBitmapType) type
+                            inFlight:(BOOL) inFlight
+                           allocator:(struct mulle_allocator *) allocator;
+
+- (struct CGFramebufferBitmap)
+   lastRenderedOffscreenFramebufferBitmapType:(enum CGFramebufferBitmapType) type
+                                    allocator:(struct mulle_allocator *) allocator;
+
+- (void) drawFramebufferBitmap:(struct CGFramebufferBitmap *) fb;
+
+- (id) shareImage:(id) framebufferImage
+      withContext:(id <UIOSGraphicsContext>) context;
+
+// used by UIWindow to blit...
+- (void) drawRect:(CGRect) rect
+            image:(id) image
+            scale:(BOOL) scale;
+
+// used by UIWindow to debug...
+- (void) fillRect:(CGRect) rect
+         hexColor:(UIHexColor) hexColor;
+
+- (void) strokeRect:(CGRect) rect
+           hexColor:(UIHexColor) hexColor
+              width:(CGFloat) width;
+@end
 
