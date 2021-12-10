@@ -12,7 +12,6 @@ endif()
 #
 set( SOURCES
 src/UIApplication.m
-src/UIEdgeInsets+UTF8String.m
 src/UIEvent.m
 src/UIResponder.m
 src/mulle-pointerarray+ObjC.m

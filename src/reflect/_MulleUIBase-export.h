@@ -11,8 +11,6 @@
  */
 #import "MulleObjCLoader+MulleUIBase.h"
 #import "UIApplication.h"
-#import "UIEdgeInsets+UTF8String.h"
-#import "UIEdgeInsets.h"
 #import "UIEvent.h"
 #import "UIResponder.h"
 #import "UIWindowTypes.h"

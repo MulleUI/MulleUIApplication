@@ -56,8 +56,6 @@ set( PUBLIC_HEADERS
 src/MulleObjCLoader+MulleUIBase.h
 src/MulleUIBase.h
 src/UIApplication.h
-src/UIEdgeInsets+UTF8String.h
-src/UIEdgeInsets.h
 src/UIEvent.h
 src/UIResponder.h
 src/UIWindowTypes.h
