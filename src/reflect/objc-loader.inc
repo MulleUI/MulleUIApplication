@@ -1,3 +1,6 @@
+      { @selector( MulleObjCLoader), @selector( MulleObjCLockFoundation) },      // 47a9beb6;MulleObjCLoader;86a97828;MulleObjCLockFoundation
+      { @selector( MulleObjCLoader), @selector( MulleObjCTimeFoundation) },      // 47a9beb6;MulleObjCLoader;cc20d48b;MulleObjCTimeFoundation
+      { @selector( UIApplication), @selector( UIEvent) },      // 48c8c9b2;UIApplication;f88bf69f;UIEvent
       { @selector( UIApplication), MULLE_OBJC_NO_CATEGORYID },      // 48c8c9b2;UIApplication;;
       { @selector( UIEvent), MULLE_OBJC_NO_CATEGORYID },      // f88bf69f;UIEvent;;
       { @selector( UIKeyboardEvent), MULLE_OBJC_NO_CATEGORYID },      // 83d7dde5;UIKeyboardEvent;;
@@ -6,6 +9,7 @@
       { @selector( UIMouseScrollEvent), MULLE_OBJC_NO_CATEGORYID },      // 115953d2;UIMouseScrollEvent;;
       { @selector( UIResponder), MULLE_OBJC_NO_CATEGORYID },      // 48335ff7;UIResponder;;
       { @selector( UIUnicodeEvent), MULLE_OBJC_NO_CATEGORYID },      // 46e5ffa8;UIUnicodeEvent;;
+      { @selector( UIUserEvent), MULLE_OBJC_NO_CATEGORYID },      // f3739e04;UIUserEvent;;
       { @selector( UIWindowCloseEvent), MULLE_OBJC_NO_CATEGORYID },      // faf97331;UIWindowCloseEvent;;
       { @selector( UIWindowEvent), MULLE_OBJC_NO_CATEGORYID },      // a7cfe718;UIWindowEvent;;
       { @selector( UIWindowFramebufferResizeEvent), MULLE_OBJC_NO_CATEGORYID },      // 79c0dd24;UIWindowFramebufferResizeEvent;;

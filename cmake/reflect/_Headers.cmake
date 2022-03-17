@@ -19,8 +19,8 @@ src/reflect
 # contents selected with patternfile ??-header--private-generated-headers
 #
 set( PRIVATE_GENERATED_HEADERS
-src/reflect/_MulleUIBase-import-private.h
-src/reflect/_MulleUIBase-include-private.h
+src/reflect/_MulleUIApplication-import-private.h
+src/reflect/_MulleUIApplication-include-private.h
 )
 
 #
@@ -35,10 +35,10 @@ src/include-private.h
 # contents selected with patternfile ??-header--public-generated-headers
 #
 set( PUBLIC_GENERATED_HEADERS
-src/reflect/_MulleUIBase-export.h
-src/reflect/_MulleUIBase-import.h
-src/reflect/_MulleUIBase-include.h
-src/reflect/_MulleUIBase-provide.h
+src/reflect/_MulleUIApplication-export.h
+src/reflect/_MulleUIApplication-import.h
+src/reflect/_MulleUIApplication-include.h
+src/reflect/_MulleUIApplication-provide.h
 )
 
 #
@@ -53,8 +53,9 @@ src/include.h
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
-src/MulleObjCLoader+MulleUIBase.h
-src/MulleUIBase.h
+src/MulleObjCLoader+MulleUIApplication.h
+src/MulleUIApplication.h
+src/UIApplication+UIEvent.h
 src/UIApplication.h
 src/UIEvent.h
 src/UIResponder.h

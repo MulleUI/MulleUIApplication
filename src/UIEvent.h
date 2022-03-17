@@ -2,15 +2,33 @@
 
 
 // bits suitable or bitmasking
-enum
+// need a way to extend this
+//
+enum UIEventType
 {                              // leave 0 to nil
    UIEventTypePresses = 0x01,  // Keyboard
    UIEventTypeUnicode = 0x02,  // Unicode char (interpreted Keyboard)
    UIEventTypeTouches = 0x04,  // Mouse click
    UIEventTypeMotion  = 0x08,  // Mouse movemeent
    UIEventTypeScroll  = 0x10,  // Mouse Scrollwheel
-   UIEventTypeWindow  = 0x20   // Window event (close, resize, move etc)
+   UIEventTypeWindow  = 0x20,  // Window event (close, resize, move etc)
+   UIEventTypeUser    = 0x40   // User event
 };
+
+static inline char   *UIEventTypeUTF8String( enum UIEventType type)
+{
+   switch( type)
+   {
+   case UIEventTypePresses : return( "UIEventTypePresses");
+   case UIEventTypeUnicode : return( "UIEventTypeUnicode");
+   case UIEventTypeTouches : return( "UIEventTypeTouches");
+   case UIEventTypeMotion  : return( "UIEventTypeMotion");
+   case UIEventTypeScroll  : return( "UIEventTypeScroll");
+   case UIEventTypeWindow  : return( "UIEventTypeWindow");
+   case UIEventTypeUser    : return( "UIEventTypeUser");
+   }
+}
+
 
 typedef NSUInteger   UIEventType;
 //
@@ -32,10 +50,10 @@ typedef NSUInteger   UIEventType;
 
 @property( assign, readonly) CGPoint   locationInWindow;
 
-// clock() vs clock_gettime() tests on linux show, that that clock
-// is 25% faster. That's IMO not enough to forego the convenience of
-// CAAbsoluteTime here
-@property( assign, readonly) CAAbsoluteTime   timestamp;
+// this is the time used by the render its relative to execution time
+// an NSDateInterval from the start of execution
+@property( assign, readonly) mulle_absolutetime_t   timestamp;
+
 
 // current known state of modifier keys
 @property( assign, readonly) NSUInteger  modifiers;
@@ -43,7 +61,7 @@ typedef NSUInteger   UIEventType;
 + (BOOL) reuseEvents;
 + (void) setReuseEvents:(BOOL) flag;
 
-+ (void) waitForEventsHz:(double) hz;
++ (void) waitForEventsTimeout:(mulle_relativetime_t) timeout;
 + (void) sendEmptyEvent;
 
 // TODO: rename to LocationInWindow or ?
@@ -61,6 +79,16 @@ typedef NSUInteger   UIEventType;
 /*
  * Subclasses
  */
+
+@interface UIUserEvent : UIEvent
+
+@property( assign, readonly) NSUInteger   eventIdentifier;
+
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(NSUInteger) mods
+                       eventIdentifier:(NSUInteger) identifier;
+@end
+
 
 @interface UIKeyboardEvent : UIEvent
 
@@ -121,7 +149,7 @@ typedef NSUInteger   UIEventType;
 
 @property( assign, readonly) CGPoint   scrollOffset;
 
-// MEMO: GLFWWindow already has scrollWheelSensitivity!!
+// MEMO: GLFWOSWindow already has scrollWheelSensitivity!!
 + (CGFloat) scrollWheelAcceleration;
 + (void) setScrollWheelAcceleration:(CGFloat) value;
 
@@ -138,6 +166,22 @@ enum UIWindowEventType
    UIWindowEventTypeMove              = 0x08,
    UIWindowEventTypeFramebufferResize = 0x10
 };
+
+
+// static inline, because presumably its only used during debugging
+// and when linking this would be force-all linked
+static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
+{
+   switch( type)
+   {
+   case UIWindowEventTypeClose             : return( "UIWindowEventTypeClose");
+   case UIWindowEventTypeRefresh           : return( "UIWindowEventTypeRefresh");
+   case UIWindowEventTypeResize            : return( "UIWindowEventTypeResize");
+   case UIWindowEventTypeMove              : return( "UIWindowEventTypeMove");
+   case UIWindowEventTypeFramebufferResize : return( "UIWindowEventTypeFramebufferResize");
+   }
+}
+
 
 
 @interface UIWindowEvent : UIEvent
@@ -185,9 +229,10 @@ enum UIWindowEventType
 @end
 
 
+
 @interface UIEvent( OS)
 
-+ (void) os_waitEventsTimeout:(CGFloat) seconds;
++ (void) os_waitEventsWithTimeout:(mulle_relativetime_t) seconds;
 + (void) os_pollEvents;
 + (void) os_sendEmptyEvent;
 

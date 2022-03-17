@@ -8,7 +8,7 @@ export PROJECT_TYPE="none"
 #
 #
 #
-export PROJECT_NAME="MulleUIBase"
+export PROJECT_NAME="MulleUIApplication"
 
 
 #

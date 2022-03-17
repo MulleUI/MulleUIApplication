@@ -11,6 +11,7 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+src/UIApplication+UIEvent.m
 src/UIApplication.m
 src/UIEvent.m
 src/UIResponder.m
@@ -21,5 +22,5 @@ src/mulle-pointerarray+ObjC.m
 # contents selected with patternfile ??-source--stage2-sources
 #
 set( STAGE2_SOURCES
-src/MulleObjCLoader+MulleUIBase.m
+src/MulleObjCLoader+MulleUIApplication.m
 )
