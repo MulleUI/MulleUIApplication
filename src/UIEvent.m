@@ -1,7 +1,10 @@
 #import "UIEvent.h"
 
+#define EVENT_DEBUG 
+
 
 @implementation UIEvent
+
 enum
 {
    UIKeyboardEventIndex,  // Keyboard
@@ -149,7 +152,7 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
                              modifiers:(NSUInteger) mods
 {
    _locationInWindow  = pos;
-   _timestamp         = CAAbsoluteTimeNow();
+   _timestamp         = mulle_absolutetime_now();
    _modifiers         = mods;
    _translatedPoint.x = CGFLOAT_MIN; // not set
    return( self);
@@ -160,29 +163,39 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
    return( event->_translatedPoint.x != CGFLOAT_MIN);
 }
 
-+ (void) waitForEventsHz:(double) hz
+
++ (void) waitForEventsTimeout:(mulle_relativetime_t) timeout
 {
-   if( hz == 0.0)
-      [self os_pollEvents];
-   else
-      [self os_waitEventsTimeout:1.0 / hz];
+   [self os_waitEventsWithTimeout:timeout];
 }
 
 
 + (void) sendEmptyEvent
 {
+#ifdef EVENT_DEBUG
+   mulle_fprintf( stderr, "%@: %@ %s send empty event\n",
+                  [NSThread currentThread], self, __PRETTY_FUNCTION__);
+#endif
+
    [self os_sendEmptyEvent];
 }
 
-
+- (char *) _payloadUTF8String
+{
+   return( "nil");
+}
 
 - (char *) UTF8String
 {
    char   *s;
+   char   *payload;
 
-   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f>",
+   payload = [self _payloadUTF8String];
+
+   s = MulleObjC_asprintf( "<%s %p %s (%.1f %.1f t:%.6f)>",
+                  MulleObjCInstanceGetClassNameUTF8String( self),
                   self,
-                  MulleObjCClassGetNameUTF8String( NSClassFromObject( self)),
+                  payload, 
                   _locationInWindow.x,
                   _locationInWindow.y,
                   _timestamp);
@@ -228,6 +241,18 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
    return( UIEventTypePresses);
 }
 
+
+- (char *) _payloadUTF8String
+{
+   char   *s;
+
+   s = MulleObjC_asprintf( "key=%td scancode=%td action=%td",
+                  _key,
+                  _scanCode,
+                  _action);
+   return( s);
+}
+
 @end
 
 
@@ -264,11 +289,15 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 }
 
 
+- (char *) _payloadUTF8String
+{
+   return( MulleObjC_asprintf( "character=%td",  _character));
+}
+
 @end
 
 
 @implementation UIMouseMotionEvent
-
 
 + (id) alloc
 {
@@ -297,6 +326,12 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
    _buttonStates = buttonStates;
 
    return( self);
+}
+
+
+- (char *) _payloadUTF8String
+{
+   return( MulleObjC_asprintf( "buttonStates=%td", _buttonStates));
 }
 
 @end
@@ -335,19 +370,9 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 }
 
 
-- (char *) UTF8String
+- (char *) _payloadUTF8String
 {
-   char   *s;
-
-   s = MulleObjC_asprintf( "<%p %s @%.1f %.1f t:%.6f b:%d a:%d>",
-                  self,
-                  MulleObjCClassGetNameUTF8String( NSClassFromObject( self)),
-                  _locationInWindow.x,
-                  _locationInWindow.y,
-                  _timestamp,
-                  _button,
-                  _action);
-   return( s);
+   return( MulleObjC_asprintf( "button=%td action=%td", _button, _action));
 }
 
 @end
@@ -365,6 +390,7 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 {
    deallocateEventWithIndex( self, UIMouseScrollEventIndex);
 }
+
 
 static struct
 {
@@ -404,6 +430,7 @@ static struct
    Self._acceleration = value;
 }
 
+
 - (CGPoint) acceleratedScrollOffset
 {
    CGPoint   offset;
@@ -412,6 +439,11 @@ static struct
    offset.y = _scrollOffset.y * Self._acceleration;
 
    return( offset);
+}
+
+- (char *) _payloadUTF8String
+{
+   return( MulleObjC_asprintf( "scrollOffset=%.2f %.2f", _scrollOffset.x, _scrollOffset.y));
 }
 
 @end
@@ -444,6 +476,7 @@ static struct
 {
    return( UIEventTypeWindow);
 }
+
 @end
 
 
@@ -474,6 +507,12 @@ static struct
    return( UIWindowEventTypeMove);
 }
 
+
+- (char *) _payloadUTF8String
+{
+   return( MulleObjC_asprintf( "origin=%td %td", _origin.x, _origin.y));
+}
+
 @end
 
 
@@ -494,6 +533,12 @@ static struct
    return( UIWindowEventTypeResize);
 }
 
+
+- (char *) _payloadUTF8String
+{
+   return( MulleObjC_asprintf( "size=%td %td", _size.width, _size.height));
+}
+
 @end
 
 
@@ -512,6 +557,33 @@ static struct
 - (enum UIWindowEventType) windowEventType
 {
    return( UIWindowEventTypeRefresh);
+}
+
+@end
+
+
+@implementation UIUserEvent
+
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(NSUInteger) mods
+                       eventIdentifier:(NSUInteger) identifier
+{
+   self = [self initWithMouseLocation:pos
+                            modifiers:mods];
+   _eventIdentifier = identifier;
+   return( self);
+}  
+
+
+- (UIEventType) eventType
+{
+   return( UIEventTypeUser);
+}
+
+
+- (char *) _payloadUTF8String
+{
+   return( MulleObjC_asprintf( "eventIdentifier=%td", _eventIdentifier));
 }
 
 @end

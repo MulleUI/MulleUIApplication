@@ -1,7 +1,7 @@
 #
 #
 #
-export PROJECT_NAME="MulleUIBase"
+export PROJECT_NAME="MulleUIApplication"
 
 
 #

@@ -3,9 +3,38 @@
 //
 // Copyright (c) 2021 Nat!, Mulle kybernetiK
 //
-// basically a future, but GLFWWindow also adopts it
-// the only reason for this is a little type safety
+// basically a future, that UIWindow and GLFWOSWindow adopt, chiefly
+// to the benefit of UIApplication, which gains a little bit of
+// type safety with it and some info
+//
+
+// values for frameRate
+// FPS will not be exceeded, but it's OK for the app to produce
+// less frames if no change occurs
+#define UIWindowFrameRateUnsynced   0.0        // as fast as possible
+#define UIWindowFrameRateAsync      INFINITY   // wait until an event hits
+#define UIWindowFrameRateSynced     -INFINITY  // tied to monitor frame rate (or 1/60.0 if not available)
+
+
+
 @protocol UIWindow < NSObject>
+
+@property( assign) double   frameRate;
+
+- (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
+
+- (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now;
+
+- (void) writeOSWindowPropertyChangesIfNeeded;
+
+// the framebuffer is dirty and needs repainting, but the geometry has not
+// neccesarily changed. If you have a copy of the window contents around
+// just blit it
+- (void) setNeedsRefresh;
+- (BOOL) shouldClose;
+
+- (double) fastestFrameRate;
+
 @end
 
 
@@ -13,7 +42,7 @@
 // trying hard to keep enums "positive"
 //
 //   .-----------------------------.
-//   | UIWindowStyleDecorated      |
+//   | UIWindowStyleBare           |
 //   '-----------------------------'
 //   | UIWindowStyleInvisible      |
 //   | UIWindowStyleTransparent    |
@@ -39,14 +68,15 @@ enum UIWindowStyle
    UIWindowStyleSingleBuffer       = 0x020, // glfw (maybe useful with offscreen)
    UIWindowStyleTransparent        = 0x040,
    UIWindowStyleFloating           = 0x080,
-   UIWindowStyleDecorated          = 0x100,  // window bar, resizer
+   UIWindowStyleBare               = 0x100,  // window bar, resizer gone
 
 // CG
    UIWindowStyleEdgeAntialias      = 0x1000,   // nanvg
    UIWindowStyleStencilStrokes     = 0x2000,   // nanovg
 
 // UIWindow
-   UIWindowStyleRetained           = 0x10000,  // use UIWindowBackingStoreRetained
+   UIWindowStyleRetained             = 0x10000,  // use UIWindowBackingStoreRetained
+   UIWindowStyleRetainedOnMainThread = 0x20000,  // use UIWindowBackingStoreRetainedOnMainThread
 
 // GLFW/OpenGL
    UIWindowOpenGLCoreProfile       = 0x0100000,
@@ -59,19 +89,22 @@ enum UIWindowStyle
 
 
 
-static inline NSUInteger   UIWindowsStyleMaskByEnabling( NSUInteger styleMask, enum UIWindowStyle style)
+static inline NSUInteger
+   UIWindowsStyleMaskByEnabling( NSUInteger styleMask, enum UIWindowStyle style)
 {
    return( styleMask | style);
 }
 
 
-static inline NSUInteger   UIWindowsStyleMaskByDisabling( NSUInteger styleMask, enum UIWindowStyle style)
+static inline NSUInteger
+   UIWindowsStyleMaskByDisabling( NSUInteger styleMask, enum UIWindowStyle style)
 {
    return( styleMask & ~style);
 }
 
 
-static inline NSUInteger   UIWindowsStyleMaskBySetting( NSUInteger styleMask, enum UIWindowStyle style, int flag)
+static inline NSUInteger
+   UIWindowsStyleMaskBySetting( NSUInteger styleMask, enum UIWindowStyle style, int flag)
 {
    if( flag)
       return( UIWindowsStyleMaskByEnabling( styleMask, style));
@@ -88,16 +121,22 @@ typedef NSUInteger   UIHexColor;
 
 
 @class UIEvent;
+@class UIWindowEvent;
 
 @protocol UIEventReceiver < NSObject>
 
-- (UIEvent *) handleWindowEvent:(UIEvent *) event;
-- (void) queueRetainedEvent:(UIEvent *) event;
+- (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event;
+- (void) handleRetainedEvent:(UIEvent *) NS_CONSUMED event;
 
 @end
 
 
 @protocol UIOSWindow <NSObject>
+
+@property( assign) id <UIEventReceiver>   windowEventsReceiver;
+@property( assign) id <UIEventReceiver>   eventsReceiver;
+@property( assign) NSUInteger             discardEventsMask;
+@property( assign) id <UIWindow>          parentWindow;  // owner UIWindow
 
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
@@ -105,22 +144,25 @@ typedef NSUInteger   UIHexColor;
                  graphicsHints:(NSUInteger) hints
                  sharingWindow:(id <UIOSWindow>) sharingWindow;
 
-@property( assign) id <UIEventReceiver>   windowEventsReceiver;
-@property( assign) id <UIEventReceiver>   eventsReceiver;
-@property( assign) NSUInteger             discardEventsMask;
-
 - (void) os_requestClose;
 - (void) os_destroyWindow;
 
+- (CGPoint) os_windowPosition;
+- (void) os_setWindowPosition:(CGPoint) position;
 - (CGSize) os_windowSize;
+- (void) os_setWindowSize:(CGSize) size;
 - (CGRect) os_windowFrame;
+- (void) os_setWindowFrame:(CGRect) rect;
+
+- (struct CGBitmapSize) os_framebufferSize;
+
+// https://www.glfw.org/docs/latest/group__context.html#ga6d4e0cdf151b5e579bd67f13202994ed
 - (void) os_setSwapInterval:(NSUInteger) value;
 
 // bind GL context of the window to the current thread
 // synonymous with activate
-- (void) os_activateContext;
-- (void) os_deactivateContext;
-- (struct CGBitmapSize) os_framebufferSize;
+- (void) os_activateGraphicsContext;
+- (void) os_deactivateGraphicsContext;
 - (void) os_swapBuffers;
 
 - (void) os_requestClose;
@@ -131,8 +173,17 @@ typedef NSUInteger   UIHexColor;
 
 - (void) os_initEvents;
 
-- (CGFloat) os_primaryMonitorPPI;
-- (CGFloat) os_primaryMonitorRefreshRate;
+- (void) os_setTitleUTF8String:(char *) s;
+
+// this is not HZ (but 1 / HZ)
+- (double) os_primaryMonitorPPI;
+- (double) os_primaryMonitorRefreshRate;
+- (double) os_monitorRefreshRate;
+
+// glfw window
+- (void *) os_window;
+
+- (void) getWindowInfo:(struct CGWindowInfo *) info;  // owner UIWindow
 
 @end
 
@@ -140,39 +191,36 @@ typedef NSUInteger   UIHexColor;
 struct mulle_pointerarray;
 
 
-@protocol UIOSGraphicsContext <NSObject>
+@protocol UIGraphicsContext <NSObject>
 
-@property( assign) BOOL   rendersOffScreen;
+@property( assign) BOOL         rendersOffScreen;
+@property( assign) NSUInteger   framebufferBits;
+@property( assign) id           OSWindow;
 
 - (instancetype) initWithEdgeAntialiasing:(BOOL) edgeAntialiasing
                         useStencilStrokes:(BOOL) stencilStrokes;
 
 - (void) setActive:(BOOL) yes;
 
-- (void) clearFramebufferWithHexColor:(UIHexColor) color;
+- (void) clearFramebufferWithColor:(CGColor) color;
 
 - (void) beginRender:(struct CGFrameInfo *) info;
-- (void) renderObjects:(struct mulle_pointerarray *) array;
+- (void) drawObjects:(struct mulle_pointerarray *) array;
 - (void) suspendRender;
 - (void) resumeRender;
 - (void) _endRender;
 - (void) endRender;  // calls suspendRender then endRender
 
-- (id) framebufferImage;
+// rename to something else, maybe combine and just reset
+- (void) resetTransform;
+- (void) resetScissor;
 
-- (struct CGFramebufferBitmap)
-   lastRenderedFramebufferBitmapType:(enum CGFramebufferBitmapType) type
-                            inFlight:(BOOL) inFlight
-                           allocator:(struct mulle_allocator *) allocator;
 
-- (struct CGFramebufferBitmap)
-   lastRenderedOffscreenFramebufferBitmapType:(enum CGFramebufferBitmapType) type
-                                    allocator:(struct mulle_allocator *) allocator;
-
-- (void) drawFramebufferBitmap:(struct CGFramebufferBitmap *) fb;
+- (id) acquireOffscreenFramebuffer;
+- (void) recycleFramebuffer:(id) layer;
 
 - (id) shareImage:(id) framebufferImage
-      withContext:(id <UIOSGraphicsContext>) context;
+      withContext:(id <UIGraphicsContext>) context;
 
 // used by UIWindow to blit...
 - (void) drawRect:(CGRect) rect
@@ -181,10 +229,17 @@ struct mulle_pointerarray;
 
 // used by UIWindow to debug...
 - (void) fillRect:(CGRect) rect
-         hexColor:(UIHexColor) hexColor;
+            color:(CGColor) color;
 
 - (void) strokeRect:(CGRect) rect
-           hexColor:(UIHexColor) hexColor
+              color:(CGColor) color
               width:(CGFloat) width;
 @end
 
+
+@protocol UIImage <NSObject>
+
+- (id) shareWithContext:(id) context;
+- (CGSize) size;
+
+@end
