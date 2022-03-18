@@ -334,7 +334,7 @@ enum application_state
       if( [window shouldClose])
       {
 #ifdef RUN_DEBUG
-         mulle_fprintf( stderr, "%@: %@ remove Window %@ and finalize\n",
+         mulle_fprintf( stderr, "%#@: %#@ remove Window %@ and finalize\n",
                          [NSThread currentThread], self, window);
 #endif
          [self removeWindow:window];
@@ -434,7 +434,7 @@ enum application_state
    mulle_structarray_add( &_timers, &appTimer);
 
 #ifdef RUN_DEBUG
-   mulle_fprintf( stderr, "%@: %@ add Timer %@ (%.3f)\n",
+   mulle_fprintf( stderr, "%#@: %#@ add Timer %@ (%.3f)\n",
                       [NSThread currentThread], self, timer, appTimer.timestamp);
 #endif
 }
@@ -564,7 +564,7 @@ enum application_state
          _state = CheckWindows;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%@: %@ -> CheckWindows\n", [NSThread currentThread], self);
+            mulle_fprintf( stderr, "%#@: %#@ -> CheckWindows\n", [NSThread currentThread], self);
 #endif
             closeWindows = NO;
 
@@ -587,7 +587,7 @@ enum application_state
             _state = CloseWindows;
             {
 #ifdef RUN_DEBUG
-               mulle_fprintf( stderr, "%@: %@ -> CloseWindows\n", [NSThread currentThread], self);
+               mulle_fprintf( stderr, "%#@: %#@ -> CloseWindows\n", [NSThread currentThread], self);
 #endif
                [self _closeWindows];
             }
@@ -603,13 +603,13 @@ enum application_state
          _state = DrawAndSwap;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%@: %@ -> DrawAndSwap\n", [NSThread currentThread], self);
+            mulle_fprintf( stderr, "%#@: %#@ -> DrawAndSwap\n", [NSThread currentThread], self);
 #endif
             rover = mulle_array_enumerate( &_windows);
             while( _mulle_arrayenumerator_next( &rover, (void **) &window))
             {
 #ifdef RUN_DEBUG
-               mulle_fprintf( stderr, "%@: %@ calls %@ to refresh (%.3f)\n",
+               mulle_fprintf( stderr, "%#@: %#@ calls %@ to refresh (%.3f)\n",
                                        [NSThread currentThread], self, window,
                                        now);
 #endif
@@ -632,7 +632,7 @@ enum application_state
          _state = InvokeMethods;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%@: %@ -> InvokeMethods\n", [NSThread currentThread], self);
+            mulle_fprintf( stderr, "%#@: %#@ -> InvokeMethods\n", [NSThread currentThread], self);
 #endif
             [self runInvocations];
          }
@@ -640,7 +640,7 @@ enum application_state
          _state = FireTimers;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%@: %@ -> FireTimers\n", [NSThread currentThread], self);
+            mulle_fprintf( stderr, "%#@: %#@ -> FireTimers\n", [NSThread currentThread], self);
 #endif
             nextTimerFireCallInSeconds = [self fireTimersIfNeeded:now];
          }
@@ -648,13 +648,13 @@ enum application_state
          _state = WindowPropertyChanges;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%@: %@ -> WindowPropertyChanges\n", [NSThread currentThread], self);
+            mulle_fprintf( stderr, "%#@: %#@ -> WindowPropertyChanges\n", [NSThread currentThread], self);
 #endif
             rover = mulle_array_enumerate( &_windows);
             while( _mulle_arrayenumerator_next( &rover, (void **) &window))
             {
 #ifdef RUN_DEBUG
-               mulle_fprintf( stderr, "%@: %@ calls %@ to push property changes (%.3f)\n",
+               mulle_fprintf( stderr, "%#@: %#@ calls %@ to push property changes (%.3f)\n",
                                        [NSThread currentThread], self, window,
                                        now);
 #endif
@@ -666,7 +666,7 @@ enum application_state
          _state = PollEvents;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%@: %@ -> PollEvents\n", [NSThread currentThread], self);
+            mulle_fprintf( stderr, "%#@: %#@ -> PollEvents\n", [NSThread currentThread], self);
 #endif
             timeout = nextTimerFireCallInSeconds < nextWindowDisplayCallInSeconds
                         ? nextTimerFireCallInSeconds
@@ -675,7 +675,7 @@ enum application_state
                timeout = 0.0;
 
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%@: %@ next loop scheduled: %.17f\n",
+            mulle_fprintf( stderr, "%#@: %#@ next loop scheduled: %.17f\n",
                                        [NSThread currentThread], self, timeout);
 #endif
             [UIEvent os_waitEventsWithTimeout:timeout];
@@ -683,7 +683,7 @@ enum application_state
 
 //         _state = ProcessEvents;
 //         {
-//            mulle_fprintf( stderr, "%@: %@ -> ProcessEvents\n", [NSThread currentThread], self);
+//            mulle_fprintf( stderr, "%#@: %#@ -> ProcessEvents\n", [NSThread currentThread], self);
 //
 //            rover = mulle_array_enumerate( &_windows);
 //            while( _mulle_arrayenumerator_next( &rover, (void **) &window))

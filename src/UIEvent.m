@@ -1,6 +1,6 @@
 #import "UIEvent.h"
 
-#define EVENT_DEBUG 
+#define EVENT_DEBUG
 
 
 @implementation UIEvent
@@ -173,7 +173,7 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 + (void) sendEmptyEvent
 {
 #ifdef EVENT_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s send empty event\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s send empty event\n",
                   [NSThread currentThread], self, __PRETTY_FUNCTION__);
 #endif
 
@@ -195,12 +195,39 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
    s = MulleObjC_asprintf( "<%s %p %s (%.1f %.1f t:%.6f)>",
                   MulleObjCInstanceGetClassNameUTF8String( self),
                   self,
-                  payload, 
+                  payload,
                   _locationInWindow.x,
                   _locationInWindow.y,
                   _timestamp);
    return( s);
 }
+
+
+- (char *) colorizedUTF8StringHeader
+{
+   char   *result;
+   int    color;
+
+   // haques for UIWindow
+
+   switch( [self eventType])
+   {
+   case UIEventTypePresses : color = 111; break;
+   case UIEventTypeUnicode : color = 110; break;
+   case UIEventTypeTouches : color = 119; break;
+   case UIEventTypeMotion  : color = 101; break;
+   case UIEventTypeScroll  : color = 113; break;
+   case UIEventTypeWindow  : color = 124; break;
+   case UIEventTypeUser    : color = 172; break;
+   default                 : return( NULL);
+   }
+
+   mulle_asprintf( &result, "\033[38;5;%dm", color);
+   MulleObjCAutoreleaseAllocation( result, NULL);
+
+   return( result);
+}
+
 
 @end
 
@@ -477,6 +504,29 @@ static struct
    return( UIEventTypeWindow);
 }
 
+
+- (char *) colorizedUTF8StringHeader
+{
+   char        *result;
+   int         color;
+
+   switch( [self windowEventType])
+   {
+   case UIWindowEventTypeClose             : color = 124; break;
+   case UIWindowEventTypeRefresh           : color = 126; break;
+   case UIWindowEventTypeResize            : color = 127; break;
+   case UIWindowEventTypeMove              : color = 129; break;
+   case UIWindowEventTypeFramebufferResize : color = 135; break;
+   default                                 : return( NULL);
+   }
+
+   mulle_asprintf( &result, "\033[38;5;%dm", color);;
+   MulleObjCAutoreleaseAllocation( result, NULL);
+
+   return( result);
+}
+
+
 @end
 
 
@@ -572,7 +622,7 @@ static struct
                             modifiers:mods];
    _eventIdentifier = identifier;
    return( self);
-}  
+}
 
 
 - (UIEventType) eventType
