@@ -17,27 +17,6 @@
 
 
 
-@protocol UIWindow < NSObject>
-
-@property( assign) double   frameRate;
-
-- (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
-
-- (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now;
-
-- (void) writeOSWindowPropertyChangesIfNeeded;
-
-// the framebuffer is dirty and needs repainting, but the geometry has not
-// neccesarily changed. If you have a copy of the window contents around
-// just blit it
-- (void) setNeedsRefresh;
-- (BOOL) shouldClose;
-
-- (double) fastestFrameRate;
-
-@end
-
-
 //
 // trying hard to keep enums "positive"
 //
@@ -60,19 +39,19 @@ enum UIWindowStyle
    UIWindowStyleNop                = 0x40000000, // if all bits are 0, use this to avoid getting default values
 
 // GLFW
-//   UIWindowStyleClosable           = 0x001,   // there are no GLFW hints for them
+//   UIWindowStyleClosable           = 0x001,    // there are no GLFW hints for them
 //   UIWindowStyleMiniaturizable     = 0x002,
    UIWindowStyleResizable          = 0x004,
    UIWindowStyleInvisible          = 0x008,
    UIWindowStyleOffscreen          = 0x010,
-   UIWindowStyleSingleBuffer       = 0x020, // glfw (maybe useful with offscreen)
+   UIWindowStyleSingleBuffer       = 0x020,      // glfw (maybe useful with offscreen)
    UIWindowStyleTransparent        = 0x040,
    UIWindowStyleFloating           = 0x080,
-   UIWindowStyleBare               = 0x100,  // window bar, resizer gone
+   UIWindowStyleBare               = 0x100,      // window bar, resizer gone
 
 // CG
-   UIWindowStyleEdgeAntialias      = 0x1000,   // nanvg
-   UIWindowStyleStencilStrokes     = 0x2000,   // nanovg
+   UIWindowStyleEdgeAntialias      = 0x1000,     // nanvg
+   UIWindowStyleStencilStrokes     = 0x2000,     // nanovg
 
 // UIWindow
    UIWindowStyleRetained             = 0x10000,  // use UIWindowBackingStoreRetained
@@ -84,7 +63,7 @@ enum UIWindowStyle
    UIWindowOpenGLForwardCompatible = 0x0400000,  // folklore says, specify compat too
 
    UIWindowOpenGLLibraryFallback   = 0x0800000,  // try other openGL libraries as fallback
-   UIWindowOpenGLDeprecated        = 0x1000000  // if this is set, GLES can't be used
+   UIWindowOpenGLDeprecated        = 0x1000000   // if this is set, GLES can't be used
 };
 
 
@@ -116,6 +95,28 @@ typedef NSUInteger   UIWindowStyleMask;
 #define UIWindowOpenGLProfileShift    (5*4)
 
 
+
+
+@protocol UIWindow < NSObject>
+
+// obsolete ?
+- (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
+
+- (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now;
+
+- (void) writeOSWindowPropertyChangesIfNeeded;
+
+// the framebuffer is dirty and needs repainting, but the geometry has not
+// neccesarily changed. If you have a copy of the window contents around
+// just blit it
+// these are threadsafe
+- (void) setNeedsRefresh;
+- (BOOL) shouldClose;
+
+@end
+
+
+
 // just like 0x800000FF for middle red, full alpha. Sparingly used...
 typedef NSUInteger   UIHexColor;
 
@@ -123,12 +124,114 @@ typedef NSUInteger   UIHexColor;
 @class UIEvent;
 @class UIWindowEvent;
 
-@protocol UIEventReceiver < NSObject>
+@protocol UIEventReceiver <NSObject>
 
 - (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event;
 - (void) handleRetainedEvent:(UIEvent *) NS_CONSUMED event;
 
 @end
+
+
+struct UIOSWindowInfo
+{
+   struct CGWindowInfo    base;
+   mulle_relativetime_t   frameRate;
+   mulle_relativetime_t   refreshRate;
+   BOOL                   frameRateLimiter;
+};
+
+
+static inline struct CGRect
+   UIOSWindowInfoGetFrame( struct UIOSWindowInfo *info)
+{
+   return( CGWindowInfoGetFrame( info ? &info->base : NULL));
+}
+
+
+static inline struct CGBitmapSize
+   UIOSWindowInfoGetFramebufferSize( struct UIOSWindowInfo *info)
+{
+   return( CGWindowInfoGetFramebufferSize( info ? &info->base : NULL));
+}
+
+
+static inline struct CGVector
+   UIOSWindowInfoGetUIScale( struct UIOSWindowInfo *info)
+{
+   return( CGWindowInfoGetUIScale( info ? &info->base : NULL));
+}
+
+
+static inline double
+   UIOSWindowInfoGetPixelRatio( struct UIOSWindowInfo *info)
+{
+   return( CGWindowInfoGetPixelRatio( info ? &info->base : NULL));
+}
+
+
+static inline mulle_relativetime_t
+   UIOSWindowInfoGetFrameRate( struct UIOSWindowInfo *info)
+{
+   return( info ? info->frameRate : 1.0 / 60.0);
+}
+
+
+static inline mulle_relativetime_t
+   UIOSWindowInfoGetRefreshRate( struct UIOSWindowInfo *info)
+{
+   return( info ? info->refreshRate : 1.0 / 60.0);
+}
+
+
+static inline BOOL
+   UIOSWindowInfoGetFrameRateLimiter( struct UIOSWindowInfo *info)
+{
+   return( info ? info->frameRateLimiter : NO);
+}
+
+
+
+// UIWindowFrameRateAsync    : INFINITY
+// UIWindowFrameRateSynced   : refreshRate
+// UIWindowFrameRateUnsynced : 0.0
+// other                     : other
+static inline mulle_relativetime_t
+   UIOSWindowInfoGetFastestFrameRate( struct UIOSWindowInfo *info)
+{
+   mulle_relativetime_t   frameRate;
+
+   if( ! info)
+      return( 1.0 / 60.0);
+
+   frameRate = info->frameRate;
+   if( frameRate == UIWindowFrameRateSynced)
+      frameRate = info->refreshRate;
+
+   return( frameRate);
+}
+
+
+// UIWindowFrameRateAsync    : INFINITY
+// UIWindowFrameRateSynced   : frameLimiter ? INFINITY : refreshRate
+// UIWindowFrameRateUnsynced : 0.0
+// other                     : frameLimiter ? INFINITY : other
+static inline mulle_relativetime_t
+   UIOSWindowInfoGetSlowestFrameRate( struct UIOSWindowInfo *info)
+{
+   mulle_relativetime_t   frameRate;
+
+   if( ! info)
+      return( 1.0 / 60.0);
+
+      // if we use a limiter, we could make no updates for forever
+   if( info->frameRateLimiter)
+      frameRate = INFINITY;
+   else
+      frameRate = UIOSWindowInfoGetFastestFrameRate( info);
+
+   return( frameRate);
+}
+
 
 
 @protocol UIOSWindow <NSObject>
@@ -143,6 +246,29 @@ typedef NSUInteger   UIHexColor;
                      styleMask:(NSUInteger) styleMask
                  graphicsHints:(NSUInteger) hints
                  sharingWindow:(id <UIOSWindow>) sharingWindow;
+
+// these are threadsafe
+- (void) setFrameRateLimiter:(BOOL) flag;
+
+// this is threadsafe
+- (BOOL) frameRateLimiter;
+
+// these are threadsafe
+- (void) setFrameRate:(mulle_relativetime_t) frameRate;
+
+// this is threadsafe
+- (mulle_relativetime_t) frameRate;
+
+// these are threadsafe
+- (void) setFrameRateHz:(CGFloat) frameRateHz;
+
+// this is threadsafe
+- (CGFloat) frameRateHz;
+
+
+// this is threadsafe
+- (void) getOSWindowInfo:(struct UIOSWindowInfo *) info;
+
 
 - (void) os_requestClose;
 - (void) os_destroyWindow;
@@ -175,15 +301,10 @@ typedef NSUInteger   UIHexColor;
 
 - (void) os_setTitleUTF8String:(char *) s;
 
-// this is not HZ (but 1 / HZ)
-- (double) os_primaryMonitorPPI;
-- (double) os_primaryMonitorRefreshRate;
-- (double) os_monitorRefreshRate;
-
 // glfw window
 - (void *) os_window;
 
-- (void) getWindowInfo:(struct CGWindowInfo *) info;  // owner UIWindow
+- (void) getOSWindowInfo:(struct UIOSWindowInfo *) info;  // owner UIWindow
 
 @end
 
@@ -234,6 +355,13 @@ struct mulle_pointerarray;
 - (void) strokeRect:(CGRect) rect
               color:(CGColor) color
               width:(CGFloat) width;
+
+- (void) drawAtPoint:(CGPoint) position
+          UTF8String:(char *) s
+            fontName:(char *) fontName    // can be NULL for default
+            fontSize:(CGFloat) fontSize  // can be 0.0 for default
+               color:(CGColor) color;
+
 @end
 
 
@@ -241,5 +369,55 @@ struct mulle_pointerarray;
 
 - (id) shareWithContext:(id) context;
 - (CGSize) size;
+
+@end
+
+
+//
+// Use CGRect from frame/canvas since it's more uniform with UIWindow/UIView
+// though the underlying OS/GLFW format is really integer
+//
+struct UIScreenInfo
+{
+   CGRect                 frame;
+   CGRect                 canvas;         // workarea
+   CGVector               contentScale;
+   CGSize                 physicalSize;
+   char                   colorBits[ 4];
+   mulle_relativetime_t   refreshRate;
+};
+
+
+static inline double   UIScreenInfoGetPPI( struct UIScreenInfo *info)
+{
+   double   ppi;
+
+   if( ! info || info->physicalSize.height == 0.0)
+      return( 72.0);
+
+   // need to convert h in mm to inches
+   // https://en.wikipedia.org/wiki/Inch
+   ppi = info->frame.size.height / (info->physicalSize.height * (1.0 / 25.4));
+   return( ppi);
+}
+
+
+@protocol UIScreen <NSObject>
+
+// threadSafe, though of course the screenAtIndex: call is not guaranteed
+// to operate on the same numberOfScreens since, that could have changed
++ (NSUInteger) numberOfScreens;
+
+// returns nil, if none at index, threadSafe
++ (id <UIScreen>) screenAtIndex:(NSUInteger) i;
+
+// this is thread safe
+- (void) getScreenInfo:(struct UIScreenInfo *) info;
+
+// this is thread safe
+- (mulle_relativetime_t) refreshRate;
+- (CGRect) frame;
+- (CGRect) canvas;
+- (char *) nameUTF8String;
 
 @end

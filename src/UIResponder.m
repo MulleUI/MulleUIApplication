@@ -20,5 +20,11 @@ PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
    return( YES);
 }
 
+// does not handle event by default
+- (UIEvent *) handleEvent:(UIEvent *) event
+{
+   return( event);
+}
+
 PROTOCOLCLASS_END()
 

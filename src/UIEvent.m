@@ -1,5 +1,6 @@
 #import "UIEvent.h"
 
+
 #define EVENT_DEBUG
 
 
@@ -7,13 +8,14 @@
 
 enum
 {
-   UIKeyboardEventIndex,  // Keyboard
-   UIUnicodeEventIndex,  // Unicode char (interpreted Keyboard)
+   UIKeyboardEventIndex,     // Keyboard
+   UIUnicodeEventIndex,      // Unicode char (interpreted Keyboard)
    UIMouseButtonEventIndex,  // Mouse click
    UIMouseMotionEventIndex,  // Mouse movemeent
    UIMouseScrollEventIndex   // Mouse Scrollwheel
 };
 #define N_UIEventIndexMax  (UIMouseScrollEventIndex + 1)
+
 
 static struct
 {
@@ -147,20 +149,19 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
    _mulle__pointerqueue_push( p, self, MulleObjCInstanceGetAllocator( self));
 }
 
-
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
+- (instancetype) init
 {
-   _locationInWindow  = pos;
-   _timestamp         = mulle_absolutetime_now();
-   _modifiers         = mods;
-   _translatedPoint.x = CGFLOAT_MIN; // not set
+   _timestamp = mulle_absolutetime_now();
    return( self);
 }
 
-static int   UIEventIsFirstResponderPointSet( UIEvent *event)
++ (void) sendEmptyEvent
 {
-   return( event->_translatedPoint.x != CGFLOAT_MIN);
+#ifdef EVENT_DEBUG
+   MulleUILog( "send empty event");
+#endif
+
+   [self os_sendEmptyEvent];
 }
 
 
@@ -170,40 +171,7 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 }
 
 
-+ (void) sendEmptyEvent
-{
-#ifdef EVENT_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ %s send empty event\n",
-                  [NSThread currentThread], self, __PRETTY_FUNCTION__);
-#endif
-
-   [self os_sendEmptyEvent];
-}
-
-- (char *) _payloadUTF8String
-{
-   return( "nil");
-}
-
-- (char *) UTF8String
-{
-   char   *s;
-   char   *payload;
-
-   payload = [self _payloadUTF8String];
-
-   s = MulleObjC_asprintf( "<%s %p %s (%.1f %.1f t:%.6f)>",
-                  MulleObjCInstanceGetClassNameUTF8String( self),
-                  self,
-                  payload,
-                  _locationInWindow.x,
-                  _locationInWindow.y,
-                  _timestamp);
-   return( s);
-}
-
-
-- (char *) colorizedUTF8StringHeader
+- (char *) colorizerPrefixUTF8String
 {
    char   *result;
    int    color;
@@ -223,11 +191,82 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
    }
 
    mulle_asprintf( &result, "\033[38;5;%dm", color);
-   MulleObjCAutoreleaseAllocation( result, NULL);
 
-   return( result);
+   return( MulleObjCAutoreleaseAllocation( result, NULL));
 }
 
+
+- (char *) _payloadUTF8String
+{
+   return( "nil");
+}
+
+
+- (char *) UTF8String
+{
+   char   *s;
+   char   *payload;
+
+   payload = [self _payloadUTF8String];
+
+   s = MulleObjC_asprintf( "<%s %p %s (t:%.6f)>",
+                  MulleObjCInstanceGetClassNameUTF8String( self),
+                  self,
+                  payload,
+                  _timestamp);
+   return( s);
+}
+
+- (BOOL) isInputEvent
+{
+   return( NO);
+}
+
+@end
+
+
+@implementation UIInputEvent
+
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(NSUInteger) mods
+{
+   self =  [self init];
+
+   _locationInWindow  = pos;
+   _modifiers         = mods;
+   _translatedPoint.x = CGFLOAT_MIN; // not set
+   return( self);
+}
+
+
+- (BOOL) isInputEvent
+{
+   return( YES);
+}
+
+
+static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
+{
+   return( event->_translatedPoint.x != CGFLOAT_MIN);
+}
+
+
+- (char *) UTF8String
+{
+   char   *s;
+   char   *payload;
+
+   payload = [self _payloadUTF8String];
+
+   s = MulleObjC_asprintf( "<%s %p %s (%.1f %.1f t:%.6f)>",
+                  MulleObjCInstanceGetClassNameUTF8String( self),
+                  self,
+                  payload,
+                  _locationInWindow.x,
+                  _locationInWindow.y,
+                  _timestamp);
+   return( s);
+}
 
 @end
 
@@ -368,8 +407,9 @@ static int   UIEventIsFirstResponderPointSet( UIEvent *event)
 
 + (id) alloc
 {
-   return(  allocateEventWithIndex( self, UIMouseButtonEventIndex));
+   return( allocateEventWithIndex( self, UIMouseButtonEventIndex));
 }
+
 
 - (void) dealloc
 {
@@ -476,6 +516,36 @@ static struct
 @end
 
 
+@implementation UIScreenEvent
+
+- (instancetype) initWithScreen:(id <UIScreen>) screen
+                screenEventType:(enum UIScreenEventType) screenEventType
+{
+   self             = [self init];
+   _screen          = [screen retain];
+   _screenEventType = screenEventType;
+   return( self);
+}
+
+- (void) dealloc
+{
+   [_screen release];
+   [super dealloc];
+}
+
+- (char *) _payloadUTF8String
+{
+   return( UIScreenEventTypeUTF8String( _screenEventType));
+}
+
+- (UIEventType) eventType
+{
+   return( UIEventTypeScreen);
+}
+
+@end
+
+
 // 95% renderzeit
 //  5% eventzeit
 //  30 FPS
@@ -505,10 +575,10 @@ static struct
 }
 
 
-- (char *) colorizedUTF8StringHeader
+- (char *) colorizerPrefixUTF8String
 {
-   char        *result;
-   int         color;
+   char   *result;
+   int    color;
 
    switch( [self windowEventType])
    {
@@ -520,12 +590,10 @@ static struct
    default                                 : return( NULL);
    }
 
-   mulle_asprintf( &result, "\033[38;5;%dm", color);;
-   MulleObjCAutoreleaseAllocation( result, NULL);
+   mulle_asprintf( &result, "\033[38;5;%dm", color);
 
-   return( result);
+   return( MulleObjCAutoreleaseAllocation( result, NULL));
 }
-
 
 @end
 
@@ -542,15 +610,13 @@ static struct
 
 @implementation UIWindowMoveEvent
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                                origin:(struct CGBitmapPoint) origin
+- (instancetype) initWithOrigin:(struct CGBitmapPoint) origin
 {
-   self = [self initWithMouseLocation:pos
-                            modifiers:mods];
+   self = [self init];
    _origin = origin;
    return( self);
 }
+
 
 - (enum UIWindowEventType) windowEventType
 {
@@ -568,15 +634,13 @@ static struct
 
 @implementation UIWindowResizeEvent : UIWindowEvent
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                                  size:(struct CGBitmapSize) size
+- (instancetype) initWithSize:(struct CGBitmapSize) size
 {
-   self  = [self initWithMouseLocation:pos
-                             modifiers:mods];
+   self  = [self init];
    _size = size;
    return( self);
 }
+
 
 - (enum UIWindowEventType) windowEventType
 {
@@ -614,12 +678,9 @@ static struct
 
 @implementation UIUserEvent
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                       eventIdentifier:(NSUInteger) identifier
+- (instancetype) initWithEventIdentifier:(NSUInteger) identifier
 {
-   self = [self initWithMouseLocation:pos
-                            modifiers:mods];
+   self = [self init];
    _eventIdentifier = identifier;
    return( self);
 }

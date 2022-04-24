@@ -39,7 +39,7 @@ int   main( int argc, char *argv[])
       [window setBackgroundColor:CGColorMakeRGBA( 1.0, 0.75, 0.0, 1.0)];
       [app addWindow:window];
 
-      timer = [[[NSTimer alloc] mulleInitWithTimeInterval:0.5
+      timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:0.5
                                            repeatInterval:1.5
                                                    target:window 
                                                  selector:@selector( randomizeBackgroundColor:)
@@ -47,7 +47,7 @@ int   main( int argc, char *argv[])
                                fireUsesUserInfoAsArgument:YES] autorelease];
       [app addTimer:timer];
 
-      timer = [[[NSTimer alloc] mulleInitWithTimeInterval:2.5
+      timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:2.5
                                            repeatInterval:0.0
                                                    target:window 
                                                  selector:@selector( setWhiteBackgroundColor:)
