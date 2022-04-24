@@ -69,6 +69,29 @@ struct UIApplicationTimer
 };
 
 
+enum application_state
+{
+   Idle,
+   CheckWindows,
+   CloseWindows,
+   DrawAndSwap,
+   FireTimers,
+   InvokeMethods,
+   PollEvents,
+   WindowPropertyChanges,
+   ProcessEvents,
+   Finished
+};
+
+
+@interface NSObject( Declare)
+
+- (void) _setPrimary:(BOOL) flag;
+
+@end
+
+
+
 @implementation UIApplication
 
 + (void) initialize
@@ -81,10 +104,18 @@ struct UIApplicationTimer
 - (id) init
 {
    struct mulle_allocator   *allocator;
+   NSUInteger               i, n;
+   id <UIScreen>            screen;
 
    assert( [NSThread mulleIsMainThread]);
 
    allocator = MulleObjCInstanceGetAllocator( self);
+   mulle_array_init( &_screens,
+                     2,
+                     (struct mulle_container_keycallback *) &key_retain_callback,
+                     allocator);
+   _screensLock = [NSLock new];
+
    mulle_array_init( &_windows,
                      4,
                      (struct mulle_container_keycallback *) &key_retain_callback,
@@ -95,25 +126,41 @@ struct UIApplicationTimer
                            alignof( struct UIApplicationTimer),
                            0,
                            allocator);
+   _timersLock = [NSLock new];
 
    _mulle_pointermultififo_init( &_invocationList, 128, allocator);
 
    _bouncerSignature = [[self methodSignatureForSelector:@selector( _synchronousInvoke:conditionLock:)] retain];
 
+   [self os_init];
+
    return( self);
+}
+
+
+- (void) finalize
+{
+   [self os_finalize];
+
+   [super finalize];
 }
 
 
 - (void) dealloc
 {
+
    assert( [NSThread mulleIsMainThread]);
 
    [_bouncerSignature release];
 
    assert( _mulle_pointermultififo_get_count( &_invocationList) == 0);
    _mulle_pointermultififo_done( &_invocationList);
+
+   [_timersLock release];
    mulle_structarray_done( &_timers);
    mulle_array_done( &_windows);
+   [_screensLock release];
+   mulle_array_done( &_screens);
 
    [super dealloc];
 }
@@ -213,7 +260,163 @@ struct UIApplicationTimer
    }
 }
 
+/*
+ * UIScreen
+ */
+- (NSInteger) _indexOfScreen:(id <UIScreen>) screen
+{
+   uintptr_t   found;
 
+   assert( [NSThread mulleIsMainThread]);
+
+   found = mulle_array_find_in_range_identical( &_screens,
+                                                screen,
+                                                mulle_range_make_all());
+   return( found == mulle_not_found_e ? NSNotFound : (NSInteger) found);
+}
+
+
+- (NSUInteger) numberOfScreens
+{
+   NSUInteger   count;
+
+   [_screensLock lock];
+   {
+      count = mulle_array_get_count( &_screens);
+   }
+   [_screensLock unlock];
+
+   return( count);
+}
+
+
+- (id <UIScreen>) screenAtIndex:(NSUInteger) i
+{
+   NSUInteger      n;
+   id <UIScreen>   screen;
+
+   screen = nil;
+   [_screensLock lock];
+   {
+      n = mulle_array_get_count( &_screens);
+      if( i < n)
+      {
+         screen = mulle_array_get( &_screens, i);
+         screen = [[screen retain] autorelease];
+      }
+   }
+   [_screensLock unlock];
+
+   return( screen);
+}
+
+
+- (id <UIScreen>) primaryScreen
+{
+   return( [self screenAtIndex:0]);
+}
+
+
+- (void) _addScreen:(id <UIScreen>) screen
+{
+   assert( screen);
+   assert( [NSThread mulleIsMainThread]);
+
+   [_screensLock lock];
+   {
+      assert( [self _indexOfScreen:screen] == NSNotFound);
+      mulle_array_add( &_screens, screen);
+   }
+   [_screensLock unlock];
+}
+
+
+- (void) _removeScreen:(id <UIScreen>) screen
+{
+   NSInteger   found;
+
+   [_screensLock lock];
+   {
+      found = [self _indexOfScreen:screen];
+      if( found != NSNotFound)
+         mulle_array_remove_in_range( &_screens, mulle_range_make( found, 1));
+   }
+   [_screensLock unlock];
+}
+
+
+- (id <UIScreen>) screenForFrame:(CGRect) frame
+            primaryIfNoneMatches:(BOOL) primaryIfNoneMatches
+{
+   id <UIScreen>   screen;
+   id <UIScreen>   best;
+   double          largestArea;
+   double          area;
+   CGRect          intersection;
+   CGRect          canvas;
+   NSUInteger      i, n;
+
+   best        = nil;
+   largestArea = 0.0;
+
+   [_screensLock lock];
+   {
+      n = mulle_array_get_count( &_screens);
+      for( i = 0; i < n; i++)
+      {
+         screen       = mulle_array_get( &_screens, i);
+         canvas       = [screen canvas];
+         intersection = CGRectIntersection( frame, canvas);
+         area         = intersection.size.width * intersection.size.height;
+         if( area > largestArea || (i == 0 && primaryIfNoneMatches))
+         {
+            largestArea = area;
+            best        = screen;
+         }
+      }
+      best = [[best retain] autorelease];
+   }
+   [_screensLock unlock];
+
+   return( best);
+}
+
+
+- (NSUInteger) getScreens:(id <UIScreen> *) screens
+                 maxCount:(NSUInteger) maxCount
+        intersectingFrame:(CGRect) frame
+{
+   id <UIScreen>   screen;
+   CGRect          canvas;
+   NSUInteger      i, n;
+   NSUInteger      count;
+
+   assert( screens || ! maxCount);
+
+   count = 0;
+   [_screensLock lock];
+   {
+      n = mulle_array_get_count( &_screens);
+      for( i = 0; i < n; i++)
+      {
+         screen = mulle_array_get( &_screens, i);
+         canvas = [screen canvas];
+         if( CGRectIntersectsRect( frame, canvas))
+         {
+            if( count < maxCount)
+               screens[ count] = [[screen retain] autorelease];
+            ++count;
+         }
+      }
+   }
+   [_screensLock unlock];
+
+   return( count);
+}
+
+/*
+ * UIWindow
+ */
 - (NSInteger) _indexOfWindow:(id <UIWindow>) window
 {
    uintptr_t   found;
@@ -249,21 +452,6 @@ struct UIApplicationTimer
 }
 
 
-enum application_state
-{
-   Idle,
-   CheckWindows,
-   CloseWindows,
-   DrawAndSwap,
-   FireTimers,
-   InvokeMethods,
-   PollEvents,
-   WindowPropertyChanges,
-   ProcessEvents,
-   Finished
-};
-
-
 - (void) addWindow:(id <UIWindow>) window
 {
    assert( window);
@@ -294,6 +482,37 @@ enum application_state
 }
 
 
+- (void) _closeWindows
+{
+   struct mulle_arrayenumerator   rover;
+   id <UIWindow>                  window;
+   struct mulle_array             tmp;
+
+   mulle_array_init( &tmp,
+                     mulle_array_get_count( &_windows),
+                     mulle_array_get_callback( &_windows),
+                     NULL);
+   mulle_array_add_array( &tmp, &_windows, mulle_range_make( 0, -1));
+
+   rover = mulle_array_enumerate( &tmp);
+   while( _mulle_arrayenumerator_next( &rover, (void **) &window))
+   {
+      if( [window shouldClose])
+      {
+#ifdef RUN_DEBUG
+         MulleUILog( "remove Window %#@ and finalize", window);
+#endif
+         [self removeWindow:window];
+         [window mullePerformFinalize];  // remove from screen
+      }
+   }
+   mulle_arrayenumerator_done( &rover);
+
+   mulle_array_done( &tmp);
+}
+
+
+
 // assume all windows thread are quiescent now... else why call terminate :)
 - (int) terminate
 {
@@ -313,37 +532,6 @@ enum application_state
    // this shuts down glfw, it doesn't exit
    [[self class] os_terminate];
    return( _returnValue);
-}
-
-
-- (void) _closeWindows
-{
-   struct mulle_arrayenumerator   rover;
-   id <UIWindow>                  window;
-   struct mulle_array             tmp;
-
-   mulle_array_init( &tmp,
-                     mulle_array_get_count( &_windows),
-                     mulle_array_get_callback( &_windows),
-                     NULL);
-   mulle_array_add_array( &tmp, &_windows, mulle_range_make( 0, -1));
-
-   rover = mulle_array_enumerate( &tmp);
-   while( _mulle_arrayenumerator_next( &rover, (void **) &window))
-   {
-      if( [window shouldClose])
-      {
-#ifdef RUN_DEBUG
-         mulle_fprintf( stderr, "%#@: %#@ remove Window %@ and finalize\n",
-                         [NSThread currentThread], self, window);
-#endif
-         [self removeWindow:window];
-         [window mullePerformFinalize];  // remove from screen
-      }
-   }
-   mulle_arrayenumerator_done( &rover);
-
-   mulle_array_done( &tmp);
 }
 
 
@@ -369,14 +557,18 @@ enum application_state
    struct UIApplicationTimer            *appTimer;
 
    // move stuff over to _timers, that's not "timer"
-   rover = mulle_structarray_enumerate( &_timers);
-   while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
-      [appTimer->timer autorelease];
-   mulle_structarrayenumerator_done( &rover);
+   [_timersLock lock];
+   {
+      rover = mulle_structarray_enumerate( &_timers);
+      while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+         [appTimer->timer autorelease];
+      mulle_structarrayenumerator_done( &rover);
 
-   mulle_structarray_reset( &_timers);
-   _timerHoles = 0;
-}
+      mulle_structarray_reset( &_timers);
+      _timerHoles = 0;
+   }
+   [_timersLock unlock];
+ }
 
 
 // if timer is nil, this will remove holes in the array
@@ -387,34 +579,38 @@ enum application_state
    struct mulle_structarray             tmp;
    NSUInteger                           n;
 
-   n = mulle_structarray_get_count( &_timers);
-   if( ! n)
-      return;
-
-   // old array in tmp, wipe _timers.
-   tmp         = _timers;
-   mulle_structarray_init( &_timers,
-                           sizeof( struct UIApplicationTimer),
-                           alignof( struct UIApplicationTimer),
-                           n,
-                           mulle_structarray_get_allocator( &_timers));
-   _timerHoles = 0;
-
-   // move stuff over to _timers, that's not "timer"
-   rover = mulle_structarray_enumerate( &tmp);
-   while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+   [_timersLock lock];
    {
-      if( appTimer->timer == timer)
+      n = mulle_structarray_get_count( &_timers);
+      if( n)
       {
-         [timer autorelease];
-         continue;
-      }
-      mulle_structarray_add( &_timers, appTimer);
-   }
-   mulle_structarrayenumerator_done( &rover);
+         // old array in tmp, wipe _timers.
+         tmp         = _timers;
+         mulle_structarray_init( &_timers,
+                                 sizeof( struct UIApplicationTimer),
+                                 alignof( struct UIApplicationTimer),
+                                 n,
+                                 mulle_structarray_get_allocator( &_timers));
+         _timerHoles = 0;
 
-   // now remove tmp
-   mulle_structarray_done( &tmp);
+         // move stuff over to _timers, that's not "timer"
+         rover = mulle_structarray_enumerate( &tmp);
+         while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+         {
+            if( appTimer->timer == timer)
+            {
+               [timer autorelease];
+               continue;
+            }
+            mulle_structarray_add( &_timers, appTimer);
+         }
+         mulle_structarrayenumerator_done( &rover);
+
+         // now remove tmp
+         mulle_structarray_done( &tmp);
+      }
+   }
+   [_timersLock unlock];
 }
 
 
@@ -422,20 +618,23 @@ enum application_state
 {
    struct UIApplicationTimer   appTimer;
 
-   // when we have too many holes compact
-   if( _timerHoles >= MAX_TIMERHOLES)
-       [self removeTimer:nil];
+   [_timersLock lock];
+   {
+      // when we have too many holes compact
+      if( _timerHoles >= MAX_TIMERHOLES)
+          [self removeTimer:nil];
 
-   assert( [timer mulleIsRelativeTimer]);
+      assert( [timer mulleIsRelativeTimer]);
 
-   appTimer.timestamp = mulle_absolutetime_now() + [timer mulleRelativeTimeInterval];
-   appTimer.timer     = [timer retain];
+      appTimer.timestamp = mulle_absolutetime_now() + [timer mulleRelativeTimeInterval];
+      appTimer.timer     = [timer retain];
 
-   mulle_structarray_add( &_timers, &appTimer);
+      mulle_structarray_add( &_timers, &appTimer);
+   }
+   [_timersLock unlock];
 
 #ifdef RUN_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ add Timer %@ (%.3f)\n",
-                      [NSThread currentThread], self, timer, appTimer.timestamp);
+   MulleUILog( "add Timer %@ (%.3f)", timer, appTimer.timestamp);
 #endif
 }
 
@@ -461,54 +660,57 @@ enum application_state
                      (struct mulle_container_keycallback *) &key_retain_callback,
                      NULL);
 
-   // because firing times may add or remove times, we first need to
-   // collect all the timers in another array, then fire them
-
-   min   = INFINITY;
-   rover = mulle_structarray_enumerate( &_timers);
-   while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+   [_timersLock lock];
    {
-      timer = appTimer->timer;
-      then  = appTimer->timestamp;
-      diff  = then - now;
+      // because firing times may add or remove times, we first need to
+      // collect all the timers in another array, then fire them
+
+      min   = INFINITY;
+      rover = mulle_structarray_enumerate( &_timers);
+      while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+      {
+         timer = appTimer->timer;
+         then  = appTimer->timestamp;
+         diff  = then - now;
 
 #ifdef RUN_DEBUG
-      mulle_fprintf( stderr, "%@: Timer %@ %.3f (%.3f)\n",
-                              [NSThread currentThread], timer, then, now);
+         MulleUILog( "Timer %@ %.3f (%.3f)",timer, then, now);
 #endif
-      if( diff > 0.0) // time to fire
-      {
-         if( diff < min)
-            min = diff;
-         continue;
+         if( diff > 0.0) // time to fire
+         {
+            if( diff < min)
+               min = diff;
+            continue;
+         }
+
+         // add time to fire list
+         mulle_array_add( &fireTimers, timer);
+
+         // check if we want to invalidate
+         repeatInterval = [timer mulleRepeatTimeInterval];
+         if( repeatInterval > 0.0)
+         {
+            // change to "then" + repeatInterval to avoid accumulating errors
+            appTimer->timestamp = then + repeatInterval;
+
+            diff = appTimer->timestamp - now;
+            if( diff < min)
+               min = diff;
+
+            continue;
+         }
+
+         // get rid of timer
+         [timer autorelease];
+
+         // make this a hole, to be reclaimed sometime later
+         appTimer->timer     = nil;
+         appTimer->timestamp = INFINITY;
+         _timerHoles++;
       }
-
-      // add time to fire list
-      mulle_array_add( &fireTimers, timer);
-
-      // check if we want to invalidate
-      repeatInterval = [timer mulleRepeatTimeInterval];
-      if( repeatInterval > 0.0)
-      {
-         // change to "then" + repeatInterval to avoid accumulating errors
-         appTimer->timestamp = then + repeatInterval;
-
-         diff = appTimer->timestamp - now;
-         if( diff < min)
-            min = diff;
-
-         continue;
-      }
-
-      // get rid of timer
-      [timer autorelease];
-
-      // make this a hole, to be reclaimed sometime later
-      appTimer->timer     = nil;
-      appTimer->timestamp = INFINITY;
-      _timerHoles++;
+      mulle_structarrayenumerator_done( &rover);
    }
-   mulle_structarrayenumerator_done( &rover);
+   [_timersLock unlock];
 
    //
    // fire all the timers that were accumulated, very often this will
@@ -518,8 +720,7 @@ enum application_state
    while( _mulle_arrayenumerator_next( &fireRover, (void **) &timer))
    {
 #ifdef RUN_DEBUG
-       mulle_fprintf( stderr, "%@: Fire Timer %@\n",
-                                        [NSThread currentThread], timer);
+       MulleUILog( "Fire Timer %@",timer);
 #endif
       [timer fire];
    }
@@ -564,7 +765,7 @@ enum application_state
          _state = CheckWindows;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%#@: %#@ -> CheckWindows\n", [NSThread currentThread], self);
+            MulleUILog( "-> CheckWindows");
 #endif
             closeWindows = NO;
 
@@ -587,7 +788,7 @@ enum application_state
             _state = CloseWindows;
             {
 #ifdef RUN_DEBUG
-               mulle_fprintf( stderr, "%#@: %#@ -> CloseWindows\n", [NSThread currentThread], self);
+               MulleUILog( "-> CloseWindows");
 #endif
                [self _closeWindows];
             }
@@ -603,15 +804,13 @@ enum application_state
          _state = DrawAndSwap;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%#@: %#@ -> DrawAndSwap\n", [NSThread currentThread], self);
+            MulleUILog( "-> DrawAndSwap");
 #endif
             rover = mulle_array_enumerate( &_windows);
             while( _mulle_arrayenumerator_next( &rover, (void **) &window))
             {
 #ifdef RUN_DEBUG
-               mulle_fprintf( stderr, "%#@: %#@ calls %@ to refresh (%.3f)\n",
-                                       [NSThread currentThread], self, window,
-                                       now);
+               MulleUILog( "calls %#@ to refresh", window);
 #endif
                callAgainInSeconds = [window displayFrameIfNeeded:now];
 
@@ -632,7 +831,7 @@ enum application_state
          _state = InvokeMethods;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%#@: %#@ -> InvokeMethods\n", [NSThread currentThread], self);
+            MulleUILog( "-> InvokeMethods");
 #endif
             [self runInvocations];
          }
@@ -640,7 +839,7 @@ enum application_state
          _state = FireTimers;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%#@: %#@ -> FireTimers\n", [NSThread currentThread], self);
+            MulleUILog( "-> FireTimers");
 #endif
             nextTimerFireCallInSeconds = [self fireTimersIfNeeded:now];
          }
@@ -648,15 +847,13 @@ enum application_state
          _state = WindowPropertyChanges;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%#@: %#@ -> WindowPropertyChanges\n", [NSThread currentThread], self);
+            MulleUILog( "-> WindowPropertyChanges");
 #endif
             rover = mulle_array_enumerate( &_windows);
             while( _mulle_arrayenumerator_next( &rover, (void **) &window))
             {
 #ifdef RUN_DEBUG
-               mulle_fprintf( stderr, "%#@: %#@ calls %@ to push property changes (%.3f)\n",
-                                       [NSThread currentThread], self, window,
-                                       now);
+               MulleUILog( "calls %#@ to push property changes", window);
 #endif
                [window writeOSWindowPropertyChangesIfNeeded];
             }
@@ -666,7 +863,7 @@ enum application_state
          _state = PollEvents;
          {
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%#@: %#@ -> PollEvents\n", [NSThread currentThread], self);
+            MulleUILog( "-> PollEvents");
 #endif
             timeout = nextTimerFireCallInSeconds < nextWindowDisplayCallInSeconds
                         ? nextTimerFireCallInSeconds
@@ -675,8 +872,7 @@ enum application_state
                timeout = 0.0;
 
 #ifdef RUN_DEBUG
-            mulle_fprintf( stderr, "%#@: %#@ next loop scheduled: %.17f\n",
-                                       [NSThread currentThread], self, timeout);
+            MulleUILog( "next loop scheduled: %.17f", timeout);
 #endif
             [UIEvent os_waitEventsWithTimeout:timeout];
          }

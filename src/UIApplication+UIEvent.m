@@ -7,8 +7,28 @@
 
 
 
+@interface UIApplication( UIScreenPrivate)
+
+- (void) _addScreen:(id <UIScreen>) screen;
+// does not call [UIWindow terminate]
+- (void) _removeScreen:(id <UIScreen>) screen;
+
+@end
+
+
+
 @implementation UIApplication ( UIEvent)
 
+
+- (UIWindowEvent *) handleScreenEvent:(UIScreenEvent *) event
+{
+   switch( [event screenEventType])
+   {
+   case UIScreenEventTypeConnected    : [self _addScreen:[event screen]]; break;
+   case UIScreenEventTypeDisconnected : [self _removeScreen:[event screen]]; break;
+   }
+   return( nil);
+}
 
 /*
  * Window events are special. They don't come in over the queue but are
@@ -43,7 +63,7 @@
 - (void) handleRetainedEvent:(UIWindowEvent *) event
 {
 #if DEBUG
-   fprintf( stderr, "UIApplication releases retained event\n");
+   MulleUILog( "release retained event");
 #endif
    [event release];
 }

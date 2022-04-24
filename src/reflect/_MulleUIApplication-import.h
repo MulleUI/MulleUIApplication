@@ -12,6 +12,18 @@
  */
 
 // You can tweak the following #import with these commands.
+// (Use 7C6E4763-2FA8-4309-924E-991FD71577E9 instead of MulleUIBase if there are duplicate entries)
+//    remove:             `mulle-sde dependency mark MulleUIBase no-header`
+//    rename:             `mulle-sde dependency|library set MulleUIBase include whatever.h`
+//    reorder:            `mulle-sde dependency move MulleUIBase <up|down>`
+//    toggle #import:     `mulle-sde dependency mark MulleUIBase [no-]import`
+//    toggle public:      `mulle-sde dependency mark MulleUIBase [no-]public`
+//    toggle optional:    `mulle-sde dependency mark MulleUIBase [no-]require`
+//    remove for platform:`mulle-sde dependency mark MulleUIBase no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
+#import <MulleUIBase/MulleUIBase.h>   // MulleUIBase
+
+// You can tweak the following #import with these commands.
 // (Use E6C64AB3-E57A-415B-ABD0-6A8A6134D52B instead of MulleObjCLockFoundation if there are duplicate entries)
 //    remove:             `mulle-sde dependency mark MulleObjCLockFoundation no-header`
 //    rename:             `mulle-sde dependency|library set MulleObjCLockFoundation include whatever.h`

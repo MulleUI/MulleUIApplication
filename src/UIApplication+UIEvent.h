@@ -9,4 +9,7 @@
 
 
 @interface UIApplication( UIEvent) <UIEventReceiver>
+
+- (UIWindowEvent *) handleScreenEvent:(UIScreenEvent *) event;
+
 @end

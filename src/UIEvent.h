@@ -1,7 +1,9 @@
 #import "import.h"
 
+#import "UIWindowTypes.h"
 
-// bits suitable or bitmasking
+
+// bits suitable for bitmasking
 // need a way to extend this
 //
 enum UIEventType
@@ -12,7 +14,8 @@ enum UIEventType
    UIEventTypeMotion  = 0x08,  // Mouse movemeent
    UIEventTypeScroll  = 0x10,  // Mouse Scrollwheel
    UIEventTypeWindow  = 0x20,  // Window event (close, resize, move etc)
-   UIEventTypeUser    = 0x40   // User event
+   UIEventTypeScreen  = 0x40,  // Screen event
+   UIEventTypeUser    = 0x80   // User event
 };
 
 static inline char   *UIEventTypeUTF8String( enum UIEventType type)
@@ -25,6 +28,7 @@ static inline char   *UIEventTypeUTF8String( enum UIEventType type)
    case UIEventTypeMotion  : return( "UIEventTypeMotion");
    case UIEventTypeScroll  : return( "UIEventTypeScroll");
    case UIEventTypeWindow  : return( "UIEventTypeWindow");
+   case UIEventTypeScreen  : return( "UIEventTypeScreen");
    case UIEventTypeUser    : return( "UIEventTypeUser");
    }
 }
@@ -43,20 +47,10 @@ typedef NSUInteger   UIEventType;
 // MULLE_UI_REUSE_EVENTS to NO, which may come in handy for leak detection.
 //
 @interface UIEvent : NSObject
-{
-   CGPoint   _translatedPoint;
-   id        _translatedView; // NOT READONLY!!
-}
-
-@property( assign, readonly) CGPoint   locationInWindow;
 
 // this is the time used by the render its relative to execution time
 // an NSDateInterval from the start of execution
 @property( assign, readonly) mulle_absolutetime_t   timestamp;
-
-
-// current known state of modifier keys
-@property( assign, readonly) NSUInteger  modifiers;
 
 + (BOOL) reuseEvents;
 + (void) setReuseEvents:(BOOL) flag;
@@ -64,17 +58,39 @@ typedef NSUInteger   UIEventType;
 + (void) waitForEventsTimeout:(mulle_relativetime_t) timeout;
 + (void) sendEmptyEvent;
 
-// TODO: rename to LocationInWindow or ?
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods;
 @end
+
 
 
 @interface UIEvent( Subclasses)
 
 - (UIEventType) eventType;
+- (BOOL) isInputEvent;
 
 @end
+
+//
+// Only UIInputEvent events are distributed to UIViews. Might rename
+// to something else, UIViewEvent maybe ?
+//
+@interface UIInputEvent : UIEvent
+{
+   CGPoint   _translatedPoint;
+   id        _translatedView; // NOT READONLY!!
+}
+
+@property( assign, readonly) CGPoint     locationInWindow;
+
+// this is thown state of modifier keys
+@property( assign, readonly) NSUInteger  modifiers;
+
+
+// TODO: rename to LocationInWindow or LocationInRootView ?
+- (instancetype) initWithMouseLocation:(CGPoint) pos
+                             modifiers:(NSUInteger) mods;
+@end
+
+
 
 /*
  * Subclasses
@@ -84,13 +100,11 @@ typedef NSUInteger   UIEventType;
 
 @property( assign, readonly) NSUInteger   eventIdentifier;
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                       eventIdentifier:(NSUInteger) identifier;
+- (instancetype) initWithEventIdentifier:(NSUInteger) identifier;
 @end
 
 
-@interface UIKeyboardEvent : UIEvent
+@interface UIKeyboardEvent : UIInputEvent
 
 @property( assign, readonly) NSUInteger   key;
 @property( assign, readonly) NSUInteger   scanCode;
@@ -105,7 +119,7 @@ typedef NSUInteger   UIEventType;
 
 
 // Receive a OS unicode character (w/o key press)
-@interface UIUnicodeEvent : UIEvent
+@interface UIUnicodeEvent : UIInputEvent
 
 @property( assign, readonly) NSUInteger   character;
 
@@ -116,7 +130,7 @@ typedef NSUInteger   UIEventType;
 @end
 
 
-@interface UIMouseButtonEvent : UIEvent
+@interface UIMouseButtonEvent : UIInputEvent
 
 @property( assign, readonly) NSUInteger   button;
 @property( assign, readonly) NSUInteger   action;
@@ -130,7 +144,7 @@ typedef NSUInteger   UIEventType;
 @end
 
 
-@interface UIMouseMotionEvent : UIEvent
+@interface UIMouseMotionEvent : UIInputEvent
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
                              modifiers:(NSUInteger) mods
@@ -141,7 +155,7 @@ typedef NSUInteger   UIEventType;
 @end
 
 
-@interface UIMouseScrollEvent : UIEvent
+@interface UIMouseScrollEvent : UIInputEvent
 
 - (instancetype) initWithMouseLocation:(CGPoint) pos
                              modifiers:(NSUInteger) mods
@@ -156,6 +170,38 @@ typedef NSUInteger   UIEventType;
 - (CGPoint) acceleratedScrollOffset;
 
 @end
+
+
+enum UIScreenEventType
+{
+   UIScreenEventTypeConnected    = 0x01,
+   UIScreenEventTypeDisconnected = 0x02
+};
+
+
+// static inline, because presumably its only used during debugging
+// and when linking this would be force-all linked
+static inline char   *UIScreenEventTypeUTF8String( enum UIScreenEventType type)
+{
+   switch( type)
+   {
+   case UIScreenEventTypeConnected    : return( "UIScreenEventTypeConnected");
+   case UIScreenEventTypeDisconnected : return( "UIScreenEventTypeDisconnected");
+   }
+}
+
+
+// a monitor event bears no data
+@interface UIScreenEvent : UIEvent
+
+@property( assign, readonly) enum UIScreenEventType  screenEventType;
+@property( assign, readonly) id <UIScreen>           screen;
+
+- (instancetype) initWithScreen:(id <UIScreen>) screen
+                screenEventType:(enum UIScreenEventType) eventType;
+
+@end
+
 
 
 enum UIWindowEventType
@@ -182,8 +228,6 @@ static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
    }
 }
 
-
-
 @interface UIWindowEvent : UIEvent
 @end
 
@@ -197,9 +241,7 @@ static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
 
 @interface UIWindowMoveEvent : UIWindowEvent
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                                origin:(struct CGBitmapPoint) pos;
+- (instancetype) initWithOrigin:(struct CGBitmapPoint) pos;
 
 @property( assign, readonly) struct CGBitmapPoint   origin;
 
@@ -216,9 +258,7 @@ static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
 
 @interface UIWindowResizeEvent : UIWindowEvent
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                                  size:(struct CGBitmapSize) size;
+- (instancetype) initWithSize:(struct CGBitmapSize) size;
 
 @property( assign, readonly) struct CGBitmapSize   size;
 
