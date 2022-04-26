@@ -323,6 +323,7 @@ struct mulle_pointerarray;
 
 - (void) setActive:(BOOL) yes;
 
+- (void) clearFramebufferNoColor; // keep color information
 - (void) clearFramebufferWithColor:(CGColor) color;
 
 - (void) beginRender:(struct CGFrameInfo *) info;
@@ -335,7 +336,6 @@ struct mulle_pointerarray;
 // rename to something else, maybe combine and just reset
 - (void) resetTransform;
 - (void) resetScissor;
-
 
 - (id) acquireOffscreenFramebuffer;
 - (void) recycleFramebuffer:(id) layer;
@@ -362,6 +362,10 @@ struct mulle_pointerarray;
             fontSize:(CGFloat) fontSize  // can be 0.0 for default
                color:(CGColor) color;
 
+// this is used for making screenshots
+- (struct CGBitmap) readFramebufferBitmap:(struct CGBitmapRect) rect
+                    framebufferBitmapType:(enum CGFramebufferBitmapType) type
+                                allocator:(struct mulle_allocator *) allocator;
 @end
 
 
