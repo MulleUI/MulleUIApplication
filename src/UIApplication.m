@@ -66,6 +66,7 @@ struct UIApplicationTimer
 {
    mulle_absolutetime_t   timestamp;
    NSTimer                *timer;
+   id <UITimerReceiver>   receiver;
 };
 
 
@@ -91,13 +92,23 @@ enum application_state
 @end
 
 
+UIApplication   *UIApp;
+
+@interface UIApplication( Declare)
+
+// don't call these yourself
+- (void) loadStandardCursors;
+- (void) removeStandardCursors;
+@end 
+
 
 @implementation UIApplication
 
 + (void) initialize
 {
    [super initialize];  // call singleton initialize ?
-   [UIApplication os_initialize];
+   if( [self respondsToSelector:@selector( os_initialize)])
+      [self os_initialize];
 }
 
 
@@ -134,6 +145,11 @@ enum application_state
 
    [self os_init];
 
+   if( ! UIApp)
+      UIApp = self;
+
+   [self loadStandardCursors];
+
    return( self);
 }
 
@@ -142,13 +158,14 @@ enum application_state
 {
    [self os_finalize];
 
+   if( UIApp == self)
+      UIApp = nil;
    [super finalize];
 }
 
 
 - (void) dealloc
 {
-
    assert( [NSThread mulleIsMainThread]);
 
    [_bouncerSignature release];
@@ -159,6 +176,7 @@ enum application_state
    [_timersLock release];
    mulle_structarray_done( &_timers);
    mulle_array_done( &_windows);
+
    [_screensLock release];
    mulle_array_done( &_screens);
 
@@ -414,6 +432,7 @@ enum application_state
    return( count);
 }
 
+
 /*
  * UIWindow
  */
@@ -459,6 +478,7 @@ enum application_state
    assert( [NSThread mulleIsMainThread]);
 
    mulle_array_add( &_windows, window);
+   [window applicationDidAddWindow];
 }
 
 
@@ -479,6 +499,7 @@ enum application_state
    }
 
    mulle_array_remove_in_range( &_windows, mulle_range_make( found, 1));
+   [window applicationDidRemoveWindow];
 }
 
 
@@ -503,7 +524,6 @@ enum application_state
          MulleUILog( "remove Window %#@ and finalize", window);
 #endif
          [self removeWindow:window];
-         [window mullePerformFinalize];  // remove from screen
       }
    }
    mulle_arrayenumerator_done( &rover);
@@ -512,6 +532,68 @@ enum application_state
 }
 
 
+- (id <UIWindow>) windowForOSWindowHandle:(void *) os_window
+{
+   struct mulle_arrayenumerator   rover;
+   id <UIWindow>                  window;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   rover = mulle_array_enumerate( &_windows);
+   while( _mulle_arrayenumerator_next( &rover, (void **) &window))
+   {
+      if( [window os_window] == os_window)
+         break;
+   }
+   mulle_arrayenumerator_done( &rover);
+
+   return( window);
+}
+
+
+//
+//
+//
+- (UICursor *) cursorWithStandardShape:(UICursorStandardShape) shape
+{
+   assert( [NSThread mulleIsMainThread]);
+   assert( shape < n_UICursorStandardShapes);
+
+   return( _standardCursors[ shape]);
+}
+
+
+- (void) loadStandardCursors
+{
+   NSUInteger   shape;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   for( shape = 1; shape < n_UICursorStandardShapes; shape++)
+   {
+      assert( ! _standardCursors[ shape]);
+      _standardCursors[ shape] =  [self os_createStandardCursor:shape];
+   }
+}
+
+
+- (void) removeStandardCursors
+{
+   NSUInteger   shape;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   for( shape = 1; shape < n_UICursorStandardShapes; shape++)
+   {
+      [self os_destroyCursor:_standardCursors[ shape]];
+      _standardCursors[ shape] = NULL;
+   }
+}
+
+
+//
+//
+//
 
 // assume all windows thread are quiescent now... else why call terminate :)
 - (int) terminate
@@ -528,6 +610,8 @@ enum application_state
    mulle_arrayenumerator_done( &rover);
 
    mulle_array_reset( &_windows);
+
+   [self removeStandardCursors];
 
    // this shuts down glfw, it doesn't exit
    [[self class] os_terminate];
@@ -550,29 +634,53 @@ enum application_state
 }
 
 
-// if timer is nil, this will remove holes in the array
-- (void) removeAllTimers
+- (void) handleRetainedTimer:(NSTimer *) timer
+{
+   [timer autorelease];
+   [timer fire];
+}
+
+
+- (void) removeTimerHoles
 {
    struct mulle_structarrayenumerator   rover;
    struct UIApplicationTimer            *appTimer;
+   struct mulle_structarray             tmp;
+   NSUInteger                           n;
 
-   // move stuff over to _timers, that's not "timer"
    [_timersLock lock];
    {
-      rover = mulle_structarray_enumerate( &_timers);
-      while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
-         [appTimer->timer autorelease];
-      mulle_structarrayenumerator_done( &rover);
+      if( _timerHoles)
+      {
+         n = mulle_structarray_get_count( &_timers);
+         // old array in tmp, wipe _timers.
 
-      mulle_structarray_reset( &_timers);
-      _timerHoles = 0;
+         tmp = _timers;
+         mulle_structarray_init( &_timers,
+                                 sizeof( struct UIApplicationTimer),
+                                 alignof( struct UIApplicationTimer),
+                                 n,
+                                 mulle_structarray_get_allocator( &_timers));
+         _timerHoles = 0;
+
+         rover = mulle_structarray_enumerate( &tmp);
+         while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+            mulle_structarray_add( &_timers, appTimer);
+         mulle_structarrayenumerator_done( &rover);
+
+         // now remove tmp
+         mulle_structarray_done( &tmp);
+      }
    }
    [_timersLock unlock];
- }
+}
 
 
-// if timer is nil, this will remove holes in the array
+
+// if timer is nil, this will remove all timers of the receiver
+// if receiver is nil, it will ignore receiver for check
 - (void) removeTimer:(NSTimer *) timer
+    forTimerReceiver:(id <UITimerReceiver>) receiver
 {
    struct mulle_structarrayenumerator   rover;
    struct UIApplicationTimer            *appTimer;
@@ -597,7 +705,8 @@ enum application_state
          rover = mulle_structarray_enumerate( &tmp);
          while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
          {
-            if( appTimer->timer == timer)
+            if( (! timer || appTimer->timer == timer) &&
+                (! receiver || appTimer->receiver == receiver))
             {
                [timer autorelease];
                continue;
@@ -614,20 +723,41 @@ enum application_state
 }
 
 
+// if receiver is nil, it will ignore receiver for check therefore removing
+// all timers
+- (void) removeAllTimersForTimerReceiver:(id <UITimerReceiver>) receiver
+{
+   [self removeTimer:nil
+    forTimerReceiver:receiver];
+}
+
+
+- (void) removeAllTimers
+{
+   return( [self removeTimer:nil
+            forTimerReceiver:nil]);
+}
+
+
 - (void) addTimer:(NSTimer *) timer
+ forTimerReceiver:(id <UITimerReceiver>) receiver
 {
    struct UIApplicationTimer   appTimer;
+
+   assert( [timer isKindOfClass:[NSTimer class]]);
+   assert( receiver);
 
    [_timersLock lock];
    {
       // when we have too many holes compact
       if( _timerHoles >= MAX_TIMERHOLES)
-          [self removeTimer:nil];
+          [self removeTimerHoles];
 
       assert( [timer mulleIsRelativeTimer]);
 
       appTimer.timestamp = mulle_absolutetime_now() + [timer mulleRelativeTimeInterval];
       appTimer.timer     = [timer retain];
+      appTimer.receiver  = receiver; // not retained!
 
       mulle_structarray_add( &_timers, &appTimer);
    }
@@ -639,12 +769,43 @@ enum application_state
 }
 
 
+- (void) resetTimer:(NSTimer *) timer
+{
+   struct UIApplicationTimer            appTimer;
+   struct mulle_structarrayenumerator   rover;
+
+   assert( [timer isKindOfClass:[NSTimer class]]);
+
+   [_timersLock lock];
+   {
+      assert( [timer mulleIsRelativeTimer]);
+
+      rover = mulle_structarray_enumerate( &_timers);
+      while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+      {
+         if( appTimer.timer == timer)
+         {
+            appTimer.timestamp = mulle_absolutetime_now() + [timer mulleRelativeTimeInterval];
+#ifdef RUN_DEBUG
+            MulleUILog( "reset Timer %@ (%.3f)", timer, appTimer.timestamp);
+#endif
+            break;
+         }
+      }
+      mulle_structarrayenumerator_done( &rover);
+   }
+   [_timersLock unlock];
+}
+
+
+//
+// returns timeinterval until next timer wants to fire
+//
 - (mulle_relativetime_t) fireTimersIfNeeded:(mulle_absolutetime_t) now
 {
    struct UIApplicationTimer            *appTimer;
    struct mulle_structarrayenumerator   rover;
-   struct mulle_array                   fireTimers;
-   struct mulle_arrayenumerator         fireRover;
+   struct mulle_structarray             fireTimers;
    NSUInteger                           n;
    mulle_absolutetime_t                 then;
    mulle_relativetime_t                 min;
@@ -655,10 +816,11 @@ enum application_state
    // if capacity is 0, nothing is malloced yet, which is good
    // because presumably most of the times there won't be timers at all
    //
-   mulle_array_init( &fireTimers,
-                     0,
-                     (struct mulle_container_keycallback *) &key_retain_callback,
-                     NULL);
+   mulle_structarray_init( &fireTimers,
+                           sizeof( struct UIApplicationTimer),
+                           alignof( struct UIApplicationTimer),
+                           0,
+                           NULL);
 
    [_timersLock lock];
    {
@@ -683,8 +845,8 @@ enum application_state
             continue;
          }
 
-         // add time to fire list
-         mulle_array_add( &fireTimers, timer);
+         // add timer to fire list
+         mulle_structarray_add( &fireTimers, appTimer);
 
          // check if we want to invalidate
          repeatInterval = [timer mulleRepeatTimeInterval];
@@ -716,17 +878,21 @@ enum application_state
    // fire all the timers that were accumulated, very often this will
    // be none...
    //
-   fireRover = mulle_array_enumerate( &fireTimers);
-   while( _mulle_arrayenumerator_next( &fireRover, (void **) &timer))
+   rover = mulle_structarray_enumerate( &fireTimers);
+   while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
    {
-#ifdef RUN_DEBUG
+#if defined( RUN_DEBUG)
        MulleUILog( "Fire Timer %@",timer);
 #endif
-      [timer fire];
-   }
-   mulle_arrayenumerator_done( &fireRover);
+      timer = [appTimer->timer retain];
+      [appTimer->receiver handleRetainedTimer:timer];
 
-   mulle_array_done( &fireTimers);
+      min = 0;  // event may have caused changes (like an event)
+                // event processing should not wait
+   }
+   mulle_structarrayenumerator_done( &rover);
+
+   mulle_structarray_done( &fireTimers);
 
    // return the time until the next time needs to fire (from now)
    return( min);
@@ -855,6 +1021,7 @@ enum application_state
 #ifdef RUN_DEBUG
                MulleUILog( "calls %#@ to push property changes", window);
 #endif
+               // TODO: pass App as parameter
                [window writeOSWindowPropertyChangesIfNeeded];
             }
             mulle_arrayenumerator_done( &rover);
@@ -871,7 +1038,7 @@ enum application_state
             if( timeout < 0.0)
                timeout = 0.0;
 
-#ifdef RUN_DEBUG
+#if defined( RUN_DEBUG)
             MulleUILog( "next loop scheduled: %.17f", timeout);
 #endif
             [UIEvent os_waitEventsWithTimeout:timeout];

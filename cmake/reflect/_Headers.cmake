@@ -57,6 +57,7 @@ src/MulleObjCLoader+MulleUIApplication.h
 src/MulleUIApplication.h
 src/UIApplication+UIEvent.h
 src/UIApplication.h
+src/UICursor.h
 src/UIEvent.h
 src/UIResponder.h
 src/UIWindowTypes.h

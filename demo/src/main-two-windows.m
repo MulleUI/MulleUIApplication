@@ -101,7 +101,7 @@ static void  drawStuff( CALayer *layer, CGContext *context)
                    rect.origin.y,
                    diameter,
                    diameter,
-                   [context numberOfRenderedFrames]);
+                   [context numberOfFrames]);
 }
 
 
@@ -179,7 +179,7 @@ int   main( int argc, char *argv[])
             {
                [window[ i] setSwapInterval:1];
             }
-            [window[ i] deactivateContext:context];
+            [window[ i] deactivateGraphicsContext:context];
             break;
 
          case Softsync :

@@ -13,6 +13,19 @@ void  mulle_pointerarray_release_all( struct mulle_pointerarray *array)
 }
 
 
+void  mulle_pointerarray_autorelease_all( struct mulle_pointerarray *array)
+{
+   struct mulle_pointerarrayenumerator   rover;
+   id     obj;
+
+   rover = mulle_pointerarray_enumerate( array);
+   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &obj))
+      [obj autorelease];
+   mulle_pointerarrayenumerator_done( &rover);
+}
+
+
+
 void  mulle_pointerarray_retain_all( struct mulle_pointerarray *array)
 {
    struct mulle_pointerarrayenumerator   rover;
@@ -21,6 +34,20 @@ void  mulle_pointerarray_retain_all( struct mulle_pointerarray *array)
    rover = mulle_pointerarray_enumerate( array);
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &obj))
       [obj retain];
+   mulle_pointerarrayenumerator_done( &rover);
+}
+
+
+void  mulle_pointerarray_call_all( struct mulle_pointerarray *array,
+                                   SEL sel,
+                                   void *param)
+{
+   struct mulle_pointerarrayenumerator   rover;
+   id     obj;
+
+   rover = mulle_pointerarray_enumerate( array);
+   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &obj))
+      MulleObjCObjectPerformSelector( obj, sel, param);
    mulle_pointerarrayenumerator_done( &rover);
 }
 

@@ -3,7 +3,7 @@
 //
 // Copyright (c) 2021 Nat!, Mulle kybernetiK
 //
-// basically a future, that UIWindow and GLFWOSWindow adopt, chiefly
+// basically a future, that UIWindow and SDLOSWindow adopt, chiefly
 // to the benefit of UIApplication, which gains a little bit of
 // type safety with it and some info
 //
@@ -38,8 +38,8 @@ enum UIWindowStyle
 // All
    UIWindowStyleNop                = 0x40000000, // if all bits are 0, use this to avoid getting default values
 
-// GLFW
-//   UIWindowStyleClosable           = 0x001,    // there are no GLFW hints for them
+// SDL
+//   UIWindowStyleClosable           = 0x001,    // there are no SDL hints for them
 //   UIWindowStyleMiniaturizable     = 0x002,
    UIWindowStyleResizable          = 0x004,
    UIWindowStyleInvisible          = 0x008,
@@ -57,12 +57,11 @@ enum UIWindowStyle
    UIWindowStyleRetained             = 0x10000,  // use UIWindowBackingStoreRetained
    UIWindowStyleRetainedOnMainThread = 0x20000,  // use UIWindowBackingStoreRetainedOnMainThread
 
-// GLFW/OpenGL
-   UIWindowOpenGLCoreProfile       = 0x0100000,
-   UIWindowOpenGLCompatProfile     = 0x0200000,
-   UIWindowOpenGLForwardCompatible = 0x0400000,  // folklore says, specify compat too
-
+// SDL/OpenGL
+   UIWindowOpenGLCoreProfile       = 0x0100000,  // OpenGLCore functions only
+   UIWindowOpenGLForward           = 0x0400000,  // non-deprecated functions only
    UIWindowOpenGLLibraryFallback   = 0x0800000,  // try other openGL libraries as fallback
+
    UIWindowOpenGLDeprecated        = 0x1000000   // if this is set, GLES can't be used
 };
 
@@ -95,9 +94,17 @@ typedef NSUInteger   UIWindowStyleMask;
 #define UIWindowOpenGLProfileShift    (5*4)
 
 
+@protocol UIOSWindow;
 
 
 @protocol UIWindow < NSObject>
+
+// return primary OSWindow this window is using (or nil if none)
+// if you return nil, you may not get many events
+- (id <UIOSWindow>) OSWindow;
+
+// return underlying SDL/GLFW window or whatever
+- (void *) os_window;
 
 // obsolete ?
 - (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
@@ -112,6 +119,12 @@ typedef NSUInteger   UIWindowStyleMask;
 // these are threadsafe
 - (void) setNeedsRefresh;
 - (BOOL) shouldClose;
+
+// sent by the application on add/remove when a window will be removed
+// the application might be gone immediately afterwards if this is the
+// last window (taking the graphics system with it!)
+- (void) applicationDidAddWindow;
+- (void) applicationDidRemoveWindow;
 
 @end
 
@@ -128,6 +141,14 @@ typedef NSUInteger   UIHexColor;
 
 - (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event;
 - (void) handleRetainedEvent:(UIEvent *) NS_CONSUMED event;
+
+@end
+
+@class NSTimer;
+
+@protocol UITimerReceiver <NSObject>
+
+- (void) handleRetainedTimer:(NSTimer *) NS_CONSUMED event;
 
 @end
 
@@ -233,6 +254,8 @@ static inline mulle_relativetime_t
 }
 
 
+@protocol UIScreen;
+
 
 @protocol UIOSWindow <NSObject>
 
@@ -246,6 +269,9 @@ static inline mulle_relativetime_t
                      styleMask:(NSUInteger) styleMask
                  graphicsHints:(NSUInteger) hints
                  sharingWindow:(id <UIOSWindow>) sharingWindow;
+
+// a shareID. Windows with shared contexts have the same shareID
+- (NSInteger) shareID;
 
 // these are threadsafe
 - (void) setFrameRateLimiter:(BOOL) flag;
@@ -264,6 +290,15 @@ static inline mulle_relativetime_t
 
 // this is threadsafe
 - (CGFloat) frameRateHz;
+
+// this is threadsafe, for OpenGL will give enum for OpenGL3, OpenGL ES etc.
+- (NSUInteger) backend;
+
+// return self
+- (id <UIOSWindow>) OSWindow;
+
+- (id <UIScreen>) screenOrPrimaryScreen:(BOOL) flag;
+- (id <UIScreen>) screen;
 
 
 // this is threadsafe
@@ -288,6 +323,7 @@ static inline mulle_relativetime_t
 // bind GL context of the window to the current thread
 // synonymous with activate
 - (void) os_activateGraphicsContext;
+- (BOOL) os_tryActivateGraphicsContext;
 - (void) os_deactivateGraphicsContext;
 - (void) os_swapBuffers;
 
@@ -300,6 +336,7 @@ static inline mulle_relativetime_t
 - (void) os_initEvents;
 
 - (void) os_setTitleUTF8String:(char *) s;
+- (void) os_setCursor:(void *) cursor;
 
 // glfw window
 - (void *) os_window;
@@ -314,12 +351,16 @@ struct mulle_pointerarray;
 
 @protocol UIGraphicsContext <NSObject>
 
-@property( assign) BOOL         rendersOffScreen;
-@property( assign) NSUInteger   framebufferBits;
-@property( assign) id           OSWindow;
+@property( assign) BOOL                          rendersOffScreen;
+@property( assign) NSUInteger                    framebufferBits;
+@property( assign) id                            OSWindow;
+@property( assign, readonly) UIGraphicsBackend   backend;
 
 - (instancetype) initWithEdgeAntialiasing:(BOOL) edgeAntialiasing
-                        useStencilStrokes:(BOOL) stencilStrokes;
+                        useStencilStrokes:(BOOL) stencilStrokes
+                                  shareID:(NSUInteger) shareID
+                                  backend:(UIGraphicsBackend) backend;
+- (char *) backendUTF8String;
 
 - (void) setActive:(BOOL) yes;
 
@@ -357,8 +398,8 @@ struct mulle_pointerarray;
               width:(CGFloat) width;
 
 - (void) drawAtPoint:(CGPoint) position
-          UTF8String:(char *) s
-            fontName:(char *) fontName    // can be NULL for default
+      textUTF8String:(char *) s
+  fontNameUTF8String:(char *) fontNameUTF8String    // can be NULL for default
             fontSize:(CGFloat) fontSize  // can be 0.0 for default
                color:(CGColor) color;
 
@@ -379,7 +420,7 @@ struct mulle_pointerarray;
 
 //
 // Use CGRect from frame/canvas since it's more uniform with UIWindow/UIView
-// though the underlying OS/GLFW format is really integer
+// though the underlying OS/SDL format is really integer
 //
 struct UIScreenInfo
 {
@@ -387,6 +428,7 @@ struct UIScreenInfo
    CGRect                 canvas;         // workarea
    CGVector               contentScale;
    CGSize                 physicalSize;
+   CGFloat                dpi;            // convenience for printing, dont use
    char                   colorBits[ 4];
    mulle_relativetime_t   refreshRate;
 };

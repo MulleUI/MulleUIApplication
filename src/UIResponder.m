@@ -2,6 +2,8 @@
 
 #import "import-private.h"
 
+#import "UIEvent.h"
+
 
 PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
 
@@ -21,8 +23,19 @@ PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
 }
 
 // does not handle event by default
+- (UIInputEvent *) handleInputEvent:(UIInputEvent *) event
+{
+   return( event);
+}
+
+
+// does not handle event by default
 - (UIEvent *) handleEvent:(UIEvent *) event
 {
+   if( [event isInputEvent])
+      return( [self handleInputEvent:(UIInputEvent *) event]);
+
+   // fall back to UIResponder
    return( event);
 }
 

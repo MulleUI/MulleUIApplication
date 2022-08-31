@@ -12,6 +12,7 @@
 #import "MulleObjCLoader+MulleUIApplication.h"
 #import "UIApplication+UIEvent.h"
 #import "UIApplication.h"
+#import "UICursor.h"
 #import "UIEvent.h"
 #import "UIResponder.h"
 #import "UIWindowTypes.h"
