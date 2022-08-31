@@ -1,7 +1,7 @@
 #import "UIEvent.h"
 
 
-#define EVENT_DEBUG
+// #define EVENT_DEBUG
 
 
 @implementation UIEvent
@@ -149,11 +149,13 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
    _mulle__pointerqueue_push( p, self, MulleObjCInstanceGetAllocator( self));
 }
 
+
 - (instancetype) init
 {
    _timestamp = mulle_absolutetime_now();
    return( self);
 }
+
 
 + (void) sendEmptyEvent
 {
@@ -227,14 +229,16 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 
 @implementation UIInputEvent
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
                              modifiers:(NSUInteger) mods
 {
    self =  [self init];
 
    _locationInWindow  = pos;
    _modifiers         = mods;
-   _translatedPoint.x = CGFLOAT_MIN; // not set
+   _location.x        = CGFLOAT_MIN; // not set
+   _locationView      = nil;
+   
    return( self);
 }
 
@@ -245,10 +249,10 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 }
 
 
-static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
-{
-   return( event->_translatedPoint.x != CGFLOAT_MIN);
-}
+//static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
+//{
+//   return( event->_location.x != CGFLOAT_MIN);
+//}
 
 
 - (char *) UTF8String
@@ -286,14 +290,14 @@ static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 
 
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
                              modifiers:(NSUInteger) mods
                                    key:(NSUInteger) key
                               scanCode:(NSUInteger) scanCode
                                 action:(NSUInteger) action
 {
-   self = [self initWithMouseLocation:pos
-                            modifiers:mods];
+   self = [self initWithLocationInWindow:pos
+                               modifiers:mods];
 
    _key       = key;
    _scanCode  = scanCode;
@@ -301,6 +305,7 @@ static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 
    return( self);
 }
+
 
 - (UIEventType) eventType
 {
@@ -311,11 +316,21 @@ static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 - (char *) _payloadUTF8String
 {
    char   *s;
+   char   *keyName;
 
-   s = MulleObjC_asprintf( "key=%td scancode=%td action=%td",
-                  _key,
-                  _scanCode,
-                  _action);
+   keyName = _UIEventKeyUTF8String( _key);
+   if( keyName)
+      s = MulleObjC_asprintf( "key=%s scancode=%td action=%td modifiers=0x%tx",
+                     keyName,
+                     _scanCode,
+                     _action,
+                     _modifiers);
+   else
+      s = MulleObjC_asprintf( "key=%td scancode=%td action=%td modifiers=0x%tx",
+                     _key,
+                     _scanCode,
+                     _action,
+                     _modifiers);
    return( s);
 }
 
@@ -337,11 +352,11 @@ static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 }
 
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
                              modifiers:(NSUInteger) mods
                              character:(NSUInteger) character
 {
-   self = [self initWithMouseLocation:pos
+   self = [self initWithLocationInWindow:pos
                             modifiers:mods];
 
    _character = character;
@@ -367,7 +382,7 @@ static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 
 + (id) alloc
 {
-   return(  allocateEventWithIndex( self, UIMouseMotionEventIndex));
+   return( allocateEventWithIndex( self, UIMouseMotionEventIndex));
 }
 
 - (void) dealloc
@@ -382,11 +397,11 @@ static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 }
 
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                          buttonStates:(NSUInteger) buttonStates
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                             buttonStates:(NSUInteger) buttonStates
 {
-   self = [self initWithMouseLocation:pos
+   self = [self initWithLocationInWindow:pos
                             modifiers:mods];
 
    _buttonStates = buttonStates;
@@ -397,7 +412,7 @@ static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 
 - (char *) _payloadUTF8String
 {
-   return( MulleObjC_asprintf( "buttonStates=%td", _buttonStates));
+   return( MulleObjC_asprintf( "buttonStates=0x%tx", _buttonStates));
 }
 
 @end
@@ -417,12 +432,12 @@ static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 }
 
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                                button:(NSUInteger) button
-                                action:(NSUInteger) action
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                                   button:(NSUInteger) button
+                                   action:(NSUInteger) action
 {
-   self = [self initWithMouseLocation:pos
+   self = [self initWithLocationInWindow:pos
                             modifiers:mods];
    _button = button;
    _action = action;
@@ -439,7 +454,9 @@ static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 
 - (char *) _payloadUTF8String
 {
-   return( MulleObjC_asprintf( "button=%td action=%td", _button, _action));
+   return( MulleObjC_asprintf( "button=%s action=%s",
+               UIEventMouseButtonUTF8String( _button),
+               UIEventButtonActionUTF8String( _action)));
 }
 
 @end
@@ -468,12 +485,12 @@ static struct
 };
 
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                          scrollOffset:(CGPoint) scrollOffset
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                             scrollOffset:(CGPoint) scrollOffset
 {
-   self = [self initWithMouseLocation:pos
-                            modifiers:mods];
+   self = [self initWithLocationInWindow:pos
+                               modifiers:mods];
    _scrollOffset = scrollOffset;
 
    return( self);
@@ -498,15 +515,42 @@ static struct
 }
 
 
-- (CGPoint) acceleratedScrollOffset
+- (CGPoint) scrollOffsetWithAcceleration:(BOOL) accelerate
+                            useModifiers:(BOOL) useModifiers
 {
    CGPoint   offset;
 
-   offset.x = _scrollOffset.x * Self._acceleration;
-   offset.y = _scrollOffset.y * Self._acceleration;
+   MulleUILog( "modifiers 0x%tx", _modifiers);
+
+   offset = _scrollOffset;
+   if( useModifiers && (_modifiers & UIEventKeyModifierAlt))
+   {
+      offset.x = _scrollOffset.y;
+      offset.y = _scrollOffset.x;
+   }
+
+   if( accelerate)
+   {
+      offset.x = offset.x * Self._acceleration;
+      offset.y = offset.y * Self._acceleration;
+   }
+
+   // TODO: could use shift for coarser and ctrl for finer scrolling
+   if( useModifiers && (_modifiers & UIEventKeyModifierShift))
+   {
+      offset.x *= 4;
+      offset.y *= 4;
+   }
+
+   if( useModifiers && (_modifiers & UIEventKeyModifierControl))
+   {
+      offset.x /= 4;
+      offset.y /= 4;
+   }
 
    return( offset);
 }
+
 
 - (char *) _payloadUTF8String
 {
@@ -527,16 +571,19 @@ static struct
    return( self);
 }
 
+
 - (void) dealloc
 {
    [_screen release];
    [super dealloc];
 }
 
+
 - (char *) _payloadUTF8String
 {
    return( UIScreenEventTypeUTF8String( _screenEventType));
 }
+
 
 - (UIEventType) eventType
 {

@@ -45,7 +45,8 @@ int   main( int argc, char *argv[])
                                                  selector:@selector( randomizeBackgroundColor:)
                                                  userInfo:nil 
                                fireUsesUserInfoAsArgument:YES] autorelease];
-      [app addTimer:timer];
+      [app addTimer:timer
+   forTimerReceiver:app];   
 
       timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:2.5
                                            repeatInterval:0.0
@@ -53,7 +54,8 @@ int   main( int argc, char *argv[])
                                                  selector:@selector( setWhiteBackgroundColor:)
                                                  userInfo:nil 
                                fireUsesUserInfoAsArgument:YES] autorelease];
-      [app addTimer:timer];
+      [app addTimer:timer
+   forTimerReceiver:app];   
    }
    return( [app run]);
 }

@@ -12,6 +12,7 @@ endif()
 #
 set( SOURCES
 src/main-two-windows.m
+src/main-window-cursor.m
 src/main-window-events.m
 src/main-window-timer.m
 )

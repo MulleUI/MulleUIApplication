@@ -8,7 +8,7 @@
 
 @implementation UIApplication ( Hacky)
 
-// fake some stuff that GLFW provides
+// fake some stuff that SDL provides
 + (void) os_initialize
 {
 }
@@ -24,7 +24,7 @@
 // no leaks or crashes
 //
 - (char *) callMeWithInteger:(NSInteger) value
-                  UTF8String:(char *) s
+                  textUTF8String:(char *) s
 {
    char   *result;
 

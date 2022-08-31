@@ -4,7 +4,7 @@
 
 This library lays the ground work for window and event handling. It isn't tied
 to any platform or graphics library. UIWindow is a protocol, that will get
-fleshed out by MulleUIWindow (and MulleGLFWWindow).
+fleshed out by MulleUIWindow (and MulleSDLWindow).
 
 
 ### You are here

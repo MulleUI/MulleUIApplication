@@ -15,7 +15,8 @@ enum UIEventType
    UIEventTypeScroll  = 0x10,  // Mouse Scrollwheel
    UIEventTypeWindow  = 0x20,  // Window event (close, resize, move etc)
    UIEventTypeScreen  = 0x40,  // Screen event
-   UIEventTypeUser    = 0x80   // User event
+   UIEventTypeUser    = 0x80,   // User event
+   _UIEventTypeTimer  = 0x100  // (This is not a real UIEvent)
 };
 
 static inline char   *UIEventTypeUTF8String( enum UIEventType type)
@@ -30,7 +31,9 @@ static inline char   *UIEventTypeUTF8String( enum UIEventType type)
    case UIEventTypeWindow  : return( "UIEventTypeWindow");
    case UIEventTypeScreen  : return( "UIEventTypeScreen");
    case UIEventTypeUser    : return( "UIEventTypeUser");
+   case _UIEventTypeTimer  : return( "_UIEventTypeTimer");
    }
+   assert( 0);
 }
 
 
@@ -40,7 +43,7 @@ typedef NSUInteger   UIEventType;
 // we retrieve objects from a central growing array of possibly used
 // objects and reuse them. When we reclaim an object from a queue, we
 // need to put up a memory barrier, so the receiver does not see stale
-// data. An UIEvent is not read/only as _translatedPoint is used for
+// data. An UIEvent is not read/only as _location is used for
 // storing by UIView for efficiency (temporarily used)
 //
 // You can turn off reuse by setting the environment variable
@@ -73,21 +76,24 @@ typedef NSUInteger   UIEventType;
 // Only UIInputEvent events are distributed to UIViews. Might rename
 // to something else, UIViewEvent maybe ?
 //
+// A input event is tied to the mouse pointer location.
+// TODO: multiple touches (center point of touches) maybe
+// TODO: keyboardEvent: last mouse pointer location, if there is
+//                      mouse pointer available, then what ?
 @interface UIInputEvent : UIEvent
 {
-   CGPoint   _translatedPoint;
-   id        _translatedView; // NOT READONLY!!
+   CGPoint   _location;     // translated locationInWindow for locationView
+   id        _locationView; // NOT READONLY!!
 }
 
 @property( assign, readonly) CGPoint     locationInWindow;
 
-// this is thown state of modifier keys
+// this is known state of modifier keys
 @property( assign, readonly) NSUInteger  modifiers;
 
 
-// TODO: rename to LocationInWindow or LocationInRootView ?
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods;
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods;
 @end
 
 
@@ -101,6 +107,7 @@ typedef NSUInteger   UIEventType;
 @property( assign, readonly) NSUInteger   eventIdentifier;
 
 - (instancetype) initWithEventIdentifier:(NSUInteger) identifier;
+
 @end
 
 
@@ -110,11 +117,11 @@ typedef NSUInteger   UIEventType;
 @property( assign, readonly) NSUInteger   scanCode;
 @property( assign, readonly) NSUInteger   action;
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                                   key:(NSUInteger) key
-                              scanCode:(NSUInteger) scanCode
-                                action:(NSUInteger) action;
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                                      key:(NSUInteger) key
+                                 scanCode:(NSUInteger) scanCode
+                                   action:(NSUInteger) action;
 @end
 
 
@@ -123,9 +130,9 @@ typedef NSUInteger   UIEventType;
 
 @property( assign, readonly) NSUInteger   character;
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                             character:(NSUInteger) key;
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                                character:(NSUInteger) key;
 
 @end
 
@@ -135,20 +142,19 @@ typedef NSUInteger   UIEventType;
 @property( assign, readonly) NSUInteger   button;
 @property( assign, readonly) NSUInteger   action;
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                                button:(NSUInteger) button
-                                action:(NSUInteger) action;
-
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                                   button:(NSUInteger) button
+                                   action:(NSUInteger) action;
 
 @end
 
 
 @interface UIMouseMotionEvent : UIInputEvent
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                          buttonStates:(NSUInteger) buttonStates;
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                             buttonStates:(NSUInteger) buttonStates;
 
 @property( assign, readonly) NSUInteger   buttonStates;
 
@@ -157,9 +163,9 @@ typedef NSUInteger   UIEventType;
 
 @interface UIMouseScrollEvent : UIInputEvent
 
-- (instancetype) initWithMouseLocation:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                          scrollOffset:(CGPoint) offset;
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                             scrollOffset:(CGPoint) offset;
 
 @property( assign, readonly) CGPoint   scrollOffset;
 
@@ -167,7 +173,12 @@ typedef NSUInteger   UIEventType;
 + (CGFloat) scrollWheelAcceleration;
 + (void) setScrollWheelAcceleration:(CGFloat) value;
 
-- (CGPoint) acceleratedScrollOffset;
+// useModifiers: YES
+//    alt swaps axis
+//    ctrl allows fine scroll
+//    shift does coarse scroll
+- (CGPoint) scrollOffsetWithAcceleration:(BOOL) accelerate
+                            useModifiers:(BOOL) useModifiers;
 
 @end
 
@@ -188,6 +199,7 @@ static inline char   *UIScreenEventTypeUTF8String( enum UIScreenEventType type)
    case UIScreenEventTypeConnected    : return( "UIScreenEventTypeConnected");
    case UIScreenEventTypeDisconnected : return( "UIScreenEventTypeDisconnected");
    }
+   assert( 0);
 }
 
 
@@ -201,7 +213,6 @@ static inline char   *UIScreenEventTypeUTF8String( enum UIScreenEventType type)
                 screenEventType:(enum UIScreenEventType) eventType;
 
 @end
-
 
 
 enum UIWindowEventType
@@ -226,7 +237,9 @@ static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
    case UIWindowEventTypeMove              : return( "UIWindowEventTypeMove");
    case UIWindowEventTypeFramebufferResize : return( "UIWindowEventTypeFramebufferResize");
    }
+   assert( 0);
 }
+
 
 @interface UIWindowEvent : UIEvent
 @end
@@ -294,27 +307,69 @@ static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
 
 enum
 {
-   UIEventMouseButtonLeft   = 1,
-   UIEventMouseButtonMiddle = 2,
-   UIEventMouseButtonRight  = 3
+   UIEventMouseButtonLeft   = 0,
+   UIEventMouseButtonRight  = 1,
+   UIEventMouseButtonMiddle = 2
 };
 
 
-// these are not compatible to iOS but the values are 1:1 GLFW
-#define GLFW_RELEASE   0
-#define GLFW_PRESS     1
-#define GLFW_REPEAT    2
+
+static inline char   *_UIEventMouseButtonUTF8String( NSUInteger button)
+{
+   switch( button)
+   {
+   case UIEventMouseButtonLeft   : return( "Left");
+   case UIEventMouseButtonRight  : return( "Right");
+   case UIEventMouseButtonMiddle : return( "Middle");
+   }
+   return( NULL);
+}
+
+
+static inline char   *UIEventMouseButtonUTF8String( NSUInteger button)
+{
+   char   *s;
+
+   s = _UIEventMouseButtonUTF8String( button);
+   return( s ? s : "???");
+}
+
+
+
+//// these are not compatible to iOS but the values are 1:1 GLFW
+//#define GLFW_RELEASE   0
+//#define GLFW_PRESS     1
+//#define GLFW_REPEAT    2
 
 
 // used for mouse button and keyboard buttons
 enum
 {
-   UIEventButtonUp     = 0,
-   UIEventButtonDown   = 1,
-   UIEventButtonRepeat = 2
+   UIEventButtonActionUp     = 0,
+   UIEventButtonActionDown   = 1,
+   UIEventButtonActionRepeat = 2
 };
 
 
+static inline char   *_UIEventButtonActionUTF8String( NSUInteger action)
+{
+   switch( action)
+   {
+   case UIEventButtonActionUp     : return( "Up");
+   case UIEventButtonActionDown   : return( "Down");
+   case UIEventButtonActionRepeat : return( "Repeat");
+   }
+   return( NULL);
+}
+
+
+static inline char   *UIEventButtonActionUTF8String( NSUInteger action)
+{
+   char   *s;
+
+   s = _UIEventButtonActionUTF8String( action);
+   return( s ? s : "???");
+}
 
 
 // #define GLFW_MOD_SHIFT           0x0001
@@ -331,8 +386,33 @@ enum
    UIEventKeyModifierAlt      = 0x0004,
    UIEventKeyModifierSuper    = 0x0008,
    UIEventKeyModifierCapsLock = 0x0010,
-   UIEventKeyModifierNukLock  = 0x0020
+   UIEventKeyModifierNumLock  = 0x0020
 };
+
+
+static inline char   *_UIEventKeyModifierUTF8String( NSUInteger modifier)
+{
+   switch( modifier)
+   {
+   case UIEventKeyModifierShift    : return( "Shift");
+   case UIEventKeyModifierControl  : return( "Control");
+   case UIEventKeyModifierAlt      : return( "Alt");
+   case UIEventKeyModifierSuper    : return( "Super");
+   case UIEventKeyModifierCapsLock : return( "CapsLock");
+   case UIEventKeyModifierNumLock  : return( "NumLock ");
+   }
+   return( NULL);
+}
+
+
+static inline char   *UIEventKeyModifierUTF8String( NSUInteger modifier)
+{
+   char   *s;
+
+   s = _UIEventKeyModifierUTF8String( modifier);
+   return( s ? s : "???");
+}
+
 
 
 // /* The unknown key */
@@ -590,7 +670,7 @@ enum
    UIEventKeyKeypadEnter    = 335,
    UIEventKeyKeypadEqual    = 336,
 
-   UIEventKeyLeftAhift      = 340,
+   UIEventKeyLeftShift      = 340,
    UIEventKeyLeftControl    = 341,
    UIEventKeyLeftAlt        = 342,
    UIEventKeyLeftSuper      = 343,
@@ -604,3 +684,142 @@ enum
 #define UIEventKeyUnknown   (-1)
 #define UIEventKeyFirst     UIEventKeySpace
 #define UIEventKeyLast      UIEventKeyMenu
+
+
+static inline char   *_UIEventKeyUTF8String( NSUInteger key)
+{
+   switch( key)
+   {
+   case UIEventKeyUnknown        : return( "Unknown");
+   case UIEventKeySpace          : return( "Space");
+   case UIEventKeyApostrophe     : return( "Apostrophe");
+   case UIEventKeyComma          : return( "Comma");
+   case UIEventKeyMinus          : return( "Minus");
+   case UIEventKeyPeriod         : return( "Period");
+   case UIEventKeySlash          : return( "Slash");
+   case UIEventKey0              : return( "0");
+   case UIEventKey1              : return( "1");
+   case UIEventKey2              : return( "2");
+   case UIEventKey3              : return( "3");
+   case UIEventKey4              : return( "4");
+   case UIEventKey5              : return( "5");
+   case UIEventKey6              : return( "6");
+   case UIEventKey7              : return( "7");
+   case UIEventKey8              : return( "8");
+   case UIEventKey9              : return( "9");
+   case UIEventKeySemicolon      : return( "Semicolon");
+   case UIEventKeyEqual          : return( "Equal");
+   case UIEventKeyA              : return( "A");
+   case UIEventKeyB              : return( "B");
+   case UIEventKeyC              : return( "C");
+   case UIEventKeyD              : return( "D");
+   case UIEventKeyE              : return( "E");
+   case UIEventKeyF              : return( "F");
+   case UIEventKeyG              : return( "G");
+   case UIEventKeyH              : return( "H");
+   case UIEventKeyI              : return( "I");
+   case UIEventKeyJ              : return( "J");
+   case UIEventKeyK              : return( "K");
+   case UIEventKeyL              : return( "L");
+   case UIEventKeyM              : return( "M");
+   case UIEventKeyN              : return( "N");
+   case UIEventKeyO              : return( "O");
+   case UIEventKeyP              : return( "P");
+   case UIEventKeyQ              : return( "Q");
+   case UIEventKeyR              : return( "R");
+   case UIEventKeyS              : return( "S");
+   case UIEventKeyT              : return( "T");
+   case UIEventKeyU              : return( "U");
+   case UIEventKeyV              : return( "V");
+   case UIEventKeyW              : return( "W");
+   case UIEventKeyX              : return( "X");
+   case UIEventKeyY              : return( "Y");
+   case UIEventKeyZ              : return( "Z");
+   case UIEventKeyLeftBracket    : return( "LeftBracket");
+   case UIEventKeyBackslash      : return( "Backslash");
+   case UIEventKeyRightBracket   : return( "RightBracket");
+   case UIEventKeyGraveAccent    : return( "GraveAccent");
+   case UIEventKeyWorld1         : return( "World1");
+   case UIEventKeyWorld2         : return( "World2");
+   case UIEventKeyEscape         : return( "Escape");
+   case UIEventKeyEnter          : return( "Enter");
+   case UIEventKeyTab            : return( "Tab");
+   case UIEventKeyBackspace      : return( "Backspace");
+   case UIEventKeyInsert         : return( "Insert");
+   case UIEventKeyDelete         : return( "Delete");
+   case UIEventKeyRight          : return( "Right");
+   case UIEventKeyLeft           : return( "Left");
+   case UIEventKeyDown           : return( "Down");
+   case UIEventKeyUp             : return( "Up");
+   case UIEventKeyPageUp         : return( "PageUp");
+   case UIEventKeyPageDown       : return( "PageDown");
+   case UIEventKeyHome           : return( "Home");
+   case UIEventKeyEnd            : return( "End");
+   case UIEventKeyCapsLock       : return( "CapsLock");
+   case UIEventKeyScrollLock     : return( "ScrollLock");
+   case UIEventKeyNumLock        : return( "NumLock");
+   case UIEventKeyPrintScreen    : return( "PrintScreen");
+   case UIEventKeyPause          : return( "Pause");
+   case UIEventKeyF1             : return( "F1");
+   case UIEventKeyF2             : return( "F2");
+   case UIEventKeyF3             : return( "F3");
+   case UIEventKeyF4             : return( "F4");
+   case UIEventKeyF5             : return( "F5");
+   case UIEventKeyF6             : return( "F6");
+   case UIEventKeyF7             : return( "F7");
+   case UIEventKeyF8             : return( "F8");
+   case UIEventKeyF9             : return( "F9");
+   case UIEventKeyF10            : return( "F10");
+   case UIEventKeyF11            : return( "F11");
+   case UIEventKeyF12            : return( "F12");
+   case UIEventKeyF13            : return( "F13");
+   case UIEventKeyF14            : return( "F14");
+   case UIEventKeyF15            : return( "F15");
+   case UIEventKeyF16            : return( "F16");
+   case UIEventKeyF17            : return( "F17");
+   case UIEventKeyF18            : return( "F18");
+   case UIEventKeyF19            : return( "F19");
+   case UIEventKeyF20            : return( "F20");
+   case UIEventKeyF21            : return( "F21");
+   case UIEventKeyF22            : return( "F22");
+   case UIEventKeyF23            : return( "F23");
+   case UIEventKeyF24            : return( "F24");
+   case UIEventKeyF25            : return( "F25");
+   case UIEventKeyKeypad0        : return( "Keypad0");
+   case UIEventKeyKeypad1        : return( "Keypad1");
+   case UIEventKeyKeypad2        : return( "Keypad2");
+   case UIEventKeyKeypad3        : return( "Keypad3");
+   case UIEventKeyKeypad4        : return( "Keypad4");
+   case UIEventKeyKeypad5        : return( "Keypad5");
+   case UIEventKeyKeypad6        : return( "Keypad6");
+   case UIEventKeyKeypad7        : return( "Keypad7");
+   case UIEventKeyKeypad8        : return( "Keypad8");
+   case UIEventKeyKeypad9        : return( "Keypad9");
+   case UIEventKeyKeypadDecimal  : return( "KeypadDecimal");
+   case UIEventKeyKeypadDivide   : return( "KeypadDivide");
+   case UIEventKeyKeypadMultiply : return( "KeypadMultiply");
+   case UIEventKeyKeypadSubtract : return( "KeypadSubtract");
+   case UIEventKeyKeypadAdd      : return( "KeypadAdd");
+   case UIEventKeyKeypadEnter    : return( "KeypadEnter");
+   case UIEventKeyKeypadEqual    : return( "KeypadEqual");
+   case UIEventKeyLeftShift      : return( "LeftShift");
+   case UIEventKeyLeftControl    : return( "LeftControl");
+   case UIEventKeyLeftAlt        : return( "LeftAlt");
+   case UIEventKeyLeftSuper      : return( "LeftSuper");
+   case UIEventKeyRightShift     : return( "RightShift");
+   case UIEventKeyRightControl   : return( "RightControl");
+   case UIEventKeyRightAlt       : return( "RightAlt");
+   case UIEventKeyRightSuper     : return( "RightSuper");
+   case UIEventKeyMenu           : return( "Menu");
+   }
+   return( NULL);
+}
+
+
+static inline char   *UIEventKeyUTF8String( NSUInteger key)
+{
+   char   *s;
+
+   s = _UIEventKeyUTF8String( key);
+   return( s ? s : "???");
+}

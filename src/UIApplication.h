@@ -1,18 +1,22 @@
 #import "import.h"
 
 #import "UIWindowTypes.h"
+#import "UICursor.h"
 
 //
 // MEMO: unhandled events, are they passed to the application ? If yes
 //       it could be a problem. Application would needs its own queue,
 //       which is managed by the main thread.
 //
-@interface UIApplication : NSObject <MulleObjCSingleton>
+@interface UIApplication : NSObject <MulleObjCSingleton, UITimerReceiver>
 {
    struct mulle_array                    _screens;
    NSLock                                *_screensLock;
 
    struct mulle_array                    _windows;
+
+   // custom cursors need a mulle_pointerarray (implement later)
+   UICursor                              *_standardCursors[ n_UICursorStandardShapes];
 
    struct mulle_structarray              _timers;
    NSLock                                *_timersLock;
@@ -65,16 +69,40 @@
 - (NSUInteger) getWindows:(id <UIWindow> *) buf
                    length:(NSUInteger) length;
 
+- (id <UIWindow>) windowForOSWindowHandle:(void *) os_window;
+
+
+//
+// UICursor
+//
+// Standard UICursors can be retrieved from any thread. 
+// As they are allocated during initialization and removed
+// on terminate.
+//
+// Cursors can't be removed currently, so don't stream
+// videos into your cursor bitmap...
+//
+- (UICursor *) cursorWithStandardShape:(UICursorStandardShape) shape;
+
 
 //
 // NSTimer:
 //
 // NSTimers that are not mutable can be added in a threadsafe manner.
 //
-- (void) addTimer:(NSTimer *) timer;
-- (void) removeTimer:(NSTimer *) timer;
+
+- (void) addTimer:(NSTimer *) timer
+ forTimerReceiver:(id <UITimerReceiver>) receiver;
+
+- (void) removeTimer:(NSTimer *) timer
+    forTimerReceiver:(id <UITimerReceiver>) receiver;
+
+- (void) removeAllTimersForTimerReceiver:(id <UITimerReceiver>) receiver;
+
 - (void) removeAllTimers;
 
+// like re-adding a timer, the timer is reset to now + offset
+- (void) resetTimer:(NSTimer *) timer;
 
 
 //
@@ -98,9 +126,6 @@
 // calls runWindows and then when all have closed, calls terminate
 - (int) run;
 - (void) runWindows;
-
-
-
 @end
 
 
@@ -112,8 +137,16 @@
 - (void) os_init;
 - (void) os_finalize;
 
+- (void *) os_createStandardCursor:(UICursorStandardShape) shape;
+- (void) os_destroyCursor:(void *) cursor;
+
 @end
 
 
 int  UIApplicationMain( int argc, char **argv, Class appClass, id delegate);
+
+// the singleton is placed into a global variable for easier access during
+// events
+//UI_APPLICATION_EXTERN_GLOBAL
+extern UIApplication   *UIApp;
 

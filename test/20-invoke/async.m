@@ -8,7 +8,7 @@
 
 @implementation UIApplication ( Hacky)
 
-// fake some stuff that GLFW provides
+// fake some stuff that SDL provides
 + (void) os_initialize
 {
 }
@@ -19,7 +19,7 @@
 
 
 - (void) callMeWithInteger:(NSInteger) value
-                UTF8String:(char *) s
+                textUTF8String:(char *) s
 {
    printf( "%s %td\n", s, value);
    if( value == 1848)
