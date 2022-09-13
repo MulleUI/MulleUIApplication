@@ -33,7 +33,7 @@
 //   '--------------------------'--'
 //                               UIWindowStyleResizable
 
-enum UIWindowStyle
+typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
 {
 // All
    UIWindowStyleNop                = 0x40000000, // if all bits are 0, use this to avoid getting default values
@@ -68,21 +68,21 @@ enum UIWindowStyle
 
 
 static inline NSUInteger
-   UIWindowsStyleMaskByEnabling( NSUInteger styleMask, enum UIWindowStyle style)
+   UIWindowsStyleMaskByEnabling( NSUInteger styleMask, UIWindowStyle style)
 {
    return( styleMask | style);
 }
 
 
 static inline NSUInteger
-   UIWindowsStyleMaskByDisabling( NSUInteger styleMask, enum UIWindowStyle style)
+   UIWindowsStyleMaskByDisabling( NSUInteger styleMask, UIWindowStyle style)
 {
    return( styleMask & ~style);
 }
 
 
 static inline NSUInteger
-   UIWindowsStyleMaskBySetting( NSUInteger styleMask, enum UIWindowStyle style, int flag)
+   UIWindowsStyleMaskBySetting( NSUInteger styleMask, UIWindowStyle style, int flag)
 {
    if( flag)
       return( UIWindowsStyleMaskByEnabling( styleMask, style));
@@ -107,7 +107,7 @@ typedef NSUInteger   UIWindowStyleMask;
 - (void *) os_window;
 
 // obsolete ?
-- (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
+//- (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
 
 - (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now;
 
@@ -169,7 +169,7 @@ static inline struct CGRect
 }
 
 
-static inline struct CGBitmapSize
+static inline struct MulleIntegerSize
    UIOSWindowInfoGetFramebufferSize( struct UIOSWindowInfo *info)
 {
    return( CGWindowInfoGetFramebufferSize( info ? &info->base : NULL));
@@ -315,7 +315,7 @@ static inline mulle_relativetime_t
 - (CGRect) os_windowFrame;
 - (void) os_setWindowFrame:(CGRect) rect;
 
-- (struct CGBitmapSize) os_framebufferSize;
+- (struct MulleIntegerSize) os_framebufferSize;
 
 // https://www.glfw.org/docs/latest/group__context.html#ga6d4e0cdf151b5e579bd67f13202994ed
 - (void) os_setSwapInterval:(NSUInteger) value;
@@ -404,9 +404,12 @@ struct mulle_pointerarray;
                color:(CGColor) color;
 
 // this is used for making screenshots
-- (struct CGBitmap) readFramebufferBitmap:(struct CGBitmapRect) rect
-                    framebufferBitmapType:(enum CGFramebufferBitmapType) type
+- (struct CGBitmap) readFramebufferBitmap:(struct MulleIntegerRect) rect
+                    framebufferBitmapType:(CGFramebufferBitmapType) type
                                 allocator:(struct mulle_allocator *) allocator;
+
+- (void) barrier;
+                                
 @end
 
 

@@ -12,9 +12,10 @@ enum
    UIUnicodeEventIndex,      // Unicode char (interpreted Keyboard)
    UIMouseButtonEventIndex,  // Mouse click
    UIMouseMotionEventIndex,  // Mouse movemeent
-   UIMouseScrollEventIndex   // Mouse Scrollwheel
+   UIMouseScrollEventIndex,  // Mouse Scrollwheel
+   UIActionEventIndex        // Mouse Scrollwheel
 };
-#define N_UIEventIndexMax  (UIMouseScrollEventIndex + 1)
+#define N_UIEventIndexMax  (UIActionEventIndex + 1)
 
 
 static struct
@@ -287,7 +288,6 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 {
    deallocateEventWithIndex( self, UIKeyboardEventIndex);
 }
-
 
 
 - (instancetype) initWithLocationInWindow:(CGPoint) pos
@@ -563,7 +563,7 @@ static struct
 @implementation UIScreenEvent
 
 - (instancetype) initWithScreen:(id <UIScreen>) screen
-                screenEventType:(enum UIScreenEventType) screenEventType
+                screenEventType:(UIScreenEventType) screenEventType
 {
    self             = [self init];
    _screen          = [screen retain];
@@ -647,7 +647,7 @@ static struct
 
 @implementation UIWindowCloseEvent
 
-- (enum UIWindowEventType) windowEventType
+- (UIWindowEventType) windowEventType
 {
    return( UIWindowEventTypeClose);
 }
@@ -657,7 +657,7 @@ static struct
 
 @implementation UIWindowMoveEvent
 
-- (instancetype) initWithOrigin:(struct CGBitmapPoint) origin
+- (instancetype) initWithOrigin:(struct MulleIntegerPoint) origin
 {
    self = [self init];
    _origin = origin;
@@ -665,7 +665,7 @@ static struct
 }
 
 
-- (enum UIWindowEventType) windowEventType
+- (UIWindowEventType) windowEventType
 {
    return( UIWindowEventTypeMove);
 }
@@ -681,7 +681,7 @@ static struct
 
 @implementation UIWindowResizeEvent : UIWindowEvent
 
-- (instancetype) initWithSize:(struct CGBitmapSize) size
+- (instancetype) initWithSize:(struct MulleIntegerSize) size
 {
    self  = [self init];
    _size = size;
@@ -689,7 +689,7 @@ static struct
 }
 
 
-- (enum UIWindowEventType) windowEventType
+- (UIWindowEventType) windowEventType
 {
    return( UIWindowEventTypeResize);
 }
@@ -705,7 +705,7 @@ static struct
 
 @implementation UIWindowFramebufferResizeEvent
 
-- (enum UIWindowEventType) windowEventType
+- (UIWindowEventType) windowEventType
 {
    return( UIWindowEventTypeFramebufferResize);
 }
@@ -715,7 +715,7 @@ static struct
 
 @implementation UIWindowRefreshEvent
 
-- (enum UIWindowEventType) windowEventType
+- (UIWindowEventType) windowEventType
 {
    return( UIWindowEventTypeRefresh);
 }
@@ -743,5 +743,47 @@ static struct
 {
    return( MulleObjC_asprintf( "eventIdentifier=%td", _eventIdentifier));
 }
+
+@end
+
+
+@implementation UIActionEvent 
+
++ (id) alloc
+{
+   return( allocateEventWithIndex( self, UIActionEventIndex));
+}
+
+
+- (void) dealloc
+{
+   deallocateEventWithIndex( self, UIActionEventIndex);
+}
+
+
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                                   action:(SEL) action
+                                   sender:(id) sender;
+{
+   self = [self initWithLocationInWindow:pos
+                               modifiers:mods];
+   _action = action;
+   _sender = sender;
+   return( self);
+}
+
+
+- (UIEventType) eventType
+{
+   return( UIEventTypeAction);
+}
+
+
+- (char *) _payloadUTF8String
+{
+   return( MulleObjC_asprintf( "sel=%s obj=%@", MulleObjCSelectorGetNameUTF8String( _action), _sender));
+}
+
 
 @end

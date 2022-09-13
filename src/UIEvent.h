@@ -6,20 +6,22 @@
 // bits suitable for bitmasking
 // need a way to extend this
 //
-enum UIEventType
+typedef NS_OPTIONS( NSUInteger, UIEventType)
 {                              // leave 0 to nil
    UIEventTypePresses = 0x01,  // Keyboard
    UIEventTypeUnicode = 0x02,  // Unicode char (interpreted Keyboard)
    UIEventTypeTouches = 0x04,  // Mouse click
-   UIEventTypeMotion  = 0x08,  // Mouse movemeent
+   UIEventTypeMotion  = 0x08,  // Mouse movement
    UIEventTypeScroll  = 0x10,  // Mouse Scrollwheel
    UIEventTypeWindow  = 0x20,  // Window event (close, resize, move etc)
    UIEventTypeScreen  = 0x40,  // Screen event
-   UIEventTypeUser    = 0x80,   // User event
-   _UIEventTypeTimer  = 0x100  // (This is not a real UIEvent)
+   UIEventTypeUser    = 0x80,  // User event
+   UIEventTypeAction  = 0x100, // Action event (e.g. menu event)
+   _UIEventTypeTimer  = 0x200  // (This is not a real UIEvent)
 };
 
-static inline char   *UIEventTypeUTF8String( enum UIEventType type)
+
+static inline char   *UIEventTypeUTF8String( UIEventType type)
 {
    switch( type)
    {
@@ -31,13 +33,14 @@ static inline char   *UIEventTypeUTF8String( enum UIEventType type)
    case UIEventTypeWindow  : return( "UIEventTypeWindow");
    case UIEventTypeScreen  : return( "UIEventTypeScreen");
    case UIEventTypeUser    : return( "UIEventTypeUser");
+   case UIEventTypeAction  : return( "UIEventTypeAction");
    case _UIEventTypeTimer  : return( "_UIEventTypeTimer");
+   default                 : return( "???");
    }
    assert( 0);
 }
 
 
-typedef NSUInteger   UIEventType;
 //
 // As we are using glfw, the main object queue is in the main thread
 // we retrieve objects from a central growing array of possibly used
@@ -71,6 +74,7 @@ typedef NSUInteger   UIEventType;
 - (BOOL) isInputEvent;
 
 @end
+
 
 //
 // Only UIInputEvent events are distributed to UIViews. Might rename
@@ -107,6 +111,19 @@ typedef NSUInteger   UIEventType;
 @property( assign, readonly) NSUInteger   eventIdentifier;
 
 - (instancetype) initWithEventIdentifier:(NSUInteger) identifier;
+
+@end
+
+
+@interface UIActionEvent : UIInputEvent
+
+@property( assign, readonly) SEL   action;
+@property( assign, readonly) id    sender;
+
+- (instancetype) initWithLocationInWindow:(CGPoint) pos
+                                modifiers:(NSUInteger) mods
+                                   action:(SEL) action
+                                   sender:(id) sender;
 
 @end
 
@@ -183,7 +200,7 @@ typedef NSUInteger   UIEventType;
 @end
 
 
-enum UIScreenEventType
+typedef NS_ENUM( NSUInteger, UIScreenEventType)
 {
    UIScreenEventTypeConnected    = 0x01,
    UIScreenEventTypeDisconnected = 0x02
@@ -192,7 +209,7 @@ enum UIScreenEventType
 
 // static inline, because presumably its only used during debugging
 // and when linking this would be force-all linked
-static inline char   *UIScreenEventTypeUTF8String( enum UIScreenEventType type)
+static inline char   *UIScreenEventTypeUTF8String( UIScreenEventType type)
 {
    switch( type)
    {
@@ -206,16 +223,16 @@ static inline char   *UIScreenEventTypeUTF8String( enum UIScreenEventType type)
 // a monitor event bears no data
 @interface UIScreenEvent : UIEvent
 
-@property( assign, readonly) enum UIScreenEventType  screenEventType;
-@property( assign, readonly) id <UIScreen>           screen;
+@property( assign, readonly) UIScreenEventType  screenEventType;
+@property( assign, readonly) id <UIScreen>      screen;
 
 - (instancetype) initWithScreen:(id <UIScreen>) screen
-                screenEventType:(enum UIScreenEventType) eventType;
+                screenEventType:(UIScreenEventType) eventType;
 
 @end
 
 
-enum UIWindowEventType
+typedef NS_OPTIONS( NSUInteger, UIWindowEventType)
 {
    UIWindowEventTypeClose             = 0x01,
    UIWindowEventTypeRefresh           = 0x02,
@@ -227,7 +244,7 @@ enum UIWindowEventType
 
 // static inline, because presumably its only used during debugging
 // and when linking this would be force-all linked
-static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
+static inline char   *UIWindowEventTypeUTF8String( UIWindowEventType type)
 {
    switch( type)
    {
@@ -236,6 +253,7 @@ static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
    case UIWindowEventTypeResize            : return( "UIWindowEventTypeResize");
    case UIWindowEventTypeMove              : return( "UIWindowEventTypeMove");
    case UIWindowEventTypeFramebufferResize : return( "UIWindowEventTypeFramebufferResize");
+   default                                 : return( "???");
    }
    assert( 0);
 }
@@ -247,16 +265,16 @@ static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
 
 @interface UIWindowEvent( Subclasses)
 
-- (enum UIWindowEventType) windowEventType;
+- (UIWindowEventType) windowEventType;
 
 @end
 
 
 @interface UIWindowMoveEvent : UIWindowEvent
 
-- (instancetype) initWithOrigin:(struct CGBitmapPoint) pos;
+- (instancetype) initWithOrigin:(struct MulleIntegerPoint) pos;
 
-@property( assign, readonly) struct CGBitmapPoint   origin;
+@property( assign, readonly) struct MulleIntegerPoint   origin;
 
 @end
 
@@ -271,9 +289,9 @@ static inline char   *UIWindowEventTypeUTF8String( enum UIWindowEventType type)
 
 @interface UIWindowResizeEvent : UIWindowEvent
 
-- (instancetype) initWithSize:(struct CGBitmapSize) size;
+- (instancetype) initWithSize:(struct MulleIntegerSize) size;
 
-@property( assign, readonly) struct CGBitmapSize   size;
+@property( assign, readonly) struct MulleIntegerSize   size;
 
 @end
 

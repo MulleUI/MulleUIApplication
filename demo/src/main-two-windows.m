@@ -117,7 +117,7 @@ static void   setupSceneInWindow( UIWindow *window)
    frame = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 10, 10, 10, 10));
 
    view  = [UIView viewWithFrame:frame];
-   [view setBackgroundColor:CGColorMakeRGBA( 0.0, 0.0, 0.0, 1.0)];
+   [view setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 0.0, 1.0)];
    [(CALayer *) [view layer] setDrawCallback:(CALayerDrawCallback_t *) drawStuff];
    [contentPlane addSubview:view];
 }
@@ -187,7 +187,7 @@ int   main( int argc, char *argv[])
             break;
          }
 
-         [window[ i] setBackgroundColor:CGColorMakeRGBA( 1.0 / N_WINDOWS, 
+         [window[ i] setBackgroundColor:CGColorMakeWithRGBA( 1.0 / N_WINDOWS, 
                                                          1.0 - 1.0 / N_WINDOWS, 
                                                          0.0, 
                                                          1.0)];
