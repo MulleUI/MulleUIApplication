@@ -55,7 +55,7 @@ int   main( int argc, char *argv[])
                                   styleMask:styleMask];
 
       [window setFrameRate:UIWindowFrameRateAsync];
-      [window setBackgroundColor:CGColorMakeRGBA( 0.0, 0.0, 1.0, 1.0)];
+      [window setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 1.0, 1.0)];
       [app addWindow:window];
 
       logger = [EventLogger object];

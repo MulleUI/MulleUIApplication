@@ -556,7 +556,6 @@ UIApplication   *UIApp;
 //
 - (UICursor *) cursorWithStandardShape:(UICursorStandardShape) shape
 {
-   assert( [NSThread mulleIsMainThread]);
    assert( shape < n_UICursorStandardShapes);
 
    return( _standardCursors[ shape]);

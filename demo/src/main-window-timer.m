@@ -5,7 +5,7 @@
 
 - (void) setWhiteBackgroundColor:(id) sender 
 {
-   [self setBackgroundColor:CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)];
+   [self setBackgroundColor:CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)];
    [self setNeedsDisplay]; 
 }
 
@@ -36,7 +36,7 @@ int   main( int argc, char *argv[])
                                   styleMask:styleMask];
 
       [window setFrameRate:UIWindowFrameRateAsync];
-      [window setBackgroundColor:CGColorMakeRGBA( 1.0, 0.75, 0.0, 1.0)];
+      [window setBackgroundColor:CGColorMakeWithRGBA( 1.0, 0.75, 0.0, 1.0)];
       [app addWindow:window];
 
       timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:0.5
