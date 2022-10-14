@@ -99,6 +99,10 @@ UIApplication   *UIApp;
 // don't call these yourself
 - (void) loadStandardCursors;
 - (void) removeStandardCursors;
+- (void) removeAllTimers;
+- (void) removeAllWindows;
+- (void) removeAllInvocations;
+
 @end 
 
 
@@ -143,12 +147,13 @@ UIApplication   *UIApp;
 
    _bouncerSignature = [[self methodSignatureForSelector:@selector( _synchronousInvoke:conditionLock:)] retain];
 
-   [self os_init];
+   if( [self respondsToSelector:@selector( os_init)])
+      [self os_init];
+
+   [self loadStandardCursors];
 
    if( ! UIApp)
       UIApp = self;
-
-   [self loadStandardCursors];
 
    return( self);
 }
@@ -156,10 +161,24 @@ UIApplication   *UIApp;
 
 - (void) finalize
 {
-   [self os_finalize];
+   Class   cls;
+
+   [self removeAllInvocations];
+   [self removeAllTimers];
+   [self removeAllWindows];
+
+   if( [self respondsToSelector:@selector( os_finalize)])
+      [self os_finalize];
+
+   [self removeStandardCursors];
+
+   cls = [self class];
+   if( [cls respondsToSelector:@selector( os_deinitialize)])
+      [cls os_deinitialize];
 
    if( UIApp == self)
       UIApp = nil;
+
    [super finalize];
 }
 
@@ -183,6 +202,21 @@ UIApplication   *UIApp;
    [super dealloc];
 }
 
+
+// assume all windows thread are quiescent now... else why call terminate :)
+
+- (int) terminate
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   [self mullePerformFinalize];
+   
+   return( _returnStatus);
+}
+
+/*
+ *
+ */
 
 - (void) _synchronousInvoke:(NSInvocation *) invocation
               conditionLock:(NSConditionLock *) lock
@@ -220,7 +254,7 @@ UIApplication   *UIApp;
 
    // we lock the condition lock and as long as its locked with condition
    // 0, the invocation is running... Need a new lock for every caller..
-
+   // TODO: pool them
    lock = [[NSConditionLock alloc] initWithCondition:0];
    {
       // so we create a second invocation that will wrap the first one
@@ -277,6 +311,37 @@ UIApplication   *UIApp;
       }
    }
 }
+
+
+- (void) runInvocations
+{
+   NSInvocation   *invocation;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   // maybe name "extract"
+   while( (invocation = _mulle_pointermultififo_read_barrier( &_invocationList)))
+   {
+      [invocation autorelease];
+      [invocation invoke];
+   }
+}
+
+
+- (void) removeAllInvocations
+{
+   NSInvocation   *invocation;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   // maybe name "extract"
+   while( (invocation = _mulle_pointermultififo_read_barrier( &_invocationList)))
+   {
+      [invocation autorelease];
+   }
+}
+
+
 
 /*
  * UIScreen
@@ -502,6 +567,18 @@ UIApplication   *UIApp;
    [window applicationDidRemoveWindow];
 }
 
+- (void) removeAllWindows
+{
+   id <UIWindow>   window;
+
+   mulle_array_for( &_windows, window)
+   {
+      [window mullePerformFinalize];
+   }
+
+   mulle_array_reset( &_windows);
+}
+
 
 - (void) _closeWindows
 {
@@ -568,10 +645,14 @@ UIApplication   *UIApp;
 
    assert( [NSThread mulleIsMainThread]);
 
+   // convenient for tests
+   if( ! [self respondsToSelector:@selector( os_createStandardCursor)])
+      return;
+
    for( shape = 1; shape < n_UICursorStandardShapes; shape++)
    {
       assert( ! _standardCursors[ shape]);
-      _standardCursors[ shape] =  [self os_createStandardCursor:shape];
+      _standardCursors[ shape] = [self os_createStandardCursor:shape];
    }
 }
 
@@ -584,7 +665,8 @@ UIApplication   *UIApp;
 
    for( shape = 1; shape < n_UICursorStandardShapes; shape++)
    {
-      [self os_destroyCursor:_standardCursors[ shape]];
+      if( _standardCursors[ shape]) // can happen in tests
+         [self os_destroyCursor:_standardCursors[ shape]];
       _standardCursors[ shape] = NULL;
    }
 }
@@ -594,42 +676,13 @@ UIApplication   *UIApp;
 //
 //
 
-// assume all windows thread are quiescent now... else why call terminate :)
-- (int) terminate
-{
-   struct mulle_arrayenumerator   rover;
-   id <UIWindow>                  window;
-
-   [self removeAllTimers];
-
-   // ensure all windows are not calling glfw/opengl anymore
-   rover = mulle_array_enumerate( &_windows);
-   while( _mulle_arrayenumerator_next( &rover, (void **) &window))
-      [window mullePerformFinalize];
-   mulle_arrayenumerator_done( &rover);
-
-   mulle_array_reset( &_windows);
-
-   [self removeStandardCursors];
-
-   // this shuts down glfw, it doesn't exit
-   [[self class] os_terminate];
-   return( _returnValue);
-}
-
-
-- (void) runInvocations
+- (void) requestTerminate
 {
    NSInvocation   *invocation;
 
-   assert( [NSThread mulleIsMainThread]);
-
-   // maybe name "extract"
-   while( (invocation = _mulle_pointermultififo_read_barrier( &_invocationList)))
-   {
-      [invocation autorelease];
-      [invocation invoke];
-   }
+   invocation = [NSInvocation mulleInvocationWithTarget:self
+                                               selector:@selector( terminate)];
+   [self invokeOnMainThread:invocation];
 }
 
 
@@ -681,10 +734,9 @@ UIApplication   *UIApp;
 - (void) removeTimer:(NSTimer *) timer
     forTimerReceiver:(id <UITimerReceiver>) receiver
 {
-   struct mulle_structarrayenumerator   rover;
-   struct UIApplicationTimer            *appTimer;
-   struct mulle_structarray             tmp;
-   NSUInteger                           n;
+   struct UIApplicationTimer   *appTimer;
+   struct mulle_structarray    tmp;
+   NSUInteger                  n;
 
    [_timersLock lock];
    {
@@ -692,7 +744,7 @@ UIApplication   *UIApp;
       if( n)
       {
          // old array in tmp, wipe _timers.
-         tmp         = _timers;
+         tmp = _timers;
          mulle_structarray_init( &_timers,
                                  sizeof( struct UIApplicationTimer),
                                  alignof( struct UIApplicationTimer),
@@ -701,18 +753,16 @@ UIApplication   *UIApp;
          _timerHoles = 0;
 
          // move stuff over to _timers, that's not "timer"
-         rover = mulle_structarray_enumerate( &tmp);
-         while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+         mulle_structarray_for( &tmp, appTimer)
          {
             if( (! timer || appTimer->timer == timer) &&
                 (! receiver || appTimer->receiver == receiver))
             {
-               [timer autorelease];
+               [appTimer->timer  autorelease];
                continue;
             }
             mulle_structarray_add( &_timers, appTimer);
          }
-         mulle_structarrayenumerator_done( &rover);
 
          // now remove tmp
          mulle_structarray_done( &tmp);
@@ -803,7 +853,6 @@ UIApplication   *UIApp;
 - (mulle_relativetime_t) fireTimersIfNeeded:(mulle_absolutetime_t) now
 {
    struct UIApplicationTimer            *appTimer;
-   struct mulle_structarrayenumerator   rover;
    struct mulle_structarray             fireTimers;
    NSUInteger                           n;
    mulle_absolutetime_t                 then;
@@ -827,8 +876,7 @@ UIApplication   *UIApp;
       // collect all the timers in another array, then fire them
 
       min   = INFINITY;
-      rover = mulle_structarray_enumerate( &_timers);
-      while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+      mulle_structarray_for( &_timers, appTimer)
       {
          timer = appTimer->timer;
          then  = appTimer->timestamp;
@@ -869,7 +917,6 @@ UIApplication   *UIApp;
          appTimer->timestamp = INFINITY;
          _timerHoles++;
       }
-      mulle_structarrayenumerator_done( &rover);
    }
    [_timersLock unlock];
 
@@ -877,8 +924,7 @@ UIApplication   *UIApp;
    // fire all the timers that were accumulated, very often this will
    // be none...
    //
-   rover = mulle_structarray_enumerate( &fireTimers);
-   while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+   mulle_structarray_for( &fireTimers, appTimer)
    {
 #if defined( RUN_DEBUG)
        MulleUILog( "Fire Timer %@",timer);
@@ -889,7 +935,6 @@ UIApplication   *UIApp;
       min = 0;  // event may have caused changes (like an event)
                 // event processing should not wait
    }
-   mulle_structarrayenumerator_done( &rover);
 
    mulle_structarray_done( &fireTimers);
 
@@ -906,17 +951,16 @@ UIApplication   *UIApp;
 // intervals, will be done with NSTimers, that sort of act like a window.
 // We also put them into the loop, query them for when they want to run.
 //
-- (void) runWindows
+- (void) runLoop
 {
-   struct mulle_arrayenumerator   rover;
-   id <UIWindow>                  window;
-   BOOL                           closeWindows;
-   mulle_absolutetime_t           now;
-   mulle_absolutetime_t           previous;
-   mulle_relativetime_t           timeout;
-   mulle_relativetime_t           callAgainInSeconds;
-   mulle_relativetime_t           nextWindowDisplayCallInSeconds;
-   mulle_relativetime_t           nextTimerFireCallInSeconds;
+   id <UIWindow>          window;
+   BOOL                   closeWindows;
+   mulle_absolutetime_t   now;
+   mulle_absolutetime_t   previous;
+   mulle_relativetime_t   timeout;
+   mulle_relativetime_t   callAgainInSeconds;
+   mulle_relativetime_t   nextWindowDisplayCallInSeconds;
+   mulle_relativetime_t   nextTimerFireCallInSeconds;
 
    assert( _state == Idle || _state == Finished);
    assert( [NSThread mulleIsMainThread]);
@@ -934,8 +978,7 @@ UIApplication   *UIApp;
 #endif
             closeWindows = NO;
 
-            rover = mulle_array_enumerate( &_windows);
-            while( _mulle_arrayenumerator_next( &rover, (void **) &window))
+            mulle_array_for( &_windows, window)
             {
                if( [window shouldClose])
                {
@@ -943,7 +986,6 @@ UIApplication   *UIApp;
                   break;
                }
             }
-            mulle_arrayenumerator_done( &rover);
          }
 
          // closing is relatively rare and a bit more expensive
@@ -971,8 +1013,7 @@ UIApplication   *UIApp;
 #ifdef RUN_DEBUG
             MulleUILog( "-> DrawAndSwap");
 #endif
-            rover = mulle_array_enumerate( &_windows);
-            while( _mulle_arrayenumerator_next( &rover, (void **) &window))
+            mulle_array_for( &_windows, window)
             {
 #ifdef RUN_DEBUG
                MulleUILog( "calls %#@ to refresh", window);
@@ -990,7 +1031,6 @@ UIApplication   *UIApp;
                // by the drawing time spent
                   nextWindowDisplayCallInSeconds -= now - previous;
             }
-            mulle_arrayenumerator_done( &rover);
          }
 
          _state = InvokeMethods;
@@ -1014,8 +1054,7 @@ UIApplication   *UIApp;
 #ifdef RUN_DEBUG
             MulleUILog( "-> WindowPropertyChanges");
 #endif
-            rover = mulle_array_enumerate( &_windows);
-            while( _mulle_arrayenumerator_next( &rover, (void **) &window))
+            mulle_array_for( &_windows, window)
             {
 #ifdef RUN_DEBUG
                MulleUILog( "calls %#@ to push property changes", window);
@@ -1023,7 +1062,6 @@ UIApplication   *UIApp;
                // TODO: pass App as parameter
                [window writeOSWindowPropertyChangesIfNeeded];
             }
-            mulle_arrayenumerator_done( &rover);
          }
 
          _state = PollEvents;
@@ -1053,7 +1091,7 @@ UIApplication   *UIApp;
 //               // just process events ASAP for each window,
 //               // these are the unretained windows though, which don't have
 //               // their own thread
-//               [window handleEventQueue];
+//               [window executeEventQueue];
 //            }
 //            mulle_arrayenumerator_done( &rover);
 //         }
@@ -1066,7 +1104,16 @@ UIApplication   *UIApp;
 
 - (int) run
 {
-   [self runWindows];
+   [self runLoop];
+   return( [self terminate]);
+}
+
+
+- (int) runWindow:(id <UIWindow>) window
+{
+   [self addWindow:window];
+   // keep stack frame a bit smaller by not calling run
+   [self runLoop];
    return( [self terminate]);
 }
 

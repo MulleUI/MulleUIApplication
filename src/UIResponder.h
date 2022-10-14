@@ -11,13 +11,12 @@
 
 PROTOCOLCLASS_INTERFACE0( UIResponder)
 
-- (BOOL) becomeModalResponder;
-- (BOOL) resignModalResponder;
-- (BOOL) isModalResponder;
 
 - (BOOL) becomeFirstResponder;
 - (BOOL) resignFirstResponder;
 - (BOOL) isFirstResponder;
+
+- (BOOL) isFirstResponderEvent:(UIEvent *) event; // default NO
 
 - (UIEvent *) handleEvent:(UIEvent *) event;
 
@@ -26,9 +25,6 @@ PROTOCOLCLASS_INTERFACE0( UIResponder)
 - (id<UIResponder>) nextResponder;
 - (BOOL) canBecomeFirstResponder;
 - (BOOL) canResignFirstResponder;
-
-- (BOOL) canBecomeModalResponder;
-- (BOOL) canResignModalResponder;
 
 - (BOOL) isUserInteractionEnabled;  // default YES
 

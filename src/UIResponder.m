@@ -12,24 +12,25 @@ PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
    return( nil);
 }
 
+
 - (BOOL) canBecomeFirstResponder
 {
    return( NO);
 }
+
 
 - (BOOL) canResignFirstResponder
 {
    return( YES);
 }
 
-- (BOOL) canBecomeModalResponder
-{
-   return( NO);
-}
 
-- (BOOL) canResignModalResponder
+//
+// the default is permissive, allowing mouse motion events
+// 
+- (BOOL) isFirstResponderEvent:(UIEvent *) event
 {
-   return( YES);
+   return( [event isInputEvent]);
 }
 
 
@@ -149,9 +150,7 @@ static UIInputEvent   *performSelectorIfResponding( UIResponder *self,
    // scrollWheel: taken from AppKit
    // https://developer.apple.com/documentation/appkit/nsscrollview/1403494-scrollwheel?language=objc
    //
-   event = performSelectorIfResponding( self, @selector( scrollWheel:), event);
-
-   return( event);
+   return( performSelectorIfResponding( self, @selector( scrollWheel:), event));
 }
 
 

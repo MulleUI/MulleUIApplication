@@ -76,6 +76,44 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 @end
 
 
+// TODO: 
+struct UIInputState
+{
+   CGPoint     locationInWindow;      // locationInWindow
+   NSUInteger  buttonStates;
+   NSUInteger  keyModifiers;
+};
+
+
+static inline struct UIInputState  UIInputStateMake( CGPoint locationInWindow,
+                                                     NSUInteger buttonStates,
+                                                     NSUInteger keyModifiers)
+{
+   return( (struct UIInputState) {
+      .locationInWindow  = locationInWindow,
+      .buttonStates      = buttonStates,
+      .keyModifiers      = keyModifiers 
+      });
+}         
+
+
+static inline void  UIInputStateInit( struct UIInputState *p,
+                                      CGPoint locationInWindow,
+                                      NSUInteger buttonStates,
+                                      NSUInteger keyModifiers)
+{
+   if( ! p)
+      return;
+
+   p->locationInWindow  = locationInWindow;
+   p->buttonStates      = buttonStates;
+   p->keyModifiers      = keyModifiers;
+}         
+
+static inline void  UIInputStateDone( struct UIInputState *p)
+{
+}
+
 //
 // Only UIInputEvent events are distributed to UIViews. Might rename
 // to something else, UIViewEvent maybe ?
@@ -86,18 +124,24 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 //                      mouse pointer available, then what ?
 @interface UIInputEvent : UIEvent
 {
-   CGPoint   _location;     // translated locationInWindow for locationView
+   struct UIInputState   _inputState;
+
+   CGPoint   _location;
    id        _locationView; // NOT READONLY!!
 }
 
-@property( assign, readonly) CGPoint     locationInWindow;
+@property( assign, readonly) struct UIInputState   inputState;
+@property( assign, readonly) CGPoint               location;
 
+// access inputState;
+@property( dynamic, assign, readonly) CGPoint      locationInWindow;
 // this is known state of modifier keys
-@property( assign, readonly) NSUInteger  modifiers;
+@property( dynamic, assign, readonly) NSUInteger   keyModifiers;
+@property( dynamic, assign, readonly) NSUInteger   buttonStates;
 
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods;
+- (instancetype) initWithInputState:(struct UIInputState *) state;
+
 @end
 
 
@@ -106,24 +150,14 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
  * Subclasses
  */
 
-@interface UIUserEvent : UIEvent
-
-@property( assign, readonly) NSUInteger   eventIdentifier;
-
-- (instancetype) initWithEventIdentifier:(NSUInteger) identifier;
-
-@end
-
-
 @interface UIActionEvent : UIInputEvent
 
 @property( assign, readonly) SEL   action;
 @property( assign, readonly) id    sender;
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                                   action:(SEL) action
-                                   sender:(id) sender;
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                             action:(SEL) action
+                             sender:(id) sender;
 
 @end
 
@@ -134,11 +168,10 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 @property( assign, readonly) NSUInteger   scanCode;
 @property( assign, readonly) NSUInteger   action;
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                                      key:(NSUInteger) key
-                                 scanCode:(NSUInteger) scanCode
-                                   action:(NSUInteger) action;
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                                key:(NSUInteger) key
+                           scanCode:(NSUInteger) scanCode
+                             action:(NSUInteger) action;
 @end
 
 
@@ -147,9 +180,8 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 
 @property( assign, readonly) NSUInteger   character;
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                                character:(NSUInteger) key;
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                          character:(NSUInteger) key;
 
 @end
 
@@ -159,36 +191,29 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 @property( assign, readonly) NSUInteger   button;
 @property( assign, readonly) NSUInteger   action;
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                                   button:(NSUInteger) button
-                                   action:(NSUInteger) action;
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                             button:(NSUInteger) button
+                             action:(NSUInteger) action;
 
 @end
 
 
 @interface UIMouseMotionEvent : UIInputEvent
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                             buttonStates:(NSUInteger) buttonStates;
-
-@property( assign, readonly) NSUInteger   buttonStates;
-
 @end
 
 
 @interface UIMouseScrollEvent : UIInputEvent
-
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                             scrollOffset:(CGPoint) offset;
 
 @property( assign, readonly) CGPoint   scrollOffset;
 
 // MEMO: GLFWOSWindow already has scrollWheelSensitivity!!
 + (CGFloat) scrollWheelAcceleration;
 + (void) setScrollWheelAcceleration:(CGFloat) value;
+
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                       scrollOffset:(CGPoint) offset;
+
 
 // useModifiers: YES
 //    alt swaps axis
@@ -198,6 +223,19 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
                             useModifiers:(BOOL) useModifiers;
 
 @end
+
+/*
+ * Other non-input events
+ */
+
+@interface UIUserEvent : UIEvent
+
+@property( assign, readonly) NSUInteger   eventIdentifier;
+
+- (instancetype) initWithEventIdentifier:(NSUInteger) identifier;
+
+@end
+
 
 
 typedef NS_ENUM( NSUInteger, UIScreenEventType)
@@ -323,7 +361,7 @@ static inline char   *UIWindowEventTypeUTF8String( UIWindowEventType type)
 // #define GLFW_MOUSE_BUTTON_RIGHT     GLFW_MOUSE_BUTTON_2
 // #define GLFW_MOUSE_BUTTON_MIDDLE    GLFW_MOUSE_BUTTON_3
 
-enum
+typedef NS_ENUM( NSUInteger, UIEventMouseButton)
 {
    UIEventMouseButtonLeft   = 0,
    UIEventMouseButtonRight  = 1,
@@ -361,7 +399,7 @@ static inline char   *UIEventMouseButtonUTF8String( NSUInteger button)
 
 
 // used for mouse button and keyboard buttons
-enum
+typedef NS_ENUM( NSUInteger, UIEventButtonAction)
 {
    UIEventButtonActionUp     = 0,
    UIEventButtonActionDown   = 1,
@@ -397,7 +435,9 @@ static inline char   *UIEventButtonActionUTF8String( NSUInteger action)
 // #define GLFW_MOD_CAPS_LOCK       0x0010
 // #define GLFW_MOD_NUM_LOCK        0x0020
 
-enum
+
+// TODO: rename to compatible keys
+typedef NS_OPTIONS( NSUInteger, UIEventKeyModifier)
 {
    UIEventKeyModifierShift    = 0x0001,
    UIEventKeyModifierControl  = 0x0002,
@@ -562,7 +602,7 @@ static inline char   *UIEventKeyModifierUTF8String( NSUInteger modifier)
 //
 // #define GLFW_KEY_LAST               GLFW_KEY_MENU
 //
-enum
+typedef NS_ENUM( NSUInteger, UIEventKey)
 {
 /* Printable keys */
    UIEventKeySpace          = 32,

@@ -66,6 +66,24 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
 };
 
 
+extern NS_OPTIONS_TABLE( UIWindowStyle, 16);
+
+static inline char  *UIWindowStyleUTF8String( UIWindowStyle style)
+{
+   return( NS_OPTIONS_PRINT( UIWindowStyle, style));
+}
+
+
+static inline UIWindowStyle   UIWindowStyleParseUTF8String( char *s)
+{
+   return( NS_OPTIONS_PARSE( UIWindowStyle, s));
+}
+
+
+// UIWindowStyleSingleBuffer is no longer fully supported, since glfw/wayland
+// does not support it anymore. "persistent" double buffering is also
+// not supported by glfw/wayland. 
+
 
 static inline NSUInteger
    UIWindowsStyleMaskByEnabling( NSUInteger styleMask, UIWindowStyle style)
@@ -126,6 +144,7 @@ typedef NSUInteger   UIWindowStyleMask;
 - (void) applicationDidAddWindow;
 - (void) applicationDidRemoveWindow;
 
+
 @end
 
 
@@ -140,7 +159,7 @@ typedef NSUInteger   UIHexColor;
 @protocol UIEventReceiver <NSObject>
 
 - (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event;
-- (void) handleRetainedEvent:(UIEvent *) NS_CONSUMED event;
+- (void) receiveRetainedEvent:(UIEvent *) NS_CONSUMED event;
 
 @end
 
@@ -347,7 +366,7 @@ static inline mulle_relativetime_t
 
 
 struct mulle_pointerarray;
-
+struct CGPath;
 
 @protocol UIGraphicsContext <NSObject>
 
@@ -356,10 +375,10 @@ struct mulle_pointerarray;
 @property( assign) id                            OSWindow;
 @property( assign, readonly) UIGraphicsBackend   backend;
 
-- (instancetype) initWithEdgeAntialiasing:(BOOL) edgeAntialiasing
-                        useStencilStrokes:(BOOL) stencilStrokes
-                                  shareID:(NSUInteger) shareID
-                                  backend:(UIGraphicsBackend) backend;
+- (instancetype) initWithBackend:(UIGraphicsBackend) backend
+                         shareID:(NSUInteger) shareID
+                         options:(UIGraphicsOptions) options;
+                                 
 - (char *) backendUTF8String;
 
 - (void) setActive:(BOOL) yes;
@@ -384,12 +403,27 @@ struct mulle_pointerarray;
 - (id) shareImage:(id) framebufferImage
       withContext:(id <UIGraphicsContext>) context;
 
-// used by UIWindow to blit...
-- (void) drawRect:(CGRect) rect
-            image:(id) image
-            scale:(BOOL) scale;
+// this is used for making screenshots
+- (struct CGBitmap) readFramebufferBitmap:(struct MulleIntegerRect) rect
+                    framebufferBitmapType:(CGFramebufferBitmapType) type
+                                allocator:(struct mulle_allocator *) allocator;
 
-// used by UIWindow to debug...
+- (void) barrier;
+
+// first frame is 0
+- (NSUInteger) numberOfFrames;
+
+// screenshot, bitmap is a copy
+- (struct CGBitmap) framebufferBitmap;
+
+// some very basic drawing commands
+
+- (void) setCompositionMode:(UIGraphicsCompositionMode) mode;
+
+// only useable until the offscreen renderer hits again (?=)
+- (void) drawBitmap:(struct CGBitmap) fb;
+
+// some very simple draw commands for debugging
 - (void) fillRect:(CGRect) rect
             color:(CGColor) color;
 
@@ -397,19 +431,42 @@ struct mulle_pointerarray;
               color:(CGColor) color
               width:(CGFloat) width;
 
+// used by UIWindow to blit...
+- (void) drawRect:(CGRect) rect
+            image:(id) image
+            scale:(BOOL) scale;
+
+- (void) fillCircleAtPoint:(CGPoint) point
+                    radius:(CGFloat) radius
+                      color:(CGColor) color;
+
+- (void) strokeCircleAtPoint:(CGPoint) point
+                      radius:(CGFloat) radius
+                       width:(CGFloat) width
+                       color:(CGColor) color;
+
+- (void) fillPoint:(CGPoint) point 
+             width:(CGFloat) width
+             color:(CGColor) color;
+
+- (void) strokeLineFromPoint:(CGPoint) from 
+                     toPoint:(CGPoint) to
+                       width:(CGFloat) strokeWidth
+                       color:(CGColor) color;
+
+- (void) fillPath:(struct CGPath *) path 
+            color:(CGColor) color;
+
+- (void) strokePath:(struct CGPath *) path 
+              width:(CGFloat) strokeWidth
+              color:(CGColor) color;
+
 - (void) drawAtPoint:(CGPoint) position
       textUTF8String:(char *) s
-  fontNameUTF8String:(char *) fontNameUTF8String    // can be NULL for default
-            fontSize:(CGFloat) fontSize  // can be 0.0 for default
+  fontNameUTF8String:(char *) fontNameUTF8String
+            fontSize:(CGFloat) fontSize
                color:(CGColor) color;
 
-// this is used for making screenshots
-- (struct CGBitmap) readFramebufferBitmap:(struct MulleIntegerRect) rect
-                    framebufferBitmapType:(CGFramebufferBitmapType) type
-                                allocator:(struct mulle_allocator *) allocator;
-
-- (void) barrier;
-                                
 @end
 
 
