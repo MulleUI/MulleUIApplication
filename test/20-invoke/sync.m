@@ -1,22 +1,11 @@
 #define _GNU_SOURCE
 
-#import <MulleUIBase/MulleUIBase.h>
+#import <MulleUIApplication/MulleUIApplication.h>
 
 #include <time.h>
 
 
-
 @implementation UIApplication ( Hacky)
-
-// fake some stuff that SDL provides
-+ (void) os_initialize
-{
-}
-
-+ (void) os_terminate
-{
-}
-
 
 //
 // Check it out: we are returning an autoreleased char pointer here,
@@ -24,7 +13,7 @@
 // no leaks or crashes
 //
 - (char *) callMeWithInteger:(NSInteger) value
-                  textUTF8String:(char *) s
+              textUTF8String:(char *) s
 {
    char   *result;
 
@@ -55,12 +44,12 @@
 
    @autoreleasepool
    {
-      signature  = [self methodSignatureForSelector:@selector( callMeWithInteger:UTF8String:)];
+      signature  = [self methodSignatureForSelector:@selector( callMeWithInteger:textUTF8String:)];
       invocation = [NSInvocation invocationWithMethodSignature:signature];
 
       [invocation setTarget:self];
       // method signature could preset this really or ?
-      [invocation setSelector:@selector( callMeWithInteger:UTF8String:)];
+      [invocation setSelector:@selector( callMeWithInteger:textUTF8String:)];
       [invocation setArgument:&value
                       atIndex:2];
       [invocation setArgument:&s  // notice how the text is on the stack

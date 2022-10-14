@@ -29,7 +29,7 @@
 }
 
 @property( assign) id   delegate;      // unused so far
-@property( assign) int  returnValue;
+@property( assign) int  returnStatus;
 
 //
 // UIScreen:
@@ -64,6 +64,7 @@
 - (void) addWindow:(id <UIWindow>) window;
 // does not call [UIWindow terminate]
 - (void) removeWindow:(id<UIWindow>) window;
+
 
 - (NSUInteger) numberOfWindows;
 - (NSUInteger) getWindows:(id <UIWindow> *) buf
@@ -106,33 +107,47 @@
 
 
 //
-// These invocations are called during run and runWindows.
+// These invocations are called during run and runLoop.
 // This is the way to do window functionality which needs to run on the
 // main thread. This is async, so you don't get a return value.
 //
 - (void) invokeOnMainThread:(NSInvocation *) invocation;
 
+// this will actually block the calling thread, not recommended
 - (void) invokeOnMainThread:(NSInvocation *) invocation
               waitUntilDone:(BOOL) flag;
 
-// called during runWindows
+// called during runLoop
 - (void) runInvocations;
 
 
+// this will return and the app will terminate some time later, 
+// except if called on the mainThread
+- (void) requestTerminate;
 
 // call terminate on all windows and then remove all of them
+// must be called from mainThread
 - (int) terminate;
 
-// calls runWindows and then when all have closed, calls terminate
+// must be called from mainThread
+- (void) runLoop;
+
+// calls runLoop and then when all have closed, calls terminate
+// must be called from mainThread
 - (int) run;
-- (void) runWindows;
+
+
+// a shortcut for addWindow: and runLoop and terminate
+// must be called from mainThread
+- (int) runWindow:(id <UIWindow>) window;
+
 @end
 
 
 @interface UIApplication( OS)
 
 + (void) os_initialize;
-+ (void) os_terminate;
++ (void) os_deinitialize;
 
 - (void) os_init;
 - (void) os_finalize;
@@ -146,7 +161,10 @@
 int  UIApplicationMain( int argc, char **argv, Class appClass, id delegate);
 
 // the singleton is placed into a global variable for easier access during
-// events
+// events. [UIApplication sharedInstance] sets this variable and 
+// UIWindow initWithFrame:... is guaranteed to call 
+// [UIApplication sharedInstance]
+
 //UI_APPLICATION_EXTERN_GLOBAL
 extern UIApplication   *UIApp;
 

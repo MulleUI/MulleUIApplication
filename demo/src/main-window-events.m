@@ -18,12 +18,12 @@
    return( [_window handleWindowEvent:event]);
 }
 
-- (void) handleRetainedEvent:(UIEvent *) NS_CONSUMED event;
+- (void) receiveRetainedEvent:(UIEvent *) NS_CONSUMED event;
 {
    assert( _window);
 
    mulle_printf( "%@\n", [event class]);
-   [_window handleRetainedEvent:event];
+   [_window receiveRetainedEvent:event];
 }
 
 @end

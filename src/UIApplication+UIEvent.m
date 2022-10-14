@@ -19,7 +19,6 @@
 
 @implementation UIApplication ( UIEvent)
 
-
 - (UIWindowEvent *) handleScreenEvent:(UIScreenEvent *) event
 {
    switch( [event screenEventType])
@@ -27,8 +26,12 @@
    case UIScreenEventTypeConnected    : [self _addScreen:[event screen]]; break;
    case UIScreenEventTypeDisconnected : [self _removeScreen:[event screen]]; break;
    }
+
+   // TODO: shouldn't we propagate this to all windows ?
+   
    return( nil);
 }
+
 
 /*
  * Window events are special. They don't come in over the queue but are
@@ -51,16 +54,16 @@
    case UIWindowEventTypeResize            :
    case UIWindowEventTypeMove              :
    case UIWindowEventTypeRefresh           :
-      fprintf( stderr, "UIApplication discards event\n");
+      MulleUILog( "UIApplication discards event %#@", event);
       return( nil);
    }
 
-   fprintf( stderr, "UIApplication ignores event\n");
+   MulleUILog( "UIApplication ignores event %#@", event);
    return( event);
 }
 
 
-- (void) handleRetainedEvent:(UIWindowEvent *) event
+- (void) receiveRetainedEvent:(UIWindowEvent *) event
 {
 #if DEBUG
    MulleUILog( "release retained event");

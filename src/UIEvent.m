@@ -230,15 +230,13 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 
 @implementation UIInputEvent
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
+- (instancetype) initWithInputState:(struct UIInputState *) state
 {
    self =  [self init];
 
-   _locationInWindow  = pos;
-   _modifiers         = mods;
-   _location.x        = CGFLOAT_MIN; // not set
-   _locationView      = nil;
+   _inputState   = *state;
+   _location.x   = CGFLOAT_MIN; // not set
+   _locationView = nil;
    
    return( self);
 }
@@ -247,6 +245,24 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 - (BOOL) isInputEvent
 {
    return( YES);
+}
+
+
+- (CGPoint) locationInWindow
+{
+   return( _inputState.locationInWindow);
+}
+
+
+- (NSUInteger) keyModifiers
+{
+   return( _inputState.keyModifiers);
+}
+
+
+- (NSUInteger) buttonStates
+{
+   return( _inputState.buttonStates);
 }
 
 
@@ -267,8 +283,8 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
                   MulleObjCInstanceGetClassNameUTF8String( self),
                   self,
                   payload,
-                  _locationInWindow.x,
-                  _locationInWindow.y,
+                  _inputState.locationInWindow.x,
+                  _inputState.locationInWindow.y,
                   _timestamp);
    return( s);
 }
@@ -290,14 +306,12 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 }
 
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                                   key:(NSUInteger) key
-                              scanCode:(NSUInteger) scanCode
-                                action:(NSUInteger) action
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                                key:(NSUInteger) key
+                           scanCode:(NSUInteger) scanCode
+                             action:(NSUInteger) action
 {
-   self = [self initWithLocationInWindow:pos
-                               modifiers:mods];
+   self = [self initWithInputState:state];
 
    _key       = key;
    _scanCode  = scanCode;
@@ -324,13 +338,13 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
                      keyName,
                      _scanCode,
                      _action,
-                     _modifiers);
+                     _inputState.keyModifiers);
    else
       s = MulleObjC_asprintf( "key=%td scancode=%td action=%td modifiers=0x%tx",
                      _key,
                      _scanCode,
                      _action,
-                     _modifiers);
+                     _inputState.keyModifiers);
    return( s);
 }
 
@@ -352,12 +366,10 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 }
 
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                             modifiers:(NSUInteger) mods
-                             character:(NSUInteger) character
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                          character:(NSUInteger) character
 {
-   self = [self initWithLocationInWindow:pos
-                            modifiers:mods];
+   self = [self initWithInputState:state];
 
    _character = character;
 
@@ -397,22 +409,9 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 }
 
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                             buttonStates:(NSUInteger) buttonStates
-{
-   self = [self initWithLocationInWindow:pos
-                            modifiers:mods];
-
-   _buttonStates = buttonStates;
-
-   return( self);
-}
-
-
 - (char *) _payloadUTF8String
 {
-   return( MulleObjC_asprintf( "buttonStates=0x%tx", _buttonStates));
+   return( MulleObjC_asprintf( "buttonStates=0x%tx", _inputState.buttonStates));
 }
 
 @end
@@ -432,15 +431,14 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 }
 
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                                   button:(NSUInteger) button
-                                   action:(NSUInteger) action
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                             button:(NSUInteger) button
+                             action:(NSUInteger) action
 {
-   self = [self initWithLocationInWindow:pos
-                            modifiers:mods];
-   _button = button;
-   _action = action;
+   self = [self initWithInputState:state];
+
+   _button       = button;
+   _action       = action;
 
    return( self);
 }
@@ -485,12 +483,10 @@ static struct
 };
 
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                             scrollOffset:(CGPoint) scrollOffset
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                        scrollOffset:(CGPoint) scrollOffset
 {
-   self = [self initWithLocationInWindow:pos
-                               modifiers:mods];
+   self = [self initWithInputState:state];
    _scrollOffset = scrollOffset;
 
    return( self);
@@ -520,10 +516,10 @@ static struct
 {
    CGPoint   offset;
 
-   MulleUILog( "modifiers 0x%tx", _modifiers);
+   MulleUILog( "modifiers 0x%tx", _inputState.keyModifiers);
 
    offset = _scrollOffset;
-   if( useModifiers && (_modifiers & UIEventKeyModifierAlt))
+   if( useModifiers && (_inputState.keyModifiers & UIEventKeyModifierAlt))
    {
       offset.x = _scrollOffset.y;
       offset.y = _scrollOffset.x;
@@ -536,13 +532,13 @@ static struct
    }
 
    // TODO: could use shift for coarser and ctrl for finer scrolling
-   if( useModifiers && (_modifiers & UIEventKeyModifierShift))
+   if( useModifiers && (_inputState.keyModifiers & UIEventKeyModifierShift))
    {
       offset.x *= 4;
       offset.y *= 4;
    }
 
-   if( useModifiers && (_modifiers & UIEventKeyModifierControl))
+   if( useModifiers && (_inputState.keyModifiers & UIEventKeyModifierControl))
    {
       offset.x /= 4;
       offset.y /= 4;
@@ -761,13 +757,11 @@ static struct
 }
 
 
-- (instancetype) initWithLocationInWindow:(CGPoint) pos
-                                modifiers:(NSUInteger) mods
-                                   action:(SEL) action
-                                   sender:(id) sender;
+- (instancetype) initWithInputState:(struct UIInputState *) state
+                             action:(SEL) action
+                             sender:(id) sender
 {
-   self = [self initWithLocationInWindow:pos
-                               modifiers:mods];
+   self = [self initWithInputState:state];
    _action = action;
    _sender = sender;
    return( self);

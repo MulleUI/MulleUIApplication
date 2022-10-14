@@ -15,6 +15,7 @@ src/UIApplication+UIEvent.m
 src/UIApplication.m
 src/UIEvent.m
 src/UIResponder.m
+src/UIWindowTypes.m
 src/mulle-pointerarray+ObjC.m
 )
 

@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 
-#import <MulleUIBase/MulleUIBase.h>
+#import <MulleUIApplication/MulleUIApplication.h>
 
 #include <time.h>
 
@@ -8,18 +8,8 @@
 
 @implementation UIApplication ( Hacky)
 
-// fake some stuff that SDL provides
-+ (void) os_initialize
-{
-}
-
-+ (void) os_terminate
-{
-}
-
-
 - (void) callMeWithInteger:(NSInteger) value
-                textUTF8String:(char *) s
+            textUTF8String:(char *) s
 {
    printf( "%s %td\n", s, value);
    if( value == 1848)
@@ -45,12 +35,12 @@
 
    @autoreleasepool
    {
-      signature  = [self methodSignatureForSelector:@selector( callMeWithInteger:UTF8String:)];
+      signature  = [self methodSignatureForSelector:@selector( callMeWithInteger:textUTF8String:)];
       invocation = [NSInvocation invocationWithMethodSignature:signature];
 
       [invocation setTarget:self];
       // method signature could preset this really or ?
-      [invocation setSelector:@selector( callMeWithInteger:UTF8String:)];
+      [invocation setSelector:@selector( callMeWithInteger:textUTF8String:)];
       [invocation setArgument:&value
                       atIndex:2];
       [invocation setArgument:&s  // notice how the text is on the stack
@@ -61,6 +51,7 @@
    }
    // notice how the autoreleased invocations lifetime is done now
 }
+
 
 - (void) callAsynchronousTest:(id) unused
 {

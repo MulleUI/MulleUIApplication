@@ -1,19 +1,21 @@
-#import "import.h"
+#import <MulleUIApplication/MulleUIApplication.h>
 
 
 int   main( void)
 {
    UIMouseButtonEvent   *event;
+   struct UIInputState   inputState;
 
-   event = [[[UIMouseButtonEvent alloc] initWithLocationInWindow:CGPointMake( 2, 3)
-                                                    modifiers:4
-                                                       button:5
-                                                       action:6] autorelease];
-   printf( "type          : %td\n", [event eventType]);
-   printf( "mouseLocation : %s\n",  CGPointUTF8String( [event locationInView:nil]));
-   printf( "modifiers     : %td\n", [event modifiers]);
-   printf( "button        : %td\n", [event button]);
-   printf( "action        : %td\n", [event action]);
+   inputState = UIInputStateMake( CGPointMake( 2, 3), 7, 4);
+   event = [[[UIMouseButtonEvent alloc] initWithInputState:&inputState
+                                                    button:5
+                                                    action:6] autorelease];
+   printf( "type             : %td\n", [event eventType]);
+   printf( "locationInWindow : %s\n",  CGPointUTF8String( [event locationInWindow]));
+   printf( "modifiers        : %td\n", [event keyModifiers]);
+   printf( "buttonStates     : %td\n", [event buttonStates]);
+   printf( "button           : %td\n", [event button]);
+   printf( "action           : %td\n", [event action]);
 
    return( 0);
 }

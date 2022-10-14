@@ -1,4 +1,4 @@
-type          : 8
-mouseLocation : 2.00 3.00
-modifiers     : 4
-buttonStates  : 5
+type             : 8
+locationInWindow : 2.00 3.00
+modifiers        : 4
+buttonStates     : 7

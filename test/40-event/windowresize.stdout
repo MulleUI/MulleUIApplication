@@ -1,4 +1,2 @@
-type          : 32
-mouseLocation : 2.00 3.00
-modifiers     : 4
-size          : 5 6
+type : 32
+size : 5 6
