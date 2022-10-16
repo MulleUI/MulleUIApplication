@@ -136,10 +136,9 @@
 // must be called from mainThread
 - (int) run;
 
-
-// a shortcut for addWindow: and runLoop and terminate
-// must be called from mainThread
+// like UIApplicationRunWindow
 - (int) runWindow:(id <UIWindow>) window;
+
 
 @end
 
@@ -159,6 +158,12 @@
 
 
 int  UIApplicationMain( int argc, char **argv, Class appClass, id delegate);
+
+
+// A shortcut for +sharedInstance, addWindow: and runLoop and terminate.
+// This must be called from mainThread
+int  UIApplicationRunWindow( id <UIWindow> window);
+
 
 // the singleton is placed into a global variable for easier access during
 // events. [UIApplication sharedInstance] sets this variable and 

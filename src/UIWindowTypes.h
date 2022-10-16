@@ -16,6 +16,8 @@
 #define UIWindowFrameRateSynced     -INFINITY  // tied to monitor frame rate (or 1/60.0 if not available)
 
 
+@class UIApplication;
+
 
 //
 // trying hard to keep enums "positive"
@@ -141,8 +143,8 @@ typedef NSUInteger   UIWindowStyleMask;
 // sent by the application on add/remove when a window will be removed
 // the application might be gone immediately afterwards if this is the
 // last window (taking the graphics system with it!)
-- (void) applicationDidAddWindow;
-- (void) applicationDidRemoveWindow;
+- (void) applicationDidAddWindow:(UIApplication *) app;
+- (void) applicationDidRemoveWindow:(UIApplication *) app;
 
 
 @end
@@ -382,6 +384,7 @@ struct CGPath;
 - (char *) backendUTF8String;
 
 - (void) setActive:(BOOL) yes;
+- (BOOL) isActive;
 
 - (void) clearFramebufferNoColor; // keep color information
 - (void) clearFramebufferWithColor:(CGColor) color;

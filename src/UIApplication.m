@@ -116,7 +116,21 @@ UIApplication   *UIApp;
 }
 
 
-- (id) init
++ (void) deinitialize
+{
+   if( [self respondsToSelector:@selector( os_deinitialize)])
+      [self os_deinitialize];
+}
+
+
++ (instancetype) sharedInstance
+{
+   UIApp = [super sharedInstance];
+   return( UIApp);
+}
+
+
+- (instancetype) init
 {
    struct mulle_allocator   *allocator;
    NSUInteger               i, n;
@@ -152,16 +166,16 @@ UIApplication   *UIApp;
 
    [self loadStandardCursors];
 
-   if( ! UIApp)
-      UIApp = self;
-
    return( self);
 }
 
 
-- (void) finalize
+// assume all windows thread are quiescent now... else why call terminate :)
+
+
+- (int) terminate
 {
-   Class   cls;
+   assert( [NSThread mulleIsMainThread]);
 
    [self removeAllInvocations];
    [self removeAllTimers];
@@ -172,9 +186,13 @@ UIApplication   *UIApp;
 
    [self removeStandardCursors];
 
-   cls = [self class];
-   if( [cls respondsToSelector:@selector( os_deinitialize)])
-      [cls os_deinitialize];
+   return( _returnStatus);
+}
+
+
+- (void) finalize
+{
+   [self terminate];
 
    if( UIApp == self)
       UIApp = nil;
@@ -203,16 +221,6 @@ UIApplication   *UIApp;
 }
 
 
-// assume all windows thread are quiescent now... else why call terminate :)
-
-- (int) terminate
-{
-   assert( [NSThread mulleIsMainThread]);
-
-   [self mullePerformFinalize];
-   
-   return( _returnStatus);
-}
 
 /*
  *
@@ -543,7 +551,7 @@ UIApplication   *UIApp;
    assert( [NSThread mulleIsMainThread]);
 
    mulle_array_add( &_windows, window);
-   [window applicationDidAddWindow];
+   [window applicationDidAddWindow:self];
 }
 
 
@@ -564,19 +572,27 @@ UIApplication   *UIApp;
    }
 
    mulle_array_remove_in_range( &_windows, mulle_range_make( found, 1));
-   [window applicationDidRemoveWindow];
+   [window applicationDidRemoveWindow:self];
 }
+
 
 - (void) removeAllWindows
 {
-   id <UIWindow>   window;
+   id <UIWindow>        window;
+   struct mulle_array   tmp;
 
-   mulle_array_for( &_windows, window)
+   tmp = _windows;
+   mulle_array_init( &_windows,
+                     0,
+                     tmp.callback,
+                     tmp.allocator);
+
+   mulle_array_for( &tmp, window)
    {
-      [window mullePerformFinalize];
+      [window applicationDidRemoveWindow:self];
    }
 
-   mulle_array_reset( &_windows);
+   mulle_array_done( &tmp);
 }
 
 
@@ -1115,6 +1131,19 @@ UIApplication   *UIApp;
    // keep stack frame a bit smaller by not calling run
    [self runLoop];
    return( [self terminate]);
+}
+
+
+int  UIApplicationRunWindow( id <UIWindow> window)
+{
+   UIApplication   *app;
+
+   app = [UIApplication sharedInstance];
+
+   [app addWindow:window];
+   // keep stack frame a bit smaller by not calling runWindow
+   [app runLoop];
+   return( [app terminate]);
 }
 
 
