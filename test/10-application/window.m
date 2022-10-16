@@ -19,12 +19,12 @@
 }
 
 
-- (void) applicationDidRemoveWindow
+- (void) applicationDidAddWindow:(UIApplication *) app
 {
 }
 
 
-- (void) applicationDidAddWindow
+- (void) applicationDidRemoveWindow:(UIApplication *) app
 {
 }
 
