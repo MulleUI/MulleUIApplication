@@ -14,16 +14,6 @@
 #ifndef _mulle_ui_application_include_h__
 #define _mulle_ui_application_include_h__
 
-// You can tweak the following #include with these commands.
-// (Use 8227684D-0825-48A9-A051-43E38A68E967 instead of mulle-multififo if there are duplicate entries)
-//    remove #include:: `mulle-sde dependency mark mulle-multififo no-header`
-//    rename:              `mulle-sde dependency|library set mulle-multififo include whatever.h`
-//    reorder:             `mulle-sde dependency move mulle-multififo <up|down>`
-//    toggle #include:    `mulle-sde dependency mark mulle-multififo [no-]import`
-//    toggle public:       `mulle-sde dependency mark mulle-multififo [no-]public`
-//    toggle optional:     `mulle-sde dependency mark mulle-multififo [no-]require`
-//    remove for platform: `mulle-sde dependency mark mulle-multififo no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#include <mulle-multififo/mulle-multififo.h>   // mulle-multififo
+/* no headers */
 
 #endif

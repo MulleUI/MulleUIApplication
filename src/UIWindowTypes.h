@@ -115,9 +115,12 @@ typedef NSUInteger   UIWindowStyleMask;
 
 
 @protocol UIOSWindow;
+@protocol UIGraphicsContext;
 
 
 @protocol UIWindow < NSObject>
+
+@property( assign, readonly) id <UIGraphicsContext>  renderGraphicsContext;
 
 // return primary OSWindow this window is using (or nil if none)
 // if you return nil, you may not get many events
@@ -145,7 +148,6 @@ typedef NSUInteger   UIWindowStyleMask;
 // last window (taking the graphics system with it!)
 - (void) applicationDidAddWindow:(UIApplication *) app;
 - (void) applicationDidRemoveWindow:(UIApplication *) app;
-
 
 @end
 
@@ -376,6 +378,8 @@ struct CGPath;
 @property( assign) NSUInteger                    framebufferBits;
 @property( assign) id                            OSWindow;
 @property( assign, readonly) UIGraphicsBackend   backend;
+@property( assign) struct UIInputState           inputState;
+@property( assign, getter=isInitializedFramebuffer) BOOL   initializedFramebuffer;
 
 - (instancetype) initWithBackend:(UIGraphicsBackend) backend
                          shareID:(NSUInteger) shareID
@@ -387,7 +391,10 @@ struct CGPath;
 - (BOOL) isActive;
 
 - (void) clearFramebufferNoColor; // keep color information
-- (void) clearFramebufferWithColor:(CGColor) color;
+- (void) clearFramebufferWithHexColor:(NSUInteger) color;        // black all zero
+
+// no CGColor here yet..
+//- (void) clearFramebufferWithColor:(CGColor) color;
 
 - (void) beginRender:(struct CGFrameInfo *) info;
 - (void) drawObjects:(struct mulle_pointerarray *) array;
@@ -419,56 +426,24 @@ struct CGPath;
 // screenshot, bitmap is a copy
 - (struct CGBitmap) framebufferBitmap;
 
-// some very basic drawing commands
+
+// the most basic drawing commands
 
 - (void) setCompositionMode:(UIGraphicsCompositionMode) mode;
 
 // only useable until the offscreen renderer hits again (?=)
 - (void) drawBitmap:(struct CGBitmap) fb;
 
-// some very simple draw commands for debugging
-- (void) fillRect:(CGRect) rect
-            color:(CGColor) color;
-
-- (void) strokeRect:(CGRect) rect
-              color:(CGColor) color
-              width:(CGFloat) width;
-
 // used by UIWindow to blit...
 - (void) drawRect:(CGRect) rect
             image:(id) image
             scale:(BOOL) scale;
 
-- (void) fillCircleAtPoint:(CGPoint) point
-                    radius:(CGFloat) radius
-                      color:(CGColor) color;
 
-- (void) strokeCircleAtPoint:(CGPoint) point
-                      radius:(CGFloat) radius
-                       width:(CGFloat) width
-                       color:(CGColor) color;
-
-- (void) fillPoint:(CGPoint) point 
-             width:(CGFloat) width
-             color:(CGColor) color;
-
-- (void) strokeLineFromPoint:(CGPoint) from 
-                     toPoint:(CGPoint) to
-                       width:(CGFloat) strokeWidth
-                       color:(CGColor) color;
-
-- (void) fillPath:(struct CGPath *) path 
-            color:(CGColor) color;
-
-- (void) strokePath:(struct CGPath *) path 
-              width:(CGFloat) strokeWidth
-              color:(CGColor) color;
-
-- (void) drawAtPoint:(CGPoint) position
-      textUTF8String:(char *) s
-  fontNameUTF8String:(char *) fontNameUTF8String
-            fontSize:(CGFloat) fontSize
-               color:(CGColor) color;
+// support for some demos
+- (CGPoint) mouseLocation;
+- (NSUInteger) keyModifiers;
+- (NSUInteger) buttonStates;
 
 @end
 

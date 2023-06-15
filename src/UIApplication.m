@@ -123,6 +123,7 @@ UIApplication   *UIApp;
 }
 
 
+#pragma clang diagnostic ignored "-Wobjc-method-access"
 + (instancetype) sharedInstance
 {
    UIApp = [super sharedInstance];
@@ -133,10 +134,17 @@ UIApplication   *UIApp;
 - (instancetype) init
 {
    struct mulle_allocator   *allocator;
-   NSUInteger               i, n;
-   id <UIScreen>            screen;
+
+
+   if( mulle_objc_global_check_universe( __MULLE_OBJC_UNIVERSENAME__) != mulle_objc_universe_is_ok)
+   {
+      MulleUILog( "Not all classes have been loaded by the runtime.\nUse MULLE_OBJC_TRACE_DEPENDENCY=YES for debugging.\n");
+      abort();
+   }
 
    assert( [NSThread mulleIsMainThread]);
+
+   [self _initResourceStorage:&_resourceStorage];
 
    allocator = MulleObjCInstanceGetAllocator( self);
    mulle_array_init( &_screens,
@@ -194,6 +202,8 @@ UIApplication   *UIApp;
 {
    [self terminate];
 
+   [self _finalizeResourceStorage:&_resourceStorage];
+
    if( UIApp == self)
       UIApp = nil;
 
@@ -204,6 +214,8 @@ UIApplication   *UIApp;
 - (void) dealloc
 {
    assert( [NSThread mulleIsMainThread]);
+
+   [self _doneResourceStorage:&_resourceStorage];
 
    [_bouncerSignature release];
 
@@ -221,6 +233,10 @@ UIApplication   *UIApp;
 }
 
 
+- (struct MulleUIResourceStorage *) _resourceStorage
+{
+   return( &_resourceStorage);
+}
 
 /*
  *
@@ -243,9 +259,8 @@ UIApplication   *UIApp;
 - (void) invokeOnMainThread:(NSInvocation *) invocation
               waitUntilDone:(BOOL) flag
 {
-   NSConditionLock     *lock;
-   NSInvocation        *bouncer;
-   NSMethodSignature   *signature;
+   NSConditionLock   *lock;
+   NSInvocation      *bouncer;
 
    if( ! flag)
    {
@@ -598,9 +613,8 @@ UIApplication   *UIApp;
 
 - (void) _closeWindows
 {
-   struct mulle_arrayenumerator   rover;
-   id <UIWindow>                  window;
-   struct mulle_array             tmp;
+   id <UIWindow>        window;
+   struct mulle_array   tmp;
 
    mulle_array_init( &tmp,
                      mulle_array_get_count( &_windows),
@@ -608,8 +622,7 @@ UIApplication   *UIApp;
                      NULL);
    mulle_array_add_array( &tmp, &_windows, mulle_range_make( 0, -1));
 
-   rover = mulle_array_enumerate( &tmp);
-   while( _mulle_arrayenumerator_next( &rover, (void **) &window))
+   mulle_array_for( &tmp, window)
    {
       if( [window shouldClose])
       {
@@ -619,7 +632,6 @@ UIApplication   *UIApp;
          [self removeWindow:window];
       }
    }
-   mulle_arrayenumerator_done( &rover);
 
    mulle_array_done( &tmp);
 }
@@ -627,18 +639,15 @@ UIApplication   *UIApp;
 
 - (id <UIWindow>) windowForOSWindowHandle:(void *) os_window
 {
-   struct mulle_arrayenumerator   rover;
-   id <UIWindow>                  window;
+   id <UIWindow>   window;
 
    assert( [NSThread mulleIsMainThread]);
 
-   rover = mulle_array_enumerate( &_windows);
-   while( _mulle_arrayenumerator_next( &rover, (void **) &window))
+   mulle_array_for( &_windows, window)
    {
       if( [window os_window] == os_window)
          break;
    }
-   mulle_arrayenumerator_done( &rover);
 
    return( window);
 }
@@ -650,6 +659,7 @@ UIApplication   *UIApp;
 - (UICursor *) cursorWithStandardShape:(UICursorStandardShape) shape
 {
    assert( shape < n_UICursorStandardShapes);
+   assert( ! shape || _standardCursors[ shape]);
 
    return( _standardCursors[ shape]);
 }
@@ -662,8 +672,12 @@ UIApplication   *UIApp;
    assert( [NSThread mulleIsMainThread]);
 
    // convenient for tests
-   if( ! [self respondsToSelector:@selector( os_createStandardCursor)])
+   if( ! [self respondsToSelector:@selector( os_createStandardCursor:)])
+   {
+      MulleUILog( "Cursor shapes not available, as \
+-[UIApplication os_createStandardCursor:] is undefined");
       return;
+   }
 
    for( shape = 1; shape < n_UICursorStandardShapes; shape++)
    {
@@ -868,14 +882,13 @@ UIApplication   *UIApp;
 //
 - (mulle_relativetime_t) fireTimersIfNeeded:(mulle_absolutetime_t) now
 {
-   struct UIApplicationTimer            *appTimer;
-   struct mulle_structarray             fireTimers;
-   NSUInteger                           n;
-   mulle_absolutetime_t                 then;
-   mulle_relativetime_t                 min;
-   mulle_relativetime_t                 diff;
-   mulle_relativetime_t                 repeatInterval;
-   NSTimer                              *timer;
+   struct UIApplicationTimer   *appTimer;
+   struct mulle_structarray    fireTimers;
+   mulle_absolutetime_t        then;
+   mulle_relativetime_t        min;
+   mulle_relativetime_t        diff;
+   mulle_relativetime_t        repeatInterval;
+   NSTimer                     *timer;
 
    // if capacity is 0, nothing is malloced yet, which is good
    // because presumably most of the times there won't be timers at all

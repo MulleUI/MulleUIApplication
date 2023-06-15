@@ -18,7 +18,9 @@ PROTOCOLCLASS_INTERFACE0( UIResponder)
 
 - (BOOL) isFirstResponderEvent:(UIEvent *) event; // default NO
 
+// handle methods walk the responder chain
 - (UIEvent *) handleEvent:(UIEvent *) event;
+- (UIMouseMotionEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) event;
 
 @optional
 
@@ -26,7 +28,20 @@ PROTOCOLCLASS_INTERFACE0( UIResponder)
 - (BOOL) canBecomeFirstResponder;
 - (BOOL) canResignFirstResponder;
 
-- (BOOL) isUserInteractionEnabled;  // default YES
+// - (BOOL) isUserInteractionEnabled;  // default YES
+
+// accept methods only consider the receiver
+- (BOOL) willAcceptEvent:(UIEvent *) event;
+- (UIEvent *) acceptEventWithCallbacks:(UIEvent *) event;
+- (UIInputEvent *) acceptInputEvent:(UIInputEvent *) event;
+- (UIMouseMotionEvent *) acceptMouseMotionEvent:(UIMouseMotionEvent *) event;
+- (UIInputEvent *) acceptMouseButtonEvent:(UIMouseButtonEvent *) event;
+- (UIInputEvent *) acceptMouseScrollEvent:(UIMouseScrollEvent *) event;
+- (UIInputEvent *) acceptKeyboardEvent:(UIKeyboardEvent *) event;
+- (UIInputEvent *) acceptUnicodeEvent:(UIUnicodeEvent *) event;
+- (UIInputEvent *) acceptActionEvent:(UIActionEvent *) event;
+- (UIEvent *) acceptOtherEvent:(UIEvent *) event;
+- (void) didAcceptEvent:(UIEvent *) event;
 
 PROTOCOLCLASS_END()
 
@@ -50,9 +65,9 @@ PROTOCOLCLASS_END()
 - (UIInputEvent *) otherMouseUp:(UIMouseButtonEvent *) event;
 - (UIInputEvent *) rightMouseUp:(UIMouseButtonEvent *) event;
 
-- (UIInputEvent *) mouseDragged:(UIMouseMotionEvent *) event;
-- (UIInputEvent *) otherMouseDragged:(UIMouseMotionEvent *) event;
-- (UIInputEvent *) rightMouseDragged:(UIMouseMotionEvent *) event;
+- (UIMouseMotionEvent *) mouseDragged:(UIMouseMotionEvent *) event;
+- (UIMouseMotionEvent *) otherMouseDragged:(UIMouseMotionEvent *) event;
+- (UIMouseMotionEvent *) rightMouseDragged:(UIMouseMotionEvent *) event;
 
 @end
 

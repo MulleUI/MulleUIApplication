@@ -14,12 +14,14 @@ include( Environment)
 
 include( Files)
 
+include( IDESupport OPTIONAL)
+
 ### Library
 
 if( HEADERS_PHASE)
    install( FILES ${INSTALL_PUBLIC_HEADERS}  DESTINATION "include/${PROJECT_NAME}")
-   install( FILES ${INSTALL_PRIVATE_HEADERS} DESTINATION "include/${PROJECT_NAME}/private")
-   install( FILES ${CMAKE_INCLUDES}          DESTINATION "include/${PROJECT_NAME}/cmake")
+   install( FILES ${INSTALL_PRIVATE_HEADERS} DESTINATION "include/${PROJECT_NAME}")
+   install( FILES ${INSTALL_CMAKE_INCLUDES}          DESTINATION "include/${PROJECT_NAME}/cmake")
    # hopefully temporary fix for Objective-C
    if( EXISTS "src/reflect/objc-loader.inc")
       install( FILES src/reflect/objc-loader.inc DESTINATION "include/${PROJECT_NAME}")
@@ -36,6 +38,15 @@ if( LINK_PHASE)
 endif()
 
 include( Library)
+
+# use LIBRARY_COMPILE_TARGET for compiler options
+target_compile_definitions( "${LIBRARY_COMPILE_TARGET}" PUBLIC)
+target_compile_options( "${LIBRARY_COMPILE_TARGET}" PUBLIC -Wall)
+# use LIBRARY_LINK_TARGET for linker options
+if( LINK_PHASE)
+   target_link_options( "${LIBRARY_LINK_TARGET}" PUBLIC)
+endif()
+
 include( InstallLibrary)
 include( FinalOutput OPTIONAL)
 
