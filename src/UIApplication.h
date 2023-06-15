@@ -8,7 +8,7 @@
 //       it could be a problem. Application would needs its own queue,
 //       which is managed by the main thread.
 //
-@interface UIApplication : NSObject <MulleObjCSingleton, UITimerReceiver>
+@interface UIApplication : NSObject <MulleObjCSingleton, UITimerReceiver, MulleUIResourceMap >
 {
    struct mulle_array                    _screens;
    NSLock                                *_screensLock;
@@ -22,6 +22,7 @@
    NSLock                                *_timersLock;
    NSUInteger                            _timerHoles;
    NSUInteger                            _state;
+   struct MulleUIResourceStorage         _resourceStorage;
 
    mulle_atomic_pointer_t                *_executionQueue;
    struct mulle_pointermultififo         _invocationList;

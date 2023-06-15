@@ -4,6 +4,8 @@
 // #define EVENT_DEBUG
 
 
+#pragma clang diagnostic ignored "-Wobjc-missing-super-calls"
+
 @implementation UIEvent
 
 enum

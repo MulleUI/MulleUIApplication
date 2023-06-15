@@ -5,6 +5,11 @@
 #import "UIEvent.h"
 
 
+#ifdef DEBUG
+//# define EVENT_DEBUG
+#endif
+
+
 PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
 
 - (id <UIResponder>) nextResponder
@@ -34,9 +39,9 @@ PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
 }
 
 
-static UIInputEvent   *performSelectorIfResponding( UIResponder *self, 
-                                                    SEL sel, 
-                                                    UIInputEvent *event)
+static id   performSelectorIfResponding( UIResponder *self,
+                                         SEL sel,
+                                         UIInputEvent *event)
 {
    assert( event);
 
@@ -48,18 +53,22 @@ static UIInputEvent   *performSelectorIfResponding( UIResponder *self,
 }
 
 
-- (UIInputEvent *) handleMouseButtonEvent:(UIMouseButtonEvent *) event
+- (UIInputEvent *) acceptMouseButtonEvent:(UIMouseButtonEvent *) event
 {
    SEL   sel;
    int   action;
    int   button;
+
+#ifdef EVENT_DEBUG
+   MulleUILog( "%#@", event);
+#endif
 
    sel    = 0;
    action = [event action];
    button = [event button];
 
    // for support of other buttons, subclass and override
-   // handleMouseButtonEvent:
+   // acceptMouseButtonEvent:
    //
    switch( button)
    {
@@ -105,12 +114,18 @@ static UIInputEvent   *performSelectorIfResponding( UIResponder *self,
 
 // general idea: suppress mouseDragged events, until a certain amount of
 //               time has passed.
-- (UIInputEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) event
+//               Also... don't do this if the responder doesn't care ?
+//
+- (UIMouseMotionEvent *) acceptMouseMotionEvent:(UIMouseMotionEvent *) event
 {
-   uint64_t   state;
-   SEL        sel;
+   uint64_t       state;
+   SEL            sel;
 
    assert( [event isKindOfClass:[UIMouseMotionEvent class]]);
+
+#ifdef EVENT_DEBUG
+   MulleUILog( "%#@", event);
+#endif
 
    sel   = 0;
    state = [event buttonStates];
@@ -143,9 +158,13 @@ static UIInputEvent   *performSelectorIfResponding( UIResponder *self,
 }
 
 
-- (UIInputEvent *) handleMouseScrollEvent:(UIMouseScrollEvent *) event
+- (UIInputEvent *) acceptMouseScrollEvent:(UIMouseScrollEvent *) event
 {
    assert( [event isKindOfClass:[UIMouseScrollEvent class]]);
+
+#ifdef EVENT_DEBUG
+   MulleUILog( "%#@", event);
+#endif
 
    // scrollWheel: taken from AppKit
    // https://developer.apple.com/documentation/appkit/nsscrollview/1403494-scrollwheel?language=objc
@@ -154,10 +173,13 @@ static UIInputEvent   *performSelectorIfResponding( UIResponder *self,
 }
 
 
-- (UIInputEvent *) handleKeyboardEvent:(UIKeyboardEvent *) event
+- (UIInputEvent *) acceptKeyboardEvent:(UIKeyboardEvent *) event
 {
-   uint64_t   state;
-   SEL        sel;
+   SEL   sel;
+
+#ifdef EVENT_DEBUG
+   MulleUILog( "%#@", event);
+#endif
 
    sel   = 0;
    switch( [event action])
@@ -181,19 +203,27 @@ static UIInputEvent   *performSelectorIfResponding( UIResponder *self,
 }
 
 
-- (UIInputEvent *) handleUnicodeEvent:(UIUnicodeEvent *) event
+- (UIInputEvent *) acceptUnicodeEvent:(UIUnicodeEvent *) event
 {
+#ifdef EVENT_DEBUG
+   MulleUILog( "%#@", event);
+#endif
+
    return( performSelectorIfResponding( self, @selector( unicodeCharacterEvent:), event));
 }
 
 
-- (UIInputEvent *) handleActionEvent:(UIActionEvent *) event
+- (UIInputEvent *) acceptActionEvent:(UIActionEvent *) event
 {
+#ifdef EVENT_DEBUG
+   MulleUILog( "%#@", event);
+#endif
+
    return( performSelectorIfResponding( self, [event action], [event sender]));
 }
 
 
-- (UIInputEvent *) handleInputEvent:(UIInputEvent *) event
+- (UIInputEvent *) acceptInputEvent:(UIInputEvent *) event
 {
    // Handle event myself
 
@@ -203,27 +233,27 @@ static UIInputEvent   *performSelectorIfResponding( UIResponder *self,
    switch( [event eventType])
    {
    case UIEventTypePresses :
-      event = [self handleKeyboardEvent:(UIKeyboardEvent *) event];
+      event = [self acceptKeyboardEvent:(UIKeyboardEvent *) event];
       break;
 
    case UIEventTypeUnicode :
-      event = [self handleUnicodeEvent:(UIUnicodeEvent *) event];
+      event = [self acceptUnicodeEvent:(UIUnicodeEvent *) event];
       break;
 
    case UIEventTypeTouches :
-      event = [self handleMouseButtonEvent:(UIMouseButtonEvent *) event];
+      event = [self acceptMouseButtonEvent:(UIMouseButtonEvent *) event];
       break;
 
    case UIEventTypeMotion :
-      event = [self handleMouseMotionEvent:(UIMouseMotionEvent *) event];
+      event = [self acceptMouseMotionEvent:(UIMouseMotionEvent *) event];
       break;
 
    case UIEventTypeScroll :
-      event = [self handleMouseScrollEvent:(UIMouseScrollEvent *) event];
+      event = [self acceptMouseScrollEvent:(UIMouseScrollEvent *) event];
       break;
 
    case UIEventTypeAction :
-      event = [self handleActionEvent:(UIActionEvent *) event];
+      event = [self acceptActionEvent:(UIActionEvent *) event];
       break;
 
    default :
@@ -234,67 +264,167 @@ static UIInputEvent   *performSelectorIfResponding( UIResponder *self,
 }
 
 
-- (UIEvent *) handleOtherEvent:(UIEvent *) event
+- (UIEvent *) acceptOtherEvent:(UIEvent *) event
 {
    return( event);
 }
 
 
-- (BOOL) willHandleEvent:(UIEvent *) event
+- (BOOL) willAcceptEvent:(UIEvent *) event
 {
    return( YES);
 }
 
 
-- (void) didHandleEvent:(UIEvent *) event
+- (void) didAcceptEvent:(UIEvent *) event
 {
 }
 
 
-- (BOOL) isUserInteractionEnabled
-{
-   return( YES);
-}
-
-
-- (UIEvent *) handleEvent:(UIEvent *) event
+- (UIEvent *) acceptEventWithCallbacks:(UIEvent *) event
 {
    UIEvent   *result;
 
    //
    // when the event is changed by an event handler, we
    // reinterpret the event, otherwise done. For reinterpreted 
-   // events it's nice, that willHandleEvent:didHandleEvent: aren't
+   // events it's nice, that willAcceptEvent:didAcceptEvent: aren't
    // nested I believe
    //
    for(;;)
    {
+      if( ! [self willAcceptEvent:event])
+         return( event);
+
       if( [event isInputEvent])
       {
-         if( ! [self isUserInteractionEnabled])
-            return( event);
+//
+// should not be needed as this is checked by the window/view
+//         if( ! [self isUserInteractionEnabled])
+//            return( event);
 
-         if( ! [self willHandleEvent:event])
-            return( event);
-
-         result = [self handleInputEvent:(UIInputEvent *) event];
+         result = [self acceptInputEvent:(UIInputEvent *) event];
       }
       else
-      {
-         if( ! [self willHandleEvent:event])
-            return( event);
-
-         result = [self handleOtherEvent:event];
-      }
+         result = [self acceptOtherEvent:event];
 
       if( result != event)
-         [self didHandleEvent:event];
+         [self didAcceptEvent:event];
    
+      // if done processing event or unchanged, we are done...
       if( ! result || result == event)
          return( result);
 
       event = result;
    }
+}
+
+
+//
+// this method exists separately so you can easily break on handleEvent:
+// and avoid the slew of mouse motion events. MouseMotionEvents are also
+// more limited. You can't replace them with anything else than a
+// mouseMotionEvent. Remember mouseMotionEvents hit a lot!
+//
+- (UIMouseMotionEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) motionEvent
+{
+   UIMouseMotionEvent   *newEvent;
+   id <UIResponder>     responder;
+
+#if defined( EVENT_DEBUG) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
+   MulleUILog( "%#@", event);
+#endif
+
+   for( responder = self; responder; responder = [responder nextResponder])
+   {
+      // TODO: translate positions
+      //       UIViewController could also be the responder here
+//      if( responder != (id <UIResponder>) self)
+//      {
+         //
+         // when the event is changed by an event handler, we
+         // reinterpret the event, otherwise done. For reinterpreted
+         // events it's nice, that willAcceptEvent:didAcceptEvent: aren't
+         // nested I believe
+         //
+      for(;;)
+      {
+         if( ! [responder willAcceptEvent:motionEvent])
+            return( motionEvent);
+
+         newEvent = [responder acceptMouseMotionEvent:motionEvent];
+         if( newEvent != motionEvent)
+            [responder didAcceptEvent:motionEvent];
+
+         // if done processing event or unchanged, we are done...
+         if( ! newEvent || newEvent == motionEvent)
+            break;
+
+         motionEvent = newEvent;
+      }
+
+      if( ! newEvent)
+      {
+#if (defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
+         MulleUILog( "Responder %#@ consumed event", responder);
+#endif
+         return( newEvent);
+      }
+
+#if (defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
+      if( newEvent != motionEvent)
+      {
+         MulleUILog( "Responder %#@ changed event to %#@", responder, newEvent);
+      }
+#endif
+
+#if (defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
+      MulleUILog( "Responder %#@ did not consume event, try next", responder);
+#endif
+      motionEvent = newEvent;
+   }
+   return( motionEvent);
+}
+
+
+- (UIEvent *) handleEvent:(UIEvent *) event
+{
+   UIEvent             *newEvent;
+   id <UIResponder>    responder;
+
+#ifdef EVENT_DEBUG
+   MulleUILog( "%#@", event);
+#endif
+
+   for( responder = self; responder; responder = [responder nextResponder])
+   {
+      // TODO: translate positions
+      //       UIViewController could also be the responder here
+//      if( responder != (id <UIResponder>) self)
+//      {
+         newEvent = [responder acceptEventWithCallbacks:event];
+         if( ! newEvent)
+         {
+#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+            MulleUILog( "Responder %#@ consumed event", responder);
+#endif
+            return( newEvent);
+         }
+
+#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+         if( newEvent != event)
+         {
+            MulleUILog( "Responder %#@ changed event to %#@", responder, newEvent);
+         }
+#endif
+
+#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+         MulleUILog( "Responder %#@ did not consume event, try next", responder);
+#endif
+         event = newEvent;
+      }
+//   }
+   return( event);
 }
 
 PROTOCOLCLASS_END()

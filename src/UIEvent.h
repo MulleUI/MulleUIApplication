@@ -76,44 +76,6 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 @end
 
 
-// TODO: 
-struct UIInputState
-{
-   CGPoint     locationInWindow;      // locationInWindow
-   NSUInteger  buttonStates;
-   NSUInteger  keyModifiers;
-};
-
-
-static inline struct UIInputState  UIInputStateMake( CGPoint locationInWindow,
-                                                     NSUInteger buttonStates,
-                                                     NSUInteger keyModifiers)
-{
-   return( (struct UIInputState) {
-      .locationInWindow  = locationInWindow,
-      .buttonStates      = buttonStates,
-      .keyModifiers      = keyModifiers 
-      });
-}         
-
-
-static inline void  UIInputStateInit( struct UIInputState *p,
-                                      CGPoint locationInWindow,
-                                      NSUInteger buttonStates,
-                                      NSUInteger keyModifiers)
-{
-   if( ! p)
-      return;
-
-   p->locationInWindow  = locationInWindow;
-   p->buttonStates      = buttonStates;
-   p->keyModifiers      = keyModifiers;
-}         
-
-static inline void  UIInputStateDone( struct UIInputState *p)
-{
-}
-
 //
 // Only UIInputEvent events are distributed to UIViews. Might rename
 // to something else, UIViewEvent maybe ?
@@ -126,8 +88,9 @@ static inline void  UIInputStateDone( struct UIInputState *p)
 {
    struct UIInputState   _inputState;
 
+   //  NOT READONLY!! these values are set in _setLocation:forView:
    CGPoint   _location;
-   id        _locationView; // NOT READONLY!!
+   id        _locationView; // NOT retained!
 }
 
 @property( assign, readonly) struct UIInputState   inputState;
@@ -255,6 +218,7 @@ static inline char   *UIScreenEventTypeUTF8String( UIScreenEventType type)
    case UIScreenEventTypeDisconnected : return( "UIScreenEventTypeDisconnected");
    }
    assert( 0);
+   return( NULL);
 }
 
 
