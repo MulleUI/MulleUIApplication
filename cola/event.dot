@@ -1,0 +1,24 @@
+digraph G {
+
+  node [shape=box];
+  
+  os [label=" Operating System"];
+  event [label=" UIEvent"];
+  window [label=" UIWindow"];
+  view [label=" UIView\n(UIButton)"];
+  layer [label=" CALayer"];
+  
+  os -> event [label=" mouse button callback"];
+  
+  event  -> window [label=" receiveRetainedEvent:"];
+  window -> view [label=" hitTest:withEvent:"];
+  
+  window -> view [label=" handleEvent:"];
+  view -> window [label=" setNeedsDisplay"];
+  window -> view [label=" -layout"];
+  window -> view [label=" renderInContext:"];
+
+  view -> layer [label=" add to render queue"];
+
+  layer -> layer [label=" -drawInContext:"];
+}
