@@ -115,6 +115,8 @@ static id   allocateEventWithIndex( Class self, unsigned int index)
    struct _mulle_objc_objectheader  *header;
    struct _mulle_objc_class         *cls;
 
+   assert( index < N_UIEventIndexMax);
+
    p     = &UIEventSelf._reuseEventQueues[ index];
    reuse = _mulle__pointerqueue_pop( p, MulleObjCClassGetAllocator( self));
    if( reuse)
@@ -141,6 +143,8 @@ static id   allocateEventWithIndex( Class self, unsigned int index)
 static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 {
    struct mulle__pointerqueue   *p;
+
+   assert( index < N_UIEventIndexMax);
 
    if( ! UIEventSelf._reuseEvents)
    {
@@ -234,7 +238,7 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 
 - (instancetype) initWithInputState:(struct UIInputState *) state
 {
-   self =  [self init];
+   self = [self init];
 
    _inputState   = *state;
    _location.x   = CGFLOAT_MIN; // not set
@@ -289,6 +293,12 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
                   _inputState.locationInWindow.y,
                   _timestamp);
    return( s);
+}
+
+
+- (BOOL) isInitialEvent
+{
+   return( NO);
 }
 
 @end
@@ -439,8 +449,8 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 {
    self = [self initWithInputState:state];
 
-   _button       = button;
-   _action       = action;
+   _button = button;
+   _action = action;
 
    return( self);
 }

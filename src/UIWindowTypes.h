@@ -43,32 +43,35 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
 // SDL
 //   UIWindowStyleClosable           = 0x001,    // there are no SDL hints for them
 //   UIWindowStyleMiniaturizable     = 0x002,
-   UIWindowStyleResizable          = 0x004,
-   UIWindowStyleInvisible          = 0x008,
-   UIWindowStyleOffscreen          = 0x010,
-   UIWindowStyleSingleBuffer       = 0x020,      // glfw (maybe useful with offscreen)
-   UIWindowStyleTransparent        = 0x040,
-   UIWindowStyleFloating           = 0x080,
-   UIWindowStyleBare               = 0x100,      // window bar, resizer gone
+   UIWindowStyleResizable            = 0x004,
+   UIWindowStyleInvisible            = 0x008,
+   UIWindowStyleOffscreen            = 0x010,
+   UIWindowStyleSingleBuffer         = 0x020,      // glfw (maybe useful with offscreen)
+   UIWindowStyleTransparent          = 0x040,
+   UIWindowStyleFloating             = 0x080,
+   UIWindowStyleBare                 = 0x100,      // window bar, resizer gone
+   UIWindowStylePanes                = 0x200,
 
 // CG
-   UIWindowStyleEdgeAntialias      = 0x1000,     // nanvg
-   UIWindowStyleStencilStrokes     = 0x2000,     // nanovg
+   UIWindowStyleAntiAlias            = 0x1000,     // nanovg or glfw
+   UIWindowStyleForceEdgeAntiAlias   = 0x2000,     // nanovg
+   UIWindowStyleStencilStrokes       = 0x4000,     // nanovg
+   UIWindowStyleClearType            = 0x8000,     // nanovg
 
 // UIWindow
-   UIWindowStyleRetained             = 0x10000,  // use UIWindowBackingStoreRetained
-   UIWindowStyleRetainedOnMainThread = 0x20000,  // use UIWindowBackingStoreRetainedOnMainThread
+   UIWindowStyleRetained             = 0x10000,    // use UIWindowBackingStoreRetained
+   UIWindowStyleRetainedOnMainThread = 0x20000,    // use UIWindowBackingStoreRetainedOnMainThread
 
 // SDL/OpenGL
-   UIWindowOpenGLCoreProfile       = 0x0100000,  // OpenGLCore functions only
-   UIWindowOpenGLForward           = 0x0400000,  // non-deprecated functions only
-   UIWindowOpenGLLibraryFallback   = 0x0800000,  // try other openGL libraries as fallback
+   UIWindowOpenGLCoreProfile         = 0x0100000,  // OpenGLCore functions only
+   UIWindowOpenGLForward             = 0x0400000,  // non-deprecated functions only
+   UIWindowOpenGLLibraryFallback     = 0x0800000,  // try other openGL libraries as fallback
 
-   UIWindowOpenGLDeprecated        = 0x1000000   // if this is set, GLES can't be used
+   UIWindowOpenGLDeprecated          = 0x1000000   // if this is set, GLES can't be used
 };
 
 
-extern NS_OPTIONS_TABLE( UIWindowStyle, 16);
+extern NS_OPTIONS_TABLE( UIWindowStyle, 19);
 
 static inline char  *UIWindowStyleUTF8String( UIWindowStyle style)
 {
@@ -116,6 +119,18 @@ typedef NSUInteger   UIWindowStyleMask;
 
 @protocol UIOSWindow;
 @protocol UIGraphicsContext;
+
+
+typedef NS_OPTIONS( NSUInteger, UIWindowDisplayBit)
+{
+   UIWindowDisplayNeedsRedraw     = 0x1,   // needs immediate attention
+   UIWindowDisplayNeedsLayout     = 0x2,   // needs immediate attention, forces redraw
+   UIWindowDisplayNeedsAnimation  = 0x4,   // needs attention according to animationRate
+   UIWindowDisplayNeedsMouseEvent = 0x8    // layout change needs to retrack mouse
+};
+
+typedef NSUInteger   UIWindowDisplayBits;
+
 
 
 @protocol UIWindow < NSObject>
@@ -212,7 +227,8 @@ static inline double
    return( CGWindowInfoGetPixelRatio( info ? &info->base : NULL));
 }
 
-
+// TODO: explain that frameRate is the rate that we are pushing to the screen
+//       and that refreshRate is the swap rate of the screen itself ()
 static inline mulle_relativetime_t
    UIOSWindowInfoGetFrameRate( struct UIOSWindowInfo *info)
 {
@@ -267,7 +283,7 @@ static inline mulle_relativetime_t
    if( ! info)
       return( 1.0 / 60.0);
 
-      // if we use a limiter, we could make no updates for forever
+   // if we use a limiter, we could make no updates for forever
    if( info->frameRateLimiter)
       frameRate = INFINITY;
    else
@@ -286,6 +302,8 @@ static inline mulle_relativetime_t
 @property( assign) id <UIEventReceiver>   eventsReceiver;
 @property( assign) NSUInteger             discardEventsMask;
 @property( assign) id <UIWindow>          parentWindow;  // owner UIWindow
+
+@property( readonly, getter=isAntiAliasing) BOOL   antiAliasing;
 
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
@@ -381,6 +399,8 @@ struct CGPath;
 @property( assign) struct UIInputState           inputState;
 @property( assign, getter=isInitializedFramebuffer) BOOL   initializedFramebuffer;
 
++ (BOOL) supportsAntiAliasing;
+
 - (instancetype) initWithBackend:(UIGraphicsBackend) backend
                          shareID:(NSUInteger) shareID
                          options:(UIGraphicsOptions) options;
@@ -393,6 +413,8 @@ struct CGPath;
 - (void) clearFramebufferNoColor; // keep color information
 - (void) clearFramebufferWithHexColor:(NSUInteger) color;        // black all zero
 
+- (void) useDefaultFont;
+
 // no CGColor here yet..
 //- (void) clearFramebufferWithColor:(CGColor) color;
 
@@ -404,8 +426,7 @@ struct CGPath;
 - (void) endRender;  // calls suspendRender then endRender
 
 // rename to something else, maybe combine and just reset
-- (void) resetTransform;
-- (void) resetScissor;
+- (void) reset;
 
 - (id) acquireOffscreenFramebuffer;
 - (void) recycleFramebuffer:(id) layer;
@@ -448,10 +469,13 @@ struct CGPath;
 @end
 
 
+
+
 @protocol UIImage <NSObject>
 
 - (id) shareWithContext:(id) context;
 - (CGSize) size;
+- (BOOL) isMultiSample;
 
 @end
 

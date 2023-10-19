@@ -8,25 +8,28 @@
 //       it could be a problem. Application would needs its own queue,
 //       which is managed by the main thread.
 //
+// If you subclass UIApplication, you must not override +initialize or
+// +deinitialize.
+//
 @interface UIApplication : NSObject <MulleObjCSingleton, UITimerReceiver, MulleUIResourceMap >
 {
-   struct mulle_array                    _screens;
-   NSLock                                *_screensLock;
+   struct mulle_array              _screens;
+   NSLock *                        _screensLock;
 
-   struct mulle_array                    _windows;
+   struct mulle_array              _windows;
 
    // custom cursors need a mulle_pointerarray (implement later)
-   UICursor                              *_standardCursors[ n_UICursorStandardShapes];
+   UICursor *                      _standardCursors[ n_UICursorStandardShapes];
 
-   struct mulle_structarray              _timers;
-   NSLock                                *_timersLock;
-   NSUInteger                            _timerHoles;
-   NSUInteger                            _state;
-   struct MulleUIResourceStorage         _resourceStorage;
+   struct mulle_structarray        _timers;
+   NSLock *                        _timersLock;
+   NSUInteger                      _timerHoles;
+   NSUInteger                      _state;
+   struct MulleUIResourceStorage   _resourceStorage;
 
-   mulle_atomic_pointer_t                *_executionQueue;
-   struct mulle_pointermultififo         _invocationList;
-   NSMethodSignature                     *_bouncerSignature;
+   mulle_atomic_pointer_t *        _executionQueue;
+   struct mulle_pointermultififo   _invocationList;
+   NSMethodSignature *             _bouncerSignature;
 }
 
 @property( assign) id   delegate;      // unused so far
@@ -82,7 +85,7 @@
 // on terminate.
 //
 // Cursors can't be removed currently, so don't stream
-// videos into your cursor bitmap...
+// videos into your cursor bitmap (would waste lotsa leaks)...
 //
 - (UICursor *) cursorWithStandardShape:(UICursorStandardShape) shape;
 

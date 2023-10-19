@@ -5,12 +5,74 @@
 #import "UIEvent.h"
 
 
-#ifdef DEBUG
-//# define EVENT_DEBUG
+enum
+{
+   UIResponderDebugEvent            = 0x1,
+   UIResponderDebugMouseMotionEvent = 0x2
+};
+
+
+#if ! defined( UI_RESPONDER_DEBUG_DISABLED)
+
+#define UIResponderEventLog( format, ...)                                  \
+do                                                                         \
+{                                                                          \
+   if( Self._debugEnabled & UIResponderDebugEvent)                         \
+      mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,       \
+                                       (char *) format, ## __VA_ARGS__);   \
+}                                                                          \
+while( 0);
+
+#define UIResponderMouseMotionEventLog( format, ...)                       \
+do                                                                         \
+{                                                                          \
+   if( Self._debugEnabled & UIResponderDebugMouseMotionEvent)              \
+      mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,       \
+                                       (char *) format, ## __VA_ARGS__);   \
+}                                                                          \
+while( 0);
+
+
+#else
+
+#define UIResponderEventLog( format, ...)               do {} while( 0)
+#define UIResponderMouseMotionEventLog( format, ...)    do {} while( 0)
+
 #endif
 
 
+
+
 PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
+
+static struct
+{
+   NSUInteger   _debugEnabled;
+} Self;
+
+
+// have no initalize
++ (void) load
+{
+   char   *s;
+
+   s = getenv( "UIResponderDebugEnabled");
+   if( s)
+      Self._debugEnabled = strtol( s, NULL, 0);
+   else
+   {
+#ifdef UIRESPONDER_DEBUG_ENABLED
+      Self._debugEnabled = UIRESPONDER_DEBUG_ENABLED;
+#endif
+   }
+}
+
+
++ (void) setDebugEnabled:(NSUInteger) flag
+{
+   Self._debugEnabled = flag;
+}
+
 
 - (id <UIResponder>) nextResponder
 {
@@ -31,10 +93,27 @@ PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
 
 
 //
-// the default is permissive, allowing mouse motion events
+// the default is permissive, allowing mouse motion events, but if we get
+// a mouse down event, the default will resign responder
 // 
 - (BOOL) isFirstResponderEvent:(UIEvent *) event
 {
+   NSUInteger          eventType;
+   UIMouseButtonEvent  *buttonEvent;
+
+   eventType = [event eventType];
+
+   UIResponderEventLog( "%#@", event);
+
+   if( eventType == UIEventTypeTouches)
+   {
+      buttonEvent = (UIMouseButtonEvent *) event;
+      if( [buttonEvent action] == UIEventButtonActionDown)
+      {
+         [self resignFirstResponder];
+         return( NO);
+      }
+   }
    return( [event isInputEvent]);
 }
 
@@ -59,9 +138,7 @@ static id   performSelectorIfResponding( UIResponder *self,
    int   action;
    int   button;
 
-#ifdef EVENT_DEBUG
-   MulleUILog( "%#@", event);
-#endif
+   UIResponderEventLog( "%#@", event);
 
    sel    = 0;
    action = [event action];
@@ -123,9 +200,7 @@ static id   performSelectorIfResponding( UIResponder *self,
 
    assert( [event isKindOfClass:[UIMouseMotionEvent class]]);
 
-#ifdef EVENT_DEBUG
-   MulleUILog( "%#@", event);
-#endif
+   UIResponderEventLog( "%#@", event);
 
    sel   = 0;
    state = [event buttonStates];
@@ -162,9 +237,7 @@ static id   performSelectorIfResponding( UIResponder *self,
 {
    assert( [event isKindOfClass:[UIMouseScrollEvent class]]);
 
-#ifdef EVENT_DEBUG
-   MulleUILog( "%#@", event);
-#endif
+   UIResponderEventLog( "%#@", event);
 
    // scrollWheel: taken from AppKit
    // https://developer.apple.com/documentation/appkit/nsscrollview/1403494-scrollwheel?language=objc
@@ -177,9 +250,7 @@ static id   performSelectorIfResponding( UIResponder *self,
 {
    SEL   sel;
 
-#ifdef EVENT_DEBUG
-   MulleUILog( "%#@", event);
-#endif
+   UIResponderEventLog( "%#@", event);
 
    sel   = 0;
    switch( [event action])
@@ -205,9 +276,7 @@ static id   performSelectorIfResponding( UIResponder *self,
 
 - (UIInputEvent *) acceptUnicodeEvent:(UIUnicodeEvent *) event
 {
-#ifdef EVENT_DEBUG
-   MulleUILog( "%#@", event);
-#endif
+   UIResponderEventLog( "%#@", event);
 
    return( performSelectorIfResponding( self, @selector( unicodeCharacterEvent:), event));
 }
@@ -215,11 +284,22 @@ static id   performSelectorIfResponding( UIResponder *self,
 
 - (UIInputEvent *) acceptActionEvent:(UIActionEvent *) event
 {
-#ifdef EVENT_DEBUG
-   MulleUILog( "%#@", event);
-#endif
+   SEL   sel;
+   id    sender;
 
-   return( performSelectorIfResponding( self, [event action], [event sender]));
+   UIResponderEventLog( "%#@", event);
+
+   sel = [event action];
+   if( ! sel || ! [self respondsToSelector:sel])
+      return( event);
+
+   //
+   // this calls: - (IBAction) doStuff:(id) sender
+   // No way to change the event
+   //
+   sender = [event sender];
+   MulleObjCObjectPerformSelector( self, sel, sender);
+   return( nil);
 }
 
 
@@ -227,33 +307,38 @@ static id   performSelectorIfResponding( UIResponder *self,
 {
    // Handle event myself
 
-#ifdef EVENT_DEBUG
-    MulleUILog( "Try to handle event %#@", event);
-#endif
+   UIResponderEventLog( "Try to handle event %#@", event);
+
    switch( [event eventType])
    {
    case UIEventTypePresses :
       event = [self acceptKeyboardEvent:(UIKeyboardEvent *) event];
+      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeUnicode :
       event = [self acceptUnicodeEvent:(UIUnicodeEvent *) event];
+      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeTouches :
       event = [self acceptMouseButtonEvent:(UIMouseButtonEvent *) event];
+      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeMotion :
       event = [self acceptMouseMotionEvent:(UIMouseMotionEvent *) event];
+      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeScroll :
       event = [self acceptMouseScrollEvent:(UIMouseScrollEvent *) event];
+      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeAction :
       event = [self acceptActionEvent:(UIActionEvent *) event];
+      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    default :
@@ -285,6 +370,8 @@ static id   performSelectorIfResponding( UIResponder *self,
 {
    UIEvent   *result;
 
+   NSParameterAssert( [event isKindOfClass:[UIEvent class]]);
+
    //
    // when the event is changed by an event handler, we
    // reinterpret the event, otherwise done. For reinterpreted 
@@ -304,9 +391,13 @@ static id   performSelectorIfResponding( UIResponder *self,
 //            return( event);
 
          result = [self acceptInputEvent:(UIInputEvent *) event];
+         NSParameterAssert( ! result || [result isKindOfClass:[UIEvent class]]);
       }
       else
+      {
          result = [self acceptOtherEvent:event];
+         NSParameterAssert( ! result || [result isKindOfClass:[UIEvent class]]);
+      }
 
       if( result != event)
          [self didAcceptEvent:event];
@@ -331,9 +422,7 @@ static id   performSelectorIfResponding( UIResponder *self,
    UIMouseMotionEvent   *newEvent;
    id <UIResponder>     responder;
 
-#if defined( EVENT_DEBUG) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
-   MulleUILog( "%#@", event);
-#endif
+   UIResponderMouseMotionEventLog( "%#@", motionEvent);
 
    for( responder = self; responder; responder = [responder nextResponder])
    {
@@ -365,22 +454,17 @@ static id   performSelectorIfResponding( UIResponder *self,
 
       if( ! newEvent)
       {
-#if (defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
-         MulleUILog( "Responder %#@ consumed event", responder);
-#endif
+         UIResponderMouseMotionEventLog( "Responder %#@ consumed event", responder);
          return( newEvent);
       }
 
-#if (defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
       if( newEvent != motionEvent)
       {
-         MulleUILog( "Responder %#@ changed event to %#@", responder, newEvent);
+         UIResponderMouseMotionEventLog( "Responder %#@ changed event to %#@", responder, newEvent);
       }
-#endif
 
-#if (defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
-      MulleUILog( "Responder %#@ did not consume event, try next", responder);
-#endif
+      UIResponderMouseMotionEventLog( "Responder %#@ did not consume event, try next", responder);
+
       motionEvent = newEvent;
    }
    return( motionEvent);
@@ -392,9 +476,7 @@ static id   performSelectorIfResponding( UIResponder *self,
    UIEvent             *newEvent;
    id <UIResponder>    responder;
 
-#ifdef EVENT_DEBUG
-   MulleUILog( "%#@", event);
-#endif
+   UIResponderEventLog( "%#@", event);
 
    for( responder = self; responder; responder = [responder nextResponder])
    {
@@ -405,22 +487,16 @@ static id   performSelectorIfResponding( UIResponder *self,
          newEvent = [responder acceptEventWithCallbacks:event];
          if( ! newEvent)
          {
-#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
-            MulleUILog( "Responder %#@ consumed event", responder);
-#endif
+            UIResponderEventLog( "Responder %#@ consumed event", responder);
             return( newEvent);
          }
 
-#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
          if( newEvent != event)
          {
-            MulleUILog( "Responder %#@ changed event to %#@", responder, newEvent);
+            UIResponderEventLog( "Responder %#@ changed event to %#@", responder, newEvent);
          }
-#endif
 
-#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
-         MulleUILog( "Responder %#@ did not consume event, try next", responder);
-#endif
+         UIResponderEventLog( "Responder %#@ did not consume event, try next", responder);
          event = newEvent;
       }
 //   }
