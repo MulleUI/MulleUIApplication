@@ -8,16 +8,17 @@
 //
 typedef NS_OPTIONS( NSUInteger, UIEventType)
 {                              // leave 0 to nil
-   UIEventTypePresses = 0x01,  // Keyboard
-   UIEventTypeUnicode = 0x02,  // Unicode char (interpreted Keyboard)
-   UIEventTypeTouches = 0x04,  // Mouse click
-   UIEventTypeMotion  = 0x08,  // Mouse movement
-   UIEventTypeScroll  = 0x10,  // Mouse Scrollwheel
-   UIEventTypeWindow  = 0x20,  // Window event (close, resize, move etc)
-   UIEventTypeScreen  = 0x40,  // Screen event
-   UIEventTypeUser    = 0x80,  // User event
-   UIEventTypeAction  = 0x100, // Action event (e.g. menu event)
-   _UIEventTypeTimer  = 0x200  // (This is not a real UIEvent)
+   UIEventTypePresses  = 0x01,  // Keyboard
+   UIEventTypeUnicode  = 0x02,  // Unicode char (interpreted Keyboard)
+   UIEventTypeTouches  = 0x04,  // Mouse click
+   UIEventTypeMotion   = 0x08,  // Mouse movement
+   UIEventTypeScroll   = 0x10,  // Mouse Scrollwheel
+   UIEventTypeWindow   = 0x20,  // Window event (close, resize, move etc)
+   UIEventTypeScreen   = 0x40,  // Screen event
+   UIEventTypeUser     = 0x80,  // User event
+   UIEventTypeAction   = 0x100, // Action event (e.g. menu event)
+   _UIEventTypeTimer   = 0x200,  // (This is not a real UIEvent)
+   UIEventTypeTracking = 0x400 // Mouse tracking event (is this UIEventTypeMotion)
 };
 
 
@@ -25,17 +26,18 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 {
    switch( type)
    {
-   case UIEventTypePresses : return( "UIEventTypePresses");
-   case UIEventTypeUnicode : return( "UIEventTypeUnicode");
-   case UIEventTypeTouches : return( "UIEventTypeTouches");
-   case UIEventTypeMotion  : return( "UIEventTypeMotion");
-   case UIEventTypeScroll  : return( "UIEventTypeScroll");
-   case UIEventTypeWindow  : return( "UIEventTypeWindow");
-   case UIEventTypeScreen  : return( "UIEventTypeScreen");
-   case UIEventTypeUser    : return( "UIEventTypeUser");
-   case UIEventTypeAction  : return( "UIEventTypeAction");
-   case _UIEventTypeTimer  : return( "_UIEventTypeTimer");
-   default                 : return( "???");
+   case UIEventTypePresses  : return( "UIEventTypePresses");
+   case UIEventTypeUnicode  : return( "UIEventTypeUnicode");
+   case UIEventTypeTouches  : return( "UIEventTypeTouches");
+   case UIEventTypeMotion   : return( "UIEventTypeMotion");
+   case UIEventTypeScroll   : return( "UIEventTypeScroll");
+   case UIEventTypeWindow   : return( "UIEventTypeWindow");
+   case UIEventTypeScreen   : return( "UIEventTypeScreen");
+   case UIEventTypeUser     : return( "UIEventTypeUser");
+   case UIEventTypeAction   : return( "UIEventTypeAction");
+   case _UIEventTypeTimer   : return( "_UIEventTypeTimer");
+   case UIEventTypeTracking : return( "UIEventTypeTracking");
+   default                  : return( "???");
    }
    assert( 0);
 }
@@ -89,8 +91,8 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
    struct UIInputState   _inputState;
 
    //  NOT READONLY!! these values are set in _setLocation:forView:
-   CGPoint   _location;
-   id        _locationView; // NOT retained!
+   CGPoint               _location;
+   id                    _locationView; // NOT retained!
 }
 
 @property( assign, readonly) struct UIInputState   inputState;
@@ -105,12 +107,15 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 
 - (instancetype) initWithInputState:(struct UIInputState *) state;
 
+// mouseDown and initial touches are YES, default is NO
+- (BOOL) isInitialEvent;
+
 @end
 
 
 
 /*
- * Subclasses
+ * Subclasses.
  */
 
 @interface UIActionEvent : UIInputEvent
@@ -124,6 +129,30 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 
 @end
 
+
+/* If you subclass any of the following:
+ *
+ * UIKeyboardEvent
+ * UIUnicodeEvent
+ * UIMouseButtonEvent
+ * UIMouseMotionEvent
+ * UIMouseScrollEvent
+ * UIActionEvent
+ *
+ * Bee sure to redefine +alloc/-dealloc:
+ *
+ *  + (id) alloc
+ * {
+ *    return( NSAllocateObject( self, 0, NULL));
+ * }
+ *
+ *
+ * - (void) dealloc
+ * {
+ *    NSDeallocateObject( self);
+ * }
+ *
+ */
 
 @interface UIKeyboardEvent : UIInputEvent
 
@@ -341,8 +370,8 @@ static inline char   *_UIEventMouseButtonUTF8String( NSUInteger button)
    case UIEventMouseButtonLeft   : return( "Left");
    case UIEventMouseButtonRight  : return( "Right");
    case UIEventMouseButtonMiddle : return( "Middle");
+   default                       : return( "Other");
    }
-   return( NULL);
 }
 
 
@@ -845,3 +874,4 @@ static inline char   *UIEventKeyUTF8String( NSUInteger key)
    s = _UIEventKeyUTF8String( key);
    return( s ? s : "???");
 }
+

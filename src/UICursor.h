@@ -10,16 +10,21 @@
 #import "import.h"
 
 
-enum
+typedef NS_ENUM( NSUInteger, UICursorStandardShape)
 {
    UICursorDefault,
    UICursorTextInput,
    UICursorDrag,
    UICursorHorizontalResize,
-   UICursorVerticalResize 
+   UICursorVerticalResize,
+#if ! defined( GLFW_VERSION_MAJOR) || (GLFW_VERSION_MAJOR > 3) || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MAJOR >= 4)
+   UICursorDiagonalResize,      // need glfw3.4 for this (also change below!)
+#endif
+
+   n_UICursorStandardShapes
 };
 
+
 typedef NSUInteger  UICursorStandardShape;
-#define n_UICursorStandardShapes   (UICursorVerticalResize + 1)
 
 typedef void   UICursor;

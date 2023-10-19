@@ -108,6 +108,16 @@ UIApplication   *UIApp;
 
 @implementation UIApplication
 
+//
+// TODO: this is an Objective-C problem, that if you subclass UIApplication
+//       then initialize will be called first on UIApplication, which will
+//       call "its" +os_initialize, so you can't really override it. Later
+//       your subclass will call os_initialize again, now initializing a 
+//       a second time. Your initialize needs to call os_deinitialize before
+//       calling os_initialize again. Super bad. Solution ? Change the 
+//       default behaviour of +initialize to _not_ be called when there
+//       is no immediate implementation.
+//
 + (void) initialize
 {
    [super initialize];  // call singleton initialize ?
@@ -134,7 +144,6 @@ UIApplication   *UIApp;
 - (instancetype) init
 {
    struct mulle_allocator   *allocator;
-
 
    if( mulle_objc_global_check_universe( __MULLE_OBJC_UNIVERSENAME__) != mulle_objc_universe_is_ok)
    {
@@ -788,7 +797,7 @@ UIApplication   *UIApp;
             if( (! timer || appTimer->timer == timer) &&
                 (! receiver || appTimer->receiver == receiver))
             {
-               [appTimer->timer  autorelease];
+               [appTimer->timer autorelease];
                continue;
             }
             mulle_structarray_add( &_timers, appTimer);
