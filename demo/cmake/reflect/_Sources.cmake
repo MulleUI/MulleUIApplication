@@ -11,6 +11,7 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+src/main-application-subclass.m
 src/main-two-windows.m
 src/main-window-cursor.m
 src/main-window-events.m

@@ -16,6 +16,13 @@
 #define UIWindowFrameRateSynced     -INFINITY  // tied to monitor frame rate (or 1/60.0 if not available)
 
 
+// this constant creates 0.016677889899999999, which we then recognize more
+// easily as a "default" rate.
+#define UIScreenAssumedRefreshRate    (1.0 / 0.0166778899)
+#define UIScreenAssumedRefreshRateHz  (1.0 / UIScreenAssumedRefreshRate)
+
+
+
 @class UIApplication;
 
 
@@ -61,6 +68,7 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
 // UIWindow
    UIWindowStyleRetained             = 0x10000,    // use UIWindowBackingStoreRetained
    UIWindowStyleRetainedOnMainThread = 0x20000,    // use UIWindowBackingStoreRetainedOnMainThread
+   UIWindowStyleProfileQueue         = 0x40000,    // generate profile entries
 
 // SDL/OpenGL
    UIWindowOpenGLCoreProfile         = 0x0100000,  // OpenGLCore functions only
@@ -123,10 +131,14 @@ typedef NSUInteger   UIWindowStyleMask;
 
 typedef NS_OPTIONS( NSUInteger, UIWindowDisplayBit)
 {
+   // user setable bits
    UIWindowDisplayNeedsRedraw     = 0x1,   // needs immediate attention
-   UIWindowDisplayNeedsLayout     = 0x2,   // needs immediate attention, forces redraw
+   UIWindowDisplayNeedsLayout     = 0x2,   // needs immediate attention, will force redraw
    UIWindowDisplayNeedsAnimation  = 0x4,   // needs attention according to animationRate
-   UIWindowDisplayNeedsMouseEvent = 0x8    // layout change needs to retrack mouse
+
+   // this bits are set during render, they will be ignored if set by user
+   UIWindowDisplayDidAnimate      = 0x10000,   // animation code did changes (will redraw next frame)
+   UIWindowDisplayNeedsMouseEvent = 0x20000    // layout change needs to retrack mouse
 };
 
 typedef NSUInteger   UIWindowDisplayBits;
@@ -232,14 +244,14 @@ static inline double
 static inline mulle_relativetime_t
    UIOSWindowInfoGetFrameRate( struct UIOSWindowInfo *info)
 {
-   return( info ? info->frameRate : 1.0 / 60.0);
+   return( info ? info->frameRate : UIScreenAssumedRefreshRate);
 }
 
 
 static inline mulle_relativetime_t
    UIOSWindowInfoGetRefreshRate( struct UIOSWindowInfo *info)
 {
-   return( info ? info->refreshRate : 1.0 / 60.0);
+   return( info ? info->refreshRate : UIScreenAssumedRefreshRate);
 }
 
 
@@ -261,7 +273,7 @@ static inline mulle_relativetime_t
    mulle_relativetime_t   frameRate;
 
    if( ! info)
-      return( 1.0 / 60.0);
+      return( UIScreenAssumedRefreshRate);
 
    frameRate = info->frameRate;
    if( frameRate == UIWindowFrameRateSynced)
@@ -281,7 +293,7 @@ static inline mulle_relativetime_t
    mulle_relativetime_t   frameRate;
 
    if( ! info)
-      return( 1.0 / 60.0);
+      return( UIScreenAssumedRefreshRate);
 
    // if we use a limiter, we could make no updates for forever
    if( info->frameRateLimiter)
@@ -375,6 +387,7 @@ static inline mulle_relativetime_t
 - (void) os_hide;
 
 - (void) os_initEvents;
+- (void) os_finalizeEvents;
 
 - (void) os_setTitleUTF8String:(char *) s;
 - (void) os_setCursor:(void *) cursor;
@@ -383,6 +396,8 @@ static inline mulle_relativetime_t
 - (void *) os_window;
 
 - (void) getOSWindowInfo:(struct UIOSWindowInfo *) info;  // owner UIWindow
+
+- (mulle_absolutetime_t) lastSwapBuffersTimestamp;
 
 @end
 
@@ -469,8 +484,6 @@ struct CGPath;
 @end
 
 
-
-
 @protocol UIImage <NSObject>
 
 - (id) shareWithContext:(id) context;
@@ -478,6 +491,7 @@ struct CGPath;
 - (BOOL) isMultiSample;
 
 @end
+
 
 
 //

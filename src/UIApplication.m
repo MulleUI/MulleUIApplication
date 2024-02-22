@@ -1,65 +1,13 @@
 #import "UIApplication.h"
 
-#import "UIEvent.h"
-
 #import "import-private.h"
+
+#import "import-project.h"
 
 #include <errno.h>
 
 #define MAX_TIMERHOLES    8
 //#define RUN_DEBUG
-
-static uintptr_t   object_hash( struct mulle_container_keycallback *callback,
-                               void * obj)
-{
-   return( (uintptr_t) [(id) obj hash]);
-}
-
-
-static int   object_is_equal( struct mulle_container_keycallback *callback,
-                             void *obj,
-                             void *other)
-{
-   return( [(id) obj isEqual:(id) other]);
-}
-
-
-static void   *object_retain( struct mulle_container_keycallback *callback,
-                              void *obj,
-                              struct mulle_allocator *allocator)
-{
-   return( [(id) obj retain]);
-}
-
-
-static void   object_autorelease( struct mulle_container_keycallback *callback,
-                                  void *obj,
-                                  struct mulle_allocator *allocator)
-{
-   [(id) obj autorelease];
-}
-
-
-static char   *object_describe( struct mulle_container_keycallback *callback,
-                                void *obj,
-                                struct mulle_allocator **p_allocator)
-{
-   *p_allocator = NULL;
-   return( mulle_objc_object_call( (id) obj, @selector( UTF8String), (id) obj));
-}
-
-
-static const struct mulle_container_keycallback   key_retain_callback =
-{
-   object_hash,
-   object_is_equal,
-   object_retain,
-   object_autorelease,
-   object_describe,
-
-   nil,
-   NULL
-};
 
 
 struct UIApplicationTimer
@@ -92,6 +40,7 @@ enum application_state
 @end
 
 
+
 UIApplication   *UIApp;
 
 @interface UIApplication( Declare)
@@ -106,7 +55,50 @@ UIApplication   *UIApp;
 @end 
 
 
+@implementation NSObject( UIApplication)
+
+- (BOOL) __isUIApplication
+{
+   return( NO);
+}
+
+@end
+
+
 @implementation UIApplication
+
+static struct
+{
+   NSUInteger   _debugEnabled;
+} Self;
+
+
++ (void) initializeDebugEnabled
+{
+   char   *s;
+
+   // don't rerun for subclass
+   if( MulleObjCClassGetID( self) != @selector( UIApplication))
+      return;
+
+   s = getenv( "UIApplicationDebugEnabled");
+   if( s)
+      Self._debugEnabled = strtol( s, NULL, 0);
+   else
+   {
+#ifdef UIAPPLICATION_DEBUG_ENABLED
+      Self._debugEnabled = UIAPPLICATION_DEBUG_ENABLED;
+#endif
+   }
+}
+
+
++ (void) setDebugEnabled:(NSUInteger) flag
+{
+   Self._debugEnabled = flag;
+}
+
+
 
 //
 // TODO: this is an Objective-C problem, that if you subclass UIApplication
@@ -121,6 +113,8 @@ UIApplication   *UIApp;
 + (void) initialize
 {
    [super initialize];  // call singleton initialize ?
+   [self initializeDebugEnabled];
+
    if( [self respondsToSelector:@selector( os_initialize)])
       [self os_initialize];
 }
@@ -133,10 +127,17 @@ UIApplication   *UIApp;
 }
 
 
+- (BOOL) __isUIApplication
+{
+   return( YES);
+}
+
+
 #pragma clang diagnostic ignored "-Wobjc-method-access"
 + (instancetype) sharedInstance
 {
-   UIApp = [super sharedInstance];
+   if( ! UIApp)
+      UIApp = [super sharedInstance];
    return( UIApp);
 }
 
@@ -153,18 +154,26 @@ UIApplication   *UIApp;
 
    assert( [NSThread mulleIsMainThread]);
 
+   _debugEnabled = Self._debugEnabled;
+   if( _debugEnabled)
+      MulleUILog( "init");
+
    [self _initResourceStorage:&_resourceStorage];
 
    allocator = MulleObjCInstanceGetAllocator( self);
    mulle_array_init( &_screens,
                      2,
-                     (struct mulle_container_keycallback *) &key_retain_callback,
+                     &MulleObjCContainerRetainKeyCallback,
                      allocator);
+   mulle_map_init( &_standardCursors,
+                   n_UICursorStandardShapes,
+                   (struct mulle_container_keyvaluecallback *) &_MulleObjCContainerIntegerKeyPointerValueCallback,
+                   allocator);
    _screensLock = [NSLock new];
 
    mulle_array_init( &_windows,
                      4,
-                     (struct mulle_container_keycallback *) &key_retain_callback,
+                     &MulleObjCContainerRetainKeyCallback,
                      allocator);
 
    mulle_structarray_init( &_timers,
@@ -228,7 +237,7 @@ UIApplication   *UIApp;
 
    [_bouncerSignature release];
 
-   assert( _mulle_pointermultififo_get_count( &_invocationList) == 0);
+   assert( _mulle_pointermultififo_read_barrier( &_invocationList) == NULL);
    _mulle_pointermultififo_done( &_invocationList);
 
    [_timersLock release];
@@ -237,6 +246,7 @@ UIApplication   *UIApp;
 
    [_screensLock release];
    mulle_array_done( &_screens);
+   mulle_map_done( &_standardCursors);
 
    [super dealloc];
 }
@@ -345,6 +355,7 @@ UIApplication   *UIApp;
 }
 
 
+// TODO: explain why this is not a MulleInvocationQueue
 - (void) runInvocations
 {
    NSInvocation   *invocation;
@@ -374,7 +385,6 @@ UIApplication   *UIApp;
 }
 
 
-
 /*
  * UIScreen
  */
@@ -395,11 +405,10 @@ UIApplication   *UIApp;
 {
    NSUInteger   count;
 
-   [_screensLock lock];
+   NSLockingDo( _screensLock)
    {
       count = mulle_array_get_count( &_screens);
    }
-   [_screensLock unlock];
 
    return( count);
 }
@@ -411,7 +420,7 @@ UIApplication   *UIApp;
    id <UIScreen>   screen;
 
    screen = nil;
-   [_screensLock lock];
+   NSLockingDo( _screensLock)
    {
       n = mulle_array_get_count( &_screens);
       if( i < n)
@@ -420,7 +429,6 @@ UIApplication   *UIApp;
          screen = [[screen retain] autorelease];
       }
    }
-   [_screensLock unlock];
 
    return( screen);
 }
@@ -437,12 +445,11 @@ UIApplication   *UIApp;
    assert( screen);
    assert( [NSThread mulleIsMainThread]);
 
-   [_screensLock lock];
+   NSLockingDo( _screensLock)
    {
       assert( [self _indexOfScreen:screen] == NSNotFound);
       mulle_array_add( &_screens, screen);
    }
-   [_screensLock unlock];
 }
 
 
@@ -450,13 +457,12 @@ UIApplication   *UIApp;
 {
    NSInteger   found;
 
-   [_screensLock lock];
+   NSLockingDo( _screensLock)
    {
       found = [self _indexOfScreen:screen];
       if( found != NSNotFound)
          mulle_array_remove_in_range( &_screens, mulle_range_make( found, 1));
    }
-   [_screensLock unlock];
 }
 
 
@@ -474,7 +480,7 @@ UIApplication   *UIApp;
    best        = nil;
    largestArea = 0.0;
 
-   [_screensLock lock];
+   NSLockingDo( _screensLock)
    {
       n = mulle_array_get_count( &_screens);
       for( i = 0; i < n; i++)
@@ -491,7 +497,6 @@ UIApplication   *UIApp;
       }
       best = [[best retain] autorelease];
    }
-   [_screensLock unlock];
 
    return( best);
 }
@@ -509,7 +514,7 @@ UIApplication   *UIApp;
    assert( screens || ! maxCount);
 
    count = 0;
-   [_screensLock lock];
+   NSLockingDo( _screensLock)
    {
       n = mulle_array_get_count( &_screens);
       for( i = 0; i < n; i++)
@@ -524,7 +529,6 @@ UIApplication   *UIApp;
          }
       }
    }
-   [_screensLock unlock];
 
    return( count);
 }
@@ -661,22 +665,18 @@ UIApplication   *UIApp;
    return( window);
 }
 
-
-//
 //
 //
 - (UICursor *) cursorWithStandardShape:(UICursorStandardShape) shape
 {
-   assert( shape < n_UICursorStandardShapes);
-   assert( ! shape || _standardCursors[ shape]);
-
-   return( _standardCursors[ shape]);
+   return( mulle_map_get( &_standardCursors, (void *) shape));
 }
 
 
 - (void) loadStandardCursors
 {
    NSUInteger   shape;
+   UICursor     *cursor;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -690,8 +690,8 @@ UIApplication   *UIApp;
 
    for( shape = 1; shape < n_UICursorStandardShapes; shape++)
    {
-      assert( ! _standardCursors[ shape]);
-      _standardCursors[ shape] = [self os_createStandardCursor:shape];
+      cursor = [self os_createStandardCursor:shape];
+      mulle_map_set( &_standardCursors, (void *) shape, cursor);
    }
 }
 
@@ -699,14 +699,18 @@ UIApplication   *UIApp;
 - (void) removeStandardCursors
 {
    NSUInteger   shape;
+   UICursor     *cursor;
 
    assert( [NSThread mulleIsMainThread]);
 
    for( shape = 1; shape < n_UICursorStandardShapes; shape++)
    {
-      if( _standardCursors[ shape]) // can happen in tests
-         [self os_destroyCursor:_standardCursors[ shape]];
-      _standardCursors[ shape] = NULL;
+      cursor = mulle_map_get( &_standardCursors, (void *) shape);
+      if( cursor) // can happen in tests
+      {
+         [self os_destroyCursor:cursor];
+         mulle_map_remove( &_standardCursors, (void *) shape);
+      }
    }
 }
 
@@ -739,7 +743,7 @@ UIApplication   *UIApp;
    struct mulle_structarray             tmp;
    NSUInteger                           n;
 
-   [_timersLock lock];
+   NSLockingDo( _timersLock)
    {
       if( _timerHoles)
       {
@@ -763,7 +767,6 @@ UIApplication   *UIApp;
          mulle_structarray_done( &tmp);
       }
    }
-   [_timersLock unlock];
 }
 
 
@@ -777,7 +780,7 @@ UIApplication   *UIApp;
    struct mulle_structarray    tmp;
    NSUInteger                  n;
 
-   [_timersLock lock];
+   NSLockingDo( _timersLock)
    {
       n = mulle_structarray_get_count( &_timers);
       if( n)
@@ -807,7 +810,6 @@ UIApplication   *UIApp;
          mulle_structarray_done( &tmp);
       }
    }
-   [_timersLock unlock];
 }
 
 
@@ -835,7 +837,7 @@ UIApplication   *UIApp;
    assert( [timer isKindOfClass:[NSTimer class]]);
    assert( receiver);
 
-   [_timersLock lock];
+   NSLockingDo( _timersLock)
    {
       // when we have too many holes compact
       if( _timerHoles >= MAX_TIMERHOLES)
@@ -849,7 +851,6 @@ UIApplication   *UIApp;
 
       mulle_structarray_add( &_timers, &appTimer);
    }
-   [_timersLock unlock];
 
 #ifdef RUN_DEBUG
    MulleUILog( "add Timer %@ (%.3f)", timer, appTimer.timestamp);
@@ -864,7 +865,7 @@ UIApplication   *UIApp;
 
    assert( [timer isKindOfClass:[NSTimer class]]);
 
-   [_timersLock lock];
+   NSLockingDo( _timersLock)
    {
       assert( [timer mulleIsRelativeTimer]);
 
@@ -882,7 +883,6 @@ UIApplication   *UIApp;
       }
       mulle_structarrayenumerator_done( &rover);
    }
-   [_timersLock unlock];
 }
 
 
@@ -908,7 +908,7 @@ UIApplication   *UIApp;
                            0,
                            NULL);
 
-   [_timersLock lock];
+   NSLockingDo( _timersLock)
    {
       // because firing times may add or remove times, we first need to
       // collect all the timers in another array, then fire them
@@ -956,7 +956,6 @@ UIApplication   *UIApp;
          _timerHoles++;
       }
    }
-   [_timersLock unlock];
 
    //
    // fire all the timers that were accumulated, very often this will
@@ -1011,9 +1010,7 @@ UIApplication   *UIApp;
       {
          _state = CheckWindows;
          {
-#ifdef RUN_DEBUG
-            MulleUILog( "-> CheckWindows");
-#endif
+            UIApplicationLogVerbose( "-> CheckWindows");
             closeWindows = NO;
 
             mulle_array_for( &_windows, window)
@@ -1032,9 +1029,7 @@ UIApplication   *UIApp;
          {
             _state = CloseWindows;
             {
-#ifdef RUN_DEBUG
-               MulleUILog( "-> CloseWindows");
-#endif
+               UIApplicationLogVerbose( "-> CloseWindows");
                [self _closeWindows];
             }
          }
@@ -1048,14 +1043,11 @@ UIApplication   *UIApp;
 
          _state = DrawAndSwap;
          {
-#ifdef RUN_DEBUG
-            MulleUILog( "-> DrawAndSwap");
-#endif
+            UIApplicationLogVerbose( "-> DrawAndSwap");
             mulle_array_for( &_windows, window)
             {
-#ifdef RUN_DEBUG
-               MulleUILog( "calls %#@ to refresh", window);
-#endif
+               UIApplicationLog( "calls %#@ to refresh", window);
+
                callAgainInSeconds = [window displayFrameIfNeeded:now];
 
                previous = now;
@@ -1068,35 +1060,30 @@ UIApplication   *UIApp;
                // principally we'd need to reduce the actualFastestFrameRate
                // by the drawing time spent
                   nextWindowDisplayCallInSeconds -= now - previous;
+
+               UIApplicationLog( "%#@ will be called to refresh again in %.6gs (requested %.6gs)", window,
+                                 nextWindowDisplayCallInSeconds, callAgainInSeconds);
             }
          }
 
          _state = InvokeMethods;
          {
-#ifdef RUN_DEBUG
-            MulleUILog( "-> InvokeMethods");
-#endif
+            UIApplicationLogVerbose( "-> InvokeMethods");
             [self runInvocations];
          }
 
          _state = FireTimers;
          {
-#ifdef RUN_DEBUG
-            MulleUILog( "-> FireTimers");
-#endif
+            UIApplicationLogVerbose( "-> FireTimers");
             nextTimerFireCallInSeconds = [self fireTimersIfNeeded:now];
          }
 
          _state = WindowPropertyChanges;
          {
-#ifdef RUN_DEBUG
-            MulleUILog( "-> WindowPropertyChanges");
-#endif
+            UIApplicationLogVerbose( "-> WindowPropertyChanges");
             mulle_array_for( &_windows, window)
             {
-#ifdef RUN_DEBUG
-               MulleUILog( "calls %#@ to push property changes", window);
-#endif
+               UIApplicationLogVerbose( "calls %#@ to push property changes", window);
                // TODO: pass App as parameter
                [window writeOSWindowPropertyChangesIfNeeded];
             }
@@ -1104,19 +1091,15 @@ UIApplication   *UIApp;
 
          _state = PollEvents;
          {
-#ifdef RUN_DEBUG
-            MulleUILog( "-> PollEvents");
-#endif
+            UIApplicationLogVerbose( "-> PollEvents");
             timeout = nextTimerFireCallInSeconds < nextWindowDisplayCallInSeconds
                         ? nextTimerFireCallInSeconds
                         : nextWindowDisplayCallInSeconds;
             if( timeout < 0.0)
                timeout = 0.0;
 
-#if defined( RUN_DEBUG)
-            MulleUILog( "next loop scheduled: %.17f", timeout);
-#endif
-            [UIEvent os_waitEventsWithTimeout:timeout];
+            UIApplicationLogVerbose( "next loop scheduled: %.17f", timeout);
+            [self os_waitEventsWithTimeout:timeout];
          }
 
 //         _state = ProcessEvents;

@@ -28,6 +28,10 @@ PROTOCOLCLASS_INTERFACE0( UIResponder)
 - (BOOL) canBecomeFirstResponder;
 - (BOOL) canResignFirstResponder;
 
+// default will query for implementations of one of the mouseDragged:
+// methods
+- (BOOL) isMouseMotionEnabled;
+
 // - (BOOL) isUserInteractionEnabled;  // default YES
 
 // accept methods only consider the receiver

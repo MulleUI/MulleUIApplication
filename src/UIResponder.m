@@ -2,13 +2,15 @@
 
 #import "import-private.h"
 
-#import "UIEvent.h"
+#import "import-project.h"
 
 
+// enums compatible to UIView/UIWindow
 enum
 {
-   UIResponderDebugEvent            = 0x1,
-   UIResponderDebugMouseMotionEvent = 0x2
+   UIResponderDebugEvent            = 0x000002,
+
+   UIResponderDebugMouseMotionEvent = 0x001000000
 };
 
 
@@ -200,7 +202,7 @@ static id   performSelectorIfResponding( UIResponder *self,
 
    assert( [event isKindOfClass:[UIMouseMotionEvent class]]);
 
-   UIResponderEventLog( "%#@", event);
+   UIResponderMouseMotionEventLog( "%#@", event);
 
    sel   = 0;
    state = [event buttonStates];
@@ -363,6 +365,14 @@ static id   performSelectorIfResponding( UIResponder *self,
 
 - (void) didAcceptEvent:(UIEvent *) event
 {
+}
+
+
+- (BOOL) isMouseMotionEnabled
+{
+   return( [self respondsToSelector:@selector( mouseDragged:)]
+           || [self respondsToSelector:@selector( otherMouseDragged:)]
+           || [self respondsToSelector:@selector( rightMouseDragged:)]);
 }
 
 

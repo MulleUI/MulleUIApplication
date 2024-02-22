@@ -1,5 +1,9 @@
 #import "UIEvent.h"
 
+#import "import-private.h"
+
+#import "import-project.h"
+
 
 // #define EVENT_DEBUG
 
@@ -170,13 +174,13 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
    MulleUILog( "send empty event");
 #endif
 
-   [self os_sendEmptyEvent];
+   [[UIApplication sharedInstance] os_sendEmptyEvent];
 }
 
 
 + (void) waitForEventsTimeout:(mulle_relativetime_t) timeout
 {
-   [self os_waitEventsWithTimeout:timeout];
+   [[UIApplication sharedInstance] os_waitEventsWithTimeout:timeout];
 }
 
 
@@ -528,7 +532,9 @@ static struct
 {
    CGPoint   offset;
 
+#ifdef EVENT_DEBUG
    MulleUILog( "modifiers 0x%tx", _inputState.keyModifiers);
+#endif
 
    offset = _scrollOffset;
    if( useModifiers && (_inputState.keyModifiers & UIEventKeyModifierAlt))

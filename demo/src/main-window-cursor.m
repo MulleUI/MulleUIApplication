@@ -12,7 +12,7 @@
 
    shape  = (shape + 1) % n_UICursorStandardShapes;
    cursor = [UIApp cursorWithStandardShape:shape];
-   fprintf( stderr, "Change cursor shape to %d (%p)", shape, cursor);
+   MulleUILog( "Change cursor shape to %d (%p)", shape, cursor);
    [self setCursor:cursor];
 }
 

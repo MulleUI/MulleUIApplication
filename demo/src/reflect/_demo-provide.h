@@ -9,4 +9,11 @@
  *
  *      mulle-sde environment set MULLE_MATCH_TO_C_RUN DISABLE
  */
+#ifndef _demo__provide_h__
+#define _demo__provide_h__
+
+
 #include "demo-version.h"
+
+
+#endif

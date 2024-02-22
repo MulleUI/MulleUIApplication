@@ -10,7 +10,7 @@ static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h,
    float rot;
    NVGpaint paint;
 
-   // stolen from the nanovg demo and stupedified
+   // stolen from the nanovg demo and stupidified
 
    // RING
    nvgSave(vg);
@@ -82,26 +82,32 @@ static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h,
 }
 
 
-static void  drawStuff( CALayer *layer, CGContext *context)
+static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *context)
 {
-   CGFloat   diameter;
-   CGRect    canvas;
-   CGRect    rect;
-   CGPoint   a;
-   CGPoint   b;
+   CGFloat       diameter;
+   CGRect        canvas;
+   CGRect        rect;
+   CGPoint       a;
+   CGPoint       b;
+   NSUInteger    numberOfFrames;
 
-   canvas      = [layer canvas];
-   rect        = UIEdgeInsetsInsetRect( canvas, UIEdgeInsetsMake( 10, 10, 10, 10));
-   diameter    = CGFloatMinimum( CGRectGetWidth( rect), CGRectGetHeight( rect));
-   rect.origin = CGSizeGetCenterPointInRect( CGSizeMake( diameter, diameter), rect);
-   rect.size   = CGSizeMake( diameter, diameter);
+   numberOfFrames = [context numberOfFrames];
+
+   MulleUICLog( "layer: %#@ context: %#@ numberOfFrames: %tu", layer, context, numberOfFrames);
+
+   canvas         = [layer canvas];
+   rect           = UIEdgeInsetsInsetRect( canvas, UIEdgeInsetsMake( 10, 10, 10, 10));
+   diameter       = CGFloatMinimum( CGRectGetWidth( rect), CGRectGetHeight( rect));
+   rect.origin    = CGSizeGetCenterPointInRect( CGSizeMake( diameter, diameter), rect);
+   rect.size      = CGSizeMake( diameter, diameter);
 
    drawColorwheel( CGContextGetNVGContext( context),
                    rect.origin.x,
                    rect.origin.y,
                    diameter,
                    diameter,
-                   [context numberOfFrames]);
+                   numberOfFrames);
+   return( YES);
 }
 
 
@@ -118,7 +124,7 @@ static void   setupSceneInWindow( UIWindow *window)
 
    view  = [UIView viewWithFrame:frame];
    [view setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 0.0, 1.0)];
-   [(CALayer *) [view layer] setDrawCallback:(CALayerDrawCallback_t *) drawStuff];
+   [(CGGraphicsLayer *) [view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
 
@@ -131,6 +137,7 @@ enum
 
 #define N_WINDOWS     2
 #define DISPLAY_MODE  Vsync
+#define HZ            2.0
 
 
 int   main( int argc, char *argv[])
@@ -142,6 +149,7 @@ int   main( int argc, char *argv[])
    id <UIGraphicsContext>   context;
    int                      mode = DISPLAY_MODE;
    NSUInteger               styleMask;
+   char                     buf[ 32];
 
    if( argc == 2)
    {
@@ -163,9 +171,11 @@ int   main( int argc, char *argv[])
       for( i = 0; i < N_WINDOWS; i++)
       {
          styleMask  = UIWindowStyleMaskDefault & ~UIWindowStyleRetained;
+         mulle_snprintf( buf, sizeof( buf), "Demo Window #%tu", i);
          window[ i] = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 200.0, 200.0)
-                              titleUTF8String:"Demo"
-                                    styleMask:styleMask];
+                                titleUTF8String:buf
+                                      styleMask:styleMask];
+         [window[ i] setDebugNameUTF8String:buf];
 
          switch( mode)
          {
@@ -183,14 +193,14 @@ int   main( int argc, char *argv[])
             break;
 
          case Softsync :
-            [window[ i] setFrameRateHz:100.0];
+            [window[ i] setFrameRateHz:HZ];
             break;
          }
 
          [window[ i] setBackgroundColor:CGColorMakeWithRGBA( 1.0 / N_WINDOWS, 
-                                                         1.0 - 1.0 / N_WINDOWS, 
-                                                         0.0, 
-                                                         1.0)];
+                                                             1.0 - 1.0 / N_WINDOWS,
+                                                             0.5  / N_WINDOWS,
+                                                             1.0)];
          setupSceneInWindow( window[ i]);
          [app addWindow:window[ i]];
       }
