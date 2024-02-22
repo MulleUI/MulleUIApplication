@@ -3,6 +3,8 @@
 #import "UIWindowTypes.h"
 #import "UICursor.h"
 
+#define N_UIApplicationSpaceDoubles  5
+
 //
 // MEMO: unhandled events, are they passed to the application ? If yes
 //       it could be a problem. Application would needs its own queue,
@@ -17,9 +19,7 @@
    NSLock *                        _screensLock;
 
    struct mulle_array              _windows;
-
-   // custom cursors need a mulle_pointerarray (implement later)
-   UICursor *                      _standardCursors[ n_UICursorStandardShapes];
+   struct mulle_map                _standardCursors;
 
    struct mulle_structarray        _timers;
    NSLock *                        _timersLock;
@@ -30,10 +30,23 @@
    mulle_atomic_pointer_t *        _executionQueue;
    struct mulle_pointermultififo   _invocationList;
    NSMethodSignature *             _bouncerSignature;
+
+   //
+   // here is some extra space for SDL/GLFW whoever. Subclassing UIApplication
+   // in general is tricky, but for SDL we need some storage space for handles
+   //
+@private
+   struct
+   {
+      double  _d[ N_UIApplicationSpaceDoubles];
+   } _space;
 }
 
-@property( assign) id   delegate;      // unused so far
-@property( assign) int  returnStatus;
+
+
+@property( assign) id     delegate;      // unused so far
+@property( assign) int    returnStatus;
+@property( assign) BOOL   debugEnabled;
 
 //
 // UIScreen:
@@ -143,6 +156,9 @@
 // like UIApplicationRunWindow
 - (int) runWindow:(id <UIWindow>) window;
 
+// this window gets the events, if UIApplication can not decide which
+// window should get it (this does not imply ordering at all)
+@property( retain, setter=setOSKeyWindow:) id <UIOSWindow>  osKeyWindow;
 
 @end
 
@@ -157,6 +173,10 @@
 
 - (void *) os_createStandardCursor:(UICursorStandardShape) shape;
 - (void) os_destroyCursor:(void *) cursor;
+
+- (void) os_waitEventsWithTimeout:(mulle_relativetime_t) seconds;
+- (void) os_pollEvents;
+- (void) os_sendEmptyEvent;
 
 @end
 
@@ -177,3 +197,11 @@ int  UIApplicationRunWindow( id <UIWindow> window);
 //UI_APPLICATION_EXTERN_GLOBAL
 extern UIApplication   *UIApp;
 
+
+#define UIApplicationSizeOfSpace   (sizeof( double) * N_UIApplicationSpaceDoubles)
+
+static inline void   *UIApplicationGetSpace( UIApplication *self, size_t expect)
+{
+   assert( expect <= UIApplicationSizeOfSpace);
+   return( (void *) &((struct{ @defs( UIApplication); } *) self)->_space);
+}

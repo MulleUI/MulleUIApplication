@@ -1,12 +1,12 @@
 #import <MulleUIApplication/MulleUIApplication.h>
 
 
-@interface UIEvent( DummyOSSupport)
+@interface UIApplication( DummyOSSupport)
 @end
 
-@implementation UIEvent( DummyOSSupport)
+@implementation UIApplication( DummyOSSupport)
 
-+ (void) os_waitEventsWithTimeout:(mulle_relativetime_t) timeout
+- (void) os_waitEventsWithTimeout:(mulle_relativetime_t) timeout
 {
 }
 

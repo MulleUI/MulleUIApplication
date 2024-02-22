@@ -1,0 +1,81 @@
+<h1>demo</h1>
+
+<h3>two-windows</h3>
+
+<p>This demo runs two windows single-threaded with the help of UIApplication.
+As the windows run by default with VSYNC enabled, you can see that one window
+animation speeds up when the other window closes. That&#39;s because both windows
+are waiting for VSYNC to redraw, so each window only gets half the framerate.</p>
+
+<p>Call <code>two-windows vsync</code> or <code>two-windows softsync</code> to see the difference.</p>
+
+<p><img src="two-windows.png" alt="two-windows"></p>
+
+<p><a href="src/main-two-windows.m">main-two-windows.m</a></p>
+
+<h2>mulle-sde</h2>
+
+<p>This is a <a href="//github.com/mulle-sde">mulle-sde</a> project. mulle-sde combines
+recursive package management with cross-platform builds via <strong>cmake</strong>:</p>
+
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Build</td>
+<td><code>mulle-sde craft [--release|--debug]</code></td>
+<td>Builds into local <code>kitchen</code> folder</td>
+</tr>
+<tr>
+<td>Install</td>
+<td><code>mulle-sde install --prefix /usr/local https://github.com/&lt;|GITHUB_USER|&gt;/demo.git</code></td>
+<td>Like <code>make install</code></td>
+</tr>
+</tbody>
+</table>
+
+<h3>Manual Installation</h3>
+
+<p>Install the requirements:</p>
+
+<table>
+<thead>
+<tr>
+<th>Requirements</th>
+<th>Description</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="//github.com/some/requirement">some-requirement</a></td>
+<td>Some requirement</td>
+</tr>
+</tbody>
+</table>
+
+<p>Install into <code>/usr/local</code>:</p>
+
+<pre><code>mkdir build 2&gt; /dev/null
+(
+   cd build ;
+   cmake -DCMAKE_INSTALL_PREFIX=/usr/local \
+         -DCMAKE_PREFIX_PATH=/usr/local \
+         -DCMAKE_BUILD_TYPE=Release .. ;
+   make install
+)
+</code></pre>
+
+<!--
+extension : mulle-sde/sde
+directory : demo/all
+template  : .../README.md
+Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`
+-->

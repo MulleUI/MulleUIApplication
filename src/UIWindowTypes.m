@@ -2,6 +2,8 @@
 
 #import "import-private.h"
 
+#import "import-project.h"
+
 
 NS_OPTIONS_TABLE( UIWindowStyle, 19) =
 {

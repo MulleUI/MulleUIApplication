@@ -331,15 +331,6 @@ static inline char   *UIWindowEventTypeUTF8String( UIWindowEventType type)
 @end
 
 
-
-@interface UIEvent( OS)
-
-+ (void) os_waitEventsWithTimeout:(mulle_relativetime_t) seconds;
-+ (void) os_pollEvents;
-+ (void) os_sendEmptyEvent;
-
-@end
-
 //
 // #define GLFW_MOUSE_BUTTON_1         0
 // #define GLFW_MOUSE_BUTTON_2         1

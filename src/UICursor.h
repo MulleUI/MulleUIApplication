@@ -17,10 +17,7 @@ typedef NS_ENUM( NSUInteger, UICursorStandardShape)
    UICursorDrag,
    UICursorHorizontalResize,
    UICursorVerticalResize,
-#if ! defined( GLFW_VERSION_MAJOR) || (GLFW_VERSION_MAJOR > 3) || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MAJOR >= 4)
-   UICursorDiagonalResize,      // need glfw3.4 for this (also change below!)
-#endif
-
+   UICursorDiagonalResize,      // need glfw3.4 for this
    n_UICursorStandardShapes
 };
 

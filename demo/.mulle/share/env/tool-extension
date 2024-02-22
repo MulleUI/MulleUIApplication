@@ -39,3 +39,5 @@ mulle-gdb
 mulle-match-to-cmake
 mulle-match-to-c
 cmake
+subl
+subl.exe

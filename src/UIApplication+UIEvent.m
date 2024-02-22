@@ -5,6 +5,7 @@
 
 #import "import-private.h"
 
+#import "import-project.h"
 
 
 @interface UIApplication( UIScreenPrivate)
