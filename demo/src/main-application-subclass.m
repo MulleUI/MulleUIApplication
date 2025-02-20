@@ -1,5 +1,11 @@
 #import "import.h"
 
+#if 1
+# define ApplicationClass  MyApplication
+#else
+# define ApplicationClass  UIApplication
+#endif
+
 
 @interface MyApplication : UIApplication <MulleObjCSingleton>
 @end
@@ -20,13 +26,31 @@
 @end 
 
 
+@implementation CGContext( Debug)
+
+- (void) mulleGainAccess
+{
+   // more todo
+   MulleUILog( "");
+   [super mulleGainAccess];
+}
+
+
+- (void) mulleRelinquishAccess
+{
+   MulleUILog( "");
+   [super mulleRelinquishAccess];
+}
+
+@end
+
 
 int   main( int argc, char *argv[])
 {
    UIWindow         *window;
    UIApplication    *app;
 
-   app = [MyApplication sharedInstance];
+   app = [ApplicationClass sharedInstance];
 
    @autoreleasepool
    {
@@ -34,7 +58,7 @@ int   main( int argc, char *argv[])
       [window setBackgroundColor:CGColorMakeWithRGBA( 1.0, 0.75, 0.0, 1.0)];
       [app addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

@@ -10,7 +10,8 @@
 
 @interface UIApplication( UIEvent) <UIEventReceiver>
 
-- (UIWindowEvent *) handleScreenEvent:(UIScreenEvent *) event;
+- (UIWindowEvent *) handleScreenEvent:(UIScreenEvent *) event   MULLE_UI_MAIN_THREAD_ONLY;
+- (UIWindowEvent *) handleGamepadEvent:(UIGamepadEvent *) event MULLE_UI_MAIN_THREAD_ONLY;
 
 @end
 

@@ -2,6 +2,9 @@
 
 
 @interface MyWindow : NSObject <UIWindow>
+{
+   id   _renderGraphicsContext;
+}
 @end
 
 
@@ -21,11 +24,13 @@
 
 - (void) applicationDidAddWindow:(UIApplication *) app
 {
+   assert( [NSThread mulleIsMainThread]);
 }
 
 
 - (void) applicationDidRemoveWindow:(UIApplication *) app
 {
+   assert( [NSThread mulleIsMainThread]);
 }
 
 

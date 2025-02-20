@@ -10,12 +10,18 @@
 {
 }
 
+- (void) os_pollGamepads
+{
+}
 
 @end
 
 
 
 @interface MyWindow : NSObject <UIWindow>
+{
+  id   _renderGraphicsContext;
+}
 @end
 
 

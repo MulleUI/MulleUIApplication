@@ -11,7 +11,6 @@
 
 PROTOCOLCLASS_INTERFACE0( UIResponder)
 
-
 - (BOOL) becomeFirstResponder;
 - (BOOL) resignFirstResponder;
 - (BOOL) isFirstResponder;
@@ -20,11 +19,12 @@ PROTOCOLCLASS_INTERFACE0( UIResponder)
 
 // handle methods walk the responder chain
 - (UIEvent *) handleEvent:(UIEvent *) event;
+- (UIInputEvent *) handleInputEvent:(UIInputEvent *) event;
 - (UIMouseMotionEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) event;
 
 @optional
 
-- (id<UIResponder>) nextResponder;
+- (id <UIResponder>) nextResponder;
 - (BOOL) canBecomeFirstResponder;
 - (BOOL) canResignFirstResponder;
 

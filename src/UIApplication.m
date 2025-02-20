@@ -27,6 +27,7 @@ enum application_state
    FireTimers,
    InvokeMethods,
    PollEvents,
+   PollGamepads,
    WindowPropertyChanges,
    ProcessEvents,
    Finished
@@ -42,12 +43,15 @@ enum application_state
 
 
 UIApplication   *UIApp;
+BOOL            UIApplicationRequestRunLoopBreak;
+
 
 @interface UIApplication( Declare)
 
 // don't call these yourself
 - (void) loadStandardCursors;
 - (void) removeStandardCursors;
+- (void) removeCustomCursors;
 - (void) removeAllTimers;
 - (void) removeAllWindows;
 - (void) removeAllInvocations;
@@ -69,11 +73,11 @@ UIApplication   *UIApp;
 
 static struct
 {
-   NSUInteger   _debugEnabled;
+   NSUInteger   _debuggingFlags;
 } Self;
 
 
-+ (void) initializeDebugEnabled
+static void   UIApplicationInitializeDebuggingFlags( Class self)
 {
    char   *s;
 
@@ -81,21 +85,18 @@ static struct
    if( MulleObjCClassGetID( self) != @selector( UIApplication))
       return;
 
-   s = getenv( "UIApplicationDebugEnabled");
+   // __CLASS_NAME__ is a wished for compiler feature,
+   s = getenv( MULLE_C_STRINGIFY( UIApplication) "DebuggingFlags");
+   if( ! s)
+      s = getenv( "UIDebuggingFlags");
    if( s)
-      Self._debugEnabled = strtol( s, NULL, 0);
-   else
-   {
-#ifdef UIAPPLICATION_DEBUG_ENABLED
-      Self._debugEnabled = UIAPPLICATION_DEBUG_ENABLED;
-#endif
-   }
+      Self._debuggingFlags = strtol( s, NULL, 0);
 }
 
 
-+ (void) setDebugEnabled:(NSUInteger) flag
++ (void) setDebuggingFlags:(NSUInteger) flag   MULLE_OBJC_THREADSAFE_METHOD
 {
-   Self._debugEnabled = flag;
+   Self._debuggingFlags = flag;
 }
 
 
@@ -108,12 +109,12 @@ static struct
 //       a second time. Your initialize needs to call os_deinitialize before
 //       calling os_initialize again. Super bad. Solution ? Change the 
 //       default behaviour of +initialize to _not_ be called when there
-//       is no immediate implementation.
+//       is no immediate implementation ?
 //
 + (void) initialize
 {
    [super initialize];  // call singleton initialize ?
-   [self initializeDebugEnabled];
+   UIApplicationInitializeDebuggingFlags( self);
 
    if( [self respondsToSelector:@selector( os_initialize)])
       [self os_initialize];
@@ -154,8 +155,12 @@ static struct
 
    assert( [NSThread mulleIsMainThread]);
 
-   _debugEnabled = Self._debugEnabled;
-   if( _debugEnabled)
+#ifdef UIAPPLICATION_DEBUGGING_FLAGS
+   _debuggingFlags = UIAPPLICATION_DEBUGGING_FLAGS;
+#else
+   _debuggingFlags = Self._debuggingFlags;
+#endif
+   if( _debuggingFlags)
       MulleUILog( "init");
 
    [self _initResourceStorage:&_resourceStorage];
@@ -165,11 +170,25 @@ static struct
                      2,
                      &MulleObjCContainerRetainKeyCallback,
                      allocator);
+   _screensLock = [NSLock new];
+
+   allocator = MulleObjCInstanceGetAllocator( self);
+
+   mulle_pointerarray_init( &_gamepads,
+                            4,
+                            allocator);
+   _gamepadsLock = [NSLock new];
+
    mulle_map_init( &_standardCursors,
                    n_UICursorStandardShapes,
                    (struct mulle_container_keyvaluecallback *) &_MulleObjCContainerIntegerKeyPointerValueCallback,
                    allocator);
-   _screensLock = [NSLock new];
+
+   _customCursorLock = [NSLock new];
+   mulle_map_init( &_customCursors,
+                   0,
+                   (struct mulle_container_keyvaluecallback *) &_MulleObjCContainerCopiedCStringPointerValueCallback,
+                   allocator);
 
    mulle_array_init( &_windows,
                      4,
@@ -196,23 +215,9 @@ static struct
 }
 
 
-// assume all windows thread are quiescent now... else why call terminate :)
-
-
-- (int) terminate
+- (MulleObjCTAOStrategy) mulleTAOStrategy
 {
-   assert( [NSThread mulleIsMainThread]);
-
-   [self removeAllInvocations];
-   [self removeAllTimers];
-   [self removeAllWindows];
-
-   if( [self respondsToSelector:@selector( os_finalize)])
-      [self os_finalize];
-
-   [self removeStandardCursors];
-
-   return( _returnStatus);
+   return( MulleObjCTAOKnownThreadSafeMethods);
 }
 
 
@@ -231,6 +236,8 @@ static struct
 
 - (void) dealloc
 {
+   id   gamepad;
+
    assert( [NSThread mulleIsMainThread]);
 
    [self _doneResourceStorage:&_resourceStorage];
@@ -244,15 +251,26 @@ static struct
    mulle_structarray_done( &_timers);
    mulle_array_done( &_windows);
 
+   [_customCursorLock release];
+   mulle_map_done( &_customCursors);
+
+   [_gamepadsLock release];
+   mulle_pointerarray_for( &_gamepads, gamepad)
+   {
+      [gamepad release];
+   }
+   mulle_pointerarray_done( &_gamepads);
+
    [_screensLock release];
    mulle_array_done( &_screens);
+
    mulle_map_done( &_standardCursors);
 
    [super dealloc];
 }
 
 
-- (struct MulleUIResourceStorage *) _resourceStorage
+- (struct MulleUIResourceStorage *) _resourceStorage  MULLE_OBJC_THREADSAFE_METHOD
 {
    return( &_resourceStorage);
 }
@@ -261,19 +279,107 @@ static struct
  *
  */
 
+// assume all windows thread are quiescent now... else why call terminate :)
+
+
+- (int) terminate
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   [self removeAllInvocations];
+   [self removeAllTimers];
+   [self removeAllWindows];
+
+   if( [self respondsToSelector:@selector( os_finalize)])
+      [self os_finalize];
+
+   [self removeCustomCursors];
+   [self removeStandardCursors];
+
+   return( _returnStatus);
+}
+
+
+- (void) invokeOnMainThread:(NSInvocation *) invocation  MULLE_OBJC_THREADSAFE_METHOD
+{
+   if( ! invocation)
+      return;
+
+   // Even if we are the mainThread we want to keep the sequence of the
+   // invocations as stored in the _invocationList and only "fire" them off at
+   // a predefined sequence point in the runLoop. So we don't special case this
+   // if( [NSThread mulleIsMainThread])
+   //    [invocation invoke];
+
+   // TODO: use -mulleImmutableCopyArguments, which doesn't exist yet (?)
+   [invocation retainArguments];
+   [invocation mulleRelinquishAccess];
+
+   for(;;)
+   {
+      if( ! _mulle_pointermultififo_write( &_invocationList, invocation))
+         break;
+
+      switch( errno)
+      {
+      case EBUSY :  // just busy, we wait... this should happen really rarely
+         mulle_thread_yield();
+         break;
+
+      default :
+         MulleObjCThrowErrnoExceptionUTF8String( "invocation fifo problem");
+      }
+   }
+}
+
+
+// TODO: explain why this is not a MulleInvocationQueue
+- (void) runInvocations
+{
+   NSInvocation   *invocation;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   // maybe name "extract"
+   while( (invocation = _mulle_pointermultififo_read_barrier( &_invocationList)))
+   {
+      [invocation mulleGainAccess];
+      [invocation invoke];
+   }
+}
+
+
+- (void) removeAllInvocations
+{
+   NSInvocation   *invocation;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   // maybe name "extract"
+   while( (invocation = _mulle_pointermultififo_read_barrier( &_invocationList)))
+   {
+      // coded like runInvocations for least surprises
+      [invocation mulleGainAccess];
+   }
+}
+
+
 - (void) _synchronousInvoke:(NSInvocation *) invocation
               conditionLock:(NSConditionLock *) lock
 {
+   assert( [NSThread mulleIsMainThread]);
+
    [lock lockWhenCondition:0];  // this can not not work
    [invocation invoke];
    [invocation mulleRetainReturnValue];
+   [invocation mulleRelinquishAccess];
    [lock unlockWithCondition:1]; // this will not block either
 }
 
 
 //
 // if waitUntilDone is set to YES, you can get the return value
-// from the invocation!!!
+// from the invocation!!! In this case the invocation w
 //
 - (void) invokeOnMainThread:(NSInvocation *) invocation
               waitUntilDone:(BOOL) flag
@@ -287,12 +393,18 @@ static struct
       return;
    }
 
-   // a special case, if we are the main thread we would deadlock ourself
+   //
+   // A special case, if we are the main thread we could deadlock ourselfs.
+   // So we just run it now, circumventing any stored invocations.
+   //
    if( [NSThread mulleIsMainThread])
    {
       [invocation invoke];
       return;
    }
+
+   // keep invocation around for return value
+   //[invocation retain];
 
    // we lock the condition lock and as long as its locked with condition
    // 0, the invocation is running... Need a new lock for every caller..
@@ -321,68 +433,15 @@ static struct
    }
    [lock lockWhenCondition:1];  // block until invocation is through
 
-   // rare that we don't autorelease here, but
+   // get invocation back (and autorelease)
+   [invocation mulleGainAccess];
+
+   // rare that we don't autorelease here, but...
    // we can't get exceptions from the invocation anyway, and I want the
    // lock to be gone ASAP, because there could be OS limits...
    [lock release];
 }
 
-
-- (void) invokeOnMainThread:(NSInvocation *) invocation
-{
-   if( ! invocation)
-      return;
-
-   // TODO: use -mulleImmutableCopyArguments, which doesn't exist yet
-   [invocation retainArguments];
-   [invocation retain];
-
-   for(;;)
-   {
-      if( ! _mulle_pointermultififo_write( &_invocationList, invocation))
-         break;
-
-      switch( errno)
-      {
-      case EAGAIN :  // just busy, we wait... this should happen really rarely
-         mulle_thread_yield();
-         break;
-
-      default :
-         abort();
-      }
-   }
-}
-
-
-// TODO: explain why this is not a MulleInvocationQueue
-- (void) runInvocations
-{
-   NSInvocation   *invocation;
-
-   assert( [NSThread mulleIsMainThread]);
-
-   // maybe name "extract"
-   while( (invocation = _mulle_pointermultififo_read_barrier( &_invocationList)))
-   {
-      [invocation autorelease];
-      [invocation invoke];
-   }
-}
-
-
-- (void) removeAllInvocations
-{
-   NSInvocation   *invocation;
-
-   assert( [NSThread mulleIsMainThread]);
-
-   // maybe name "extract"
-   while( (invocation = _mulle_pointermultififo_read_barrier( &_invocationList)))
-   {
-      [invocation autorelease];
-   }
-}
 
 
 /*
@@ -461,7 +520,10 @@ static struct
    {
       found = [self _indexOfScreen:screen];
       if( found != NSNotFound)
+      {
+         [screen mullePerformFinalize]; // lop off connection to GLFW
          mulle_array_remove_in_range( &_screens, mulle_range_make( found, 1));
+      }
    }
 }
 
@@ -531,6 +593,135 @@ static struct
    }
 
    return( count);
+}
+
+
+/*
+ * UIGamepad
+ */
+static NSUInteger   UIApplicationIndexOfGamepad( UIApplication *self,
+                                                 id <UIGamepad> gamepad,
+                                                 NSUInteger * firstHoleIndex,
+                                                 BOOL locking)
+{
+   char        *guid;
+   char        *other_guid;
+   NSUInteger  i;
+   NSUInteger  index;
+   NSLock      *lock;
+
+   guid            = [gamepad guidUTF8String];
+   index           = NSNotFound;
+   *firstHoleIndex = NSNotFound;  // superflous but less complicated
+
+   if( ! guid)
+      return( index);
+
+   lock = locking ? self->_gamepadsLock : nil;
+   NSLockingDo( lock)
+   {
+      i = 0;
+      mulle_pointerarray_for( &self->_gamepads, gamepad)
+      {
+         other_guid = [gamepad guidUTF8String];
+         if( ! other_guid)
+         {
+            *firstHoleIndex = i;
+            continue;
+         }
+         if( ! strcmp( guid, other_guid))
+         {
+            index = i;
+            break;
+         }
+         i++;
+      }
+   }
+
+   return( index);
+}
+
+
+- (NSUInteger) indexOfGamepad:(id <UIGamepad>) gamepad
+{
+   NSUInteger   unused;
+
+   return( UIApplicationIndexOfGamepad( self, gamepad, &unused, YES));
+}
+
+
+
+static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
+                                                    id <UIGamepad> gamepad)
+{
+   id <UIGamepad>   old;
+   NSUInteger       index;
+   NSUInteger       firstHoleIndex;
+
+   index = UIApplicationIndexOfGamepad( self, gamepad, &firstHoleIndex, NO);
+   if( index == NSNotFound)
+   {
+      index = firstHoleIndex;
+      if( index == NSNotFound)
+         index = mulle_pointerarray_get_count( &self->_gamepads);
+   }
+   else
+   {
+      // remove previous if present
+      old = mulle_pointerarray_get_zeroing( &self->_gamepads, index);
+      if( old)
+      {
+         [old autorelease];
+         self->_numberOfGamepads--;
+      }
+   }
+   return( index);
+}
+
+
+- (void) _addGamepad:(id <UIGamepad>) gamepad
+{
+   NSInteger   index;
+
+   assert( gamepad);
+
+   NSLockingDo( _gamepadsLock)
+   {
+      index = UIApplicationIndexForSetGamepad( self, gamepad);
+
+      [gamepad retain];
+      mulle_pointerarray_set_zeroing( &_gamepads, index, gamepad);
+      _numberOfGamepads++;
+   }
+}
+
+
+- (void) _removeGamepad:(id <UIGamepad>) gamepad
+{
+   NSInteger   index;
+
+   assert( gamepad);
+
+   NSLockingDo( _gamepadsLock)
+   {
+      index = UIApplicationIndexForSetGamepad( self, gamepad);
+      mulle_pointerarray_set_zeroing( &_gamepads, index, NULL);
+      [gamepad mullePerformFinalize]; // lop off connection to GLFW
+   }
+}
+
+
+- (id <UIGamepad>) gamepadAtIndex:(NSUInteger) index
+{
+   id <UIGamepad>   gamepad;
+
+   NSLockingDo( _gamepadsLock)
+   {
+      gamepad = mulle_pointerarray_get_zeroing( &_gamepads, index);
+      gamepad = [[gamepad retain] autorelease];
+   }
+
+   return( gamepad);
 }
 
 
@@ -609,6 +800,8 @@ static struct
    id <UIWindow>        window;
    struct mulle_array   tmp;
 
+   assert( [NSThread mulleIsMainThread]);
+
    tmp = _windows;
    mulle_array_init( &_windows,
                      0,
@@ -628,6 +821,8 @@ static struct
 {
    id <UIWindow>        window;
    struct mulle_array   tmp;
+
+   assert( [NSThread mulleIsMainThread]);
 
    mulle_array_init( &tmp,
                      mulle_array_get_count( &_windows),
@@ -665,8 +860,38 @@ static struct
    return( window);
 }
 
+
 //
 //
+//
+
+- (CGPixelSize) standardCursorSize
+{
+#if defined(_WIN32)
+      return( CGPixelSizeMake( 32, 32));
+#endif
+
+#if defined(__APPLE__)
+      return( CGPixelSizeMake( 32, 32));
+#endif
+
+#if defined(__linux__)
+   char   *xdg_session_type = (char *) getenv("XDG_SESSION_TYPE");
+
+   if( xdg_session_type && strcmp(xdg_session_type, "wayland") == 0)
+   {
+      return( CGPixelSizeMake( 32, 32));
+   }
+   else
+   {
+      return( CGPixelSizeMake( 32, 32));
+   }
+#else
+   return( CGPixelSizeMake( 32, 32));
+#endif
+}
+
+
 - (UICursor *) cursorWithStandardShape:(UICursorStandardShape) shape
 {
    return( mulle_map_get( &_standardCursors, (void *) shape));
@@ -715,6 +940,76 @@ static struct
 }
 
 
+- (UICursor *) cursorForKeyUTF8String:(char *) s
+{
+   UICursor  *cursor;
+
+   NSLockingDo( _customCursorLock)
+   {
+      cursor = mulle_map_get( &_customCursors, (void *) s);
+   }
+   return( cursor);
+}
+
+
+- (void) removeCustomCursors
+{
+   UICursor     *cursor;
+   char         *key;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   mulle_map_for( &_customCursors, key, cursor)
+   {
+      [self os_destroyCursor:cursor];
+   }
+   mulle_map_reset( &_customCursors);
+}
+
+
+- (UICursor *) registerCursorBitmap:(struct CGBitmap) bitmap
+                            hotSpot:(CGPixelPoint) hotSpot
+                   forKeyUTF8String:(char *) key
+                scaleToStandardSize:(BOOL) flag
+{
+   struct CGBitmapInfo  info;
+   struct CGBitmap      scaled;
+   struct CGBitmap      *cursorBitmap;
+   UICursor             *cursor;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   info = CGBitmapInfoMake( flag
+                              ? [self standardCursorSize]
+                              : bitmap.info.size,
+                            0,
+                            CGBitmapEncodingRGBABytes);
+
+   // avoid needless bitmap copy, if it already fits
+   if( CGBitmapNeedsConversion( bitmap, info))
+   {
+      scaled       = CGBitmapConvert( bitmap, info, NULL);
+      cursorBitmap = &scaled;
+   }
+   else
+   {
+      memset( &scaled, 0, sizeof( scaled));
+      cursorBitmap = &bitmap;
+   }
+
+   cursor = [self os_createCursorWithBitmap:*cursorBitmap
+                                    hotSpot:hotSpot];
+   if( cursor)
+      NSLockingDo( _customCursorLock)
+      {
+         mulle_map_set( &_customCursors, key, (void *) cursor);
+      }
+
+   CGBitmapDone( scaled);
+   return( cursor);
+}
+
+
 //
 //
 //
@@ -729,7 +1024,7 @@ static struct
 }
 
 
-- (void) handleRetainedTimer:(NSTimer *) timer
+- (void) handleRetainedTimer:(NSTimer *) timer   MULLE_UI_MAIN_THREAD_ONLY
 {
    [timer autorelease];
    [timer fire];
@@ -768,7 +1063,6 @@ static struct
       }
    }
 }
-
 
 
 // if timer is nil, this will remove all timers of the receiver
@@ -860,8 +1154,7 @@ static struct
 
 - (void) resetTimer:(NSTimer *) timer
 {
-   struct UIApplicationTimer            appTimer;
-   struct mulle_structarrayenumerator   rover;
+   struct UIApplicationTimer   *appTimer;
 
    assert( [timer isKindOfClass:[NSTimer class]]);
 
@@ -869,19 +1162,17 @@ static struct
    {
       assert( [timer mulleIsRelativeTimer]);
 
-      rover = mulle_structarray_enumerate( &_timers);
-      while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+      mulle_structarray_for( &_timers, appTimer)
       {
-         if( appTimer.timer == timer)
+         if( appTimer->timer == timer)
          {
-            appTimer.timestamp = mulle_absolutetime_now() + [timer mulleRelativeTimeInterval];
+            appTimer->timestamp = mulle_absolutetime_now() + [timer mulleRelativeTimeInterval];
 #ifdef RUN_DEBUG
-            MulleUILog( "reset Timer %@ (%.3f)", timer, appTimer.timestamp);
+            MulleUILog( "reset Timer %@ (%.3f)", timer, appTimer->timestamp);
 #endif
             break;
          }
       }
-      mulle_structarrayenumerator_done( &rover);
    }
 }
 
@@ -979,6 +1270,9 @@ static struct
    return( min);
 }
 
+//
+//
+//
 
 //
 // The frameRate of a window gives a "hint", when to call "draw" again. "draw"
@@ -1072,6 +1366,9 @@ static struct
             [self runInvocations];
          }
 
+         if( UIApplicationRequestRunLoopBreak)
+            break;
+
          _state = FireTimers;
          {
             UIApplicationLogVerbose( "-> FireTimers");
@@ -1091,16 +1388,26 @@ static struct
 
          _state = PollEvents;
          {
-            UIApplicationLogVerbose( "-> PollEvents");
             timeout = nextTimerFireCallInSeconds < nextWindowDisplayCallInSeconds
                         ? nextTimerFireCallInSeconds
                         : nextWindowDisplayCallInSeconds;
             if( timeout < 0.0)
                timeout = 0.0;
 
-            UIApplicationLogVerbose( "next loop scheduled: %.17f", timeout);
+            UIApplicationLogVerbose( "-> PollEvents with timeout: %.17f", timeout);
             [self os_waitEventsWithTimeout:timeout];
+            UIApplicationLogVerbose( "<- PollEvents returned");
          }
+
+         // this will generate event callbacks for gamepads to the application
+         // but the event will be sent later to the
+         _state = PollGamepads;
+         {
+            UIApplicationLogVerbose( "-> PollGamepads");
+            [self os_pollGamepads];
+            UIApplicationLogVerbose( "<- PollGamepads");
+         }
+
 
 //         _state = ProcessEvents;
 //         {
@@ -1123,7 +1430,7 @@ static struct
 }
 
 
-- (int) run
+- (int) runApp
 {
    [self runLoop];
    return( [self terminate]);
@@ -1162,7 +1469,7 @@ int   UIApplicationMain( int argc, char **argv, Class appClass, id delegate)
 
    app = [appClass sharedInstance];
    [app setDelegate:delegate];
-   return( [app run]);
+   return( [app runApp]);
 }
 
 @end

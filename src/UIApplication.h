@@ -11,15 +11,24 @@
 //       which is managed by the main thread.
 //
 // If you subclass UIApplication, you must not override +initialize or
-// +deinitialize.
+// +deinitialize. If you add category methods, make sure they are either
+// main thread only or threadsafe. UIApplication is not marked as threadsafe,
+// but its TAO strategy is (MulleObjCTAOKnownThreadSafeMethods)
 //
-@interface UIApplication : NSObject <MulleObjCSingleton, UITimerReceiver, MulleUIResourceMap >
+@interface UIApplication : MulleDynamicObject <MulleObjCSingleton, UITimerReceiver, MulleUIResourceMap >
 {
    struct mulle_array              _screens;
    NSLock *                        _screensLock;
 
+   struct mulle_pointerarray       _gamepads;
+   NSUInteger                      _numberOfGamepads; // not same as count!
+   NSLock *                        _gamepadsLock;
+
    struct mulle_array              _windows;
    struct mulle_map                _standardCursors;
+
+   NSLock *                        _customCursorLock;
+   struct mulle_map                _customCursors;
 
    struct mulle_structarray        _timers;
    NSLock *                        _timersLock;
@@ -44,9 +53,9 @@
 
 
 
-@property( assign) id     delegate;      // unused so far
-@property( assign) int    returnStatus;
-@property( assign) BOOL   debugEnabled;
+@property( assign) id           delegate        MULLE_UI_MAIN_THREAD_ONLY;      // unused so far
+@property( assign) int          returnStatus    MULLE_UI_MAIN_THREAD_ONLY;
+@property( assign) NSUInteger   debuggingFlags  MULLE_OBJC_THREADSAFE_PROPERTY;
 
 //
 // UIScreen:
@@ -55,21 +64,32 @@
 // UIScreens manually. Once you have a screen you can get its info also in
 // a threadsafe manner.
 //
-- (id <UIScreen>) primaryScreen;
-- (NSUInteger) numberOfScreens;
-- (id <UIScreen>) screenAtIndex:(NSUInteger) i;
+- (id <UIScreen>) primaryScreen                 MULLE_OBJC_THREADSAFE_METHOD;
+- (NSUInteger) numberOfScreens                  MULLE_OBJC_THREADSAFE_METHOD;
+- (id <UIScreen>) screenAtIndex:(NSUInteger) i  MULLE_OBJC_THREADSAFE_METHOD;
 
 // use the window frame to figure out on which screen the window resides
 // (predominantly)
 // can also be nil if primaryIfNoneMatches is set, if no screen is connected
 - (id <UIScreen>) screenForFrame:(CGRect) frame
-            primaryIfNoneMatches:(BOOL) primaryIfNoneMatches;
+            primaryIfNoneMatches:(BOOL) primaryIfNoneMatches   MULLE_OBJC_THREADSAFE_METHOD;
 
 // always returns the number of actually intersecting screens. Will store
 // the first `maxCount` screens in `screens`
 - (NSUInteger) getScreens:(id <UIScreen> *) screens
                  maxCount:(NSUInteger) maxCount
-        intersectingFrame:(CGRect) frame;
+        intersectingFrame:(CGRect) frame                       MULLE_OBJC_THREADSAFE_METHOD;
+
+
+
+//
+// UIGamepad:
+//
+// Note that gamepads can be unplugged and swapped, so a gamepadAtIndex: can
+// return nil. We don't keep the joystick stable, but we could...
+//
+- (id <UIGamepad>) gamepadAtIndex:(NSUInteger) i MULLE_OBJC_THREADSAFE_METHOD;
+
 
 //
 // UIWindow
@@ -78,16 +98,16 @@
 // What can be queried on a UIWindow from the mainThread and from a possible
 // render/event thread is explained in UIWindow.h
 
-- (void) addWindow:(id <UIWindow>) window;
+- (void) addWindow:(id <UIWindow>) window                      MULLE_UI_MAIN_THREAD_ONLY;
 // does not call [UIWindow terminate]
-- (void) removeWindow:(id<UIWindow>) window;
+- (void) removeWindow:(id<UIWindow>) window                    MULLE_UI_MAIN_THREAD_ONLY;
 
 
-- (NSUInteger) numberOfWindows;
+- (NSUInteger) numberOfWindows                                 MULLE_UI_MAIN_THREAD_ONLY;
 - (NSUInteger) getWindows:(id <UIWindow> *) buf
-                   length:(NSUInteger) length;
+                   length:(NSUInteger) length                  MULLE_UI_MAIN_THREAD_ONLY;
 
-- (id <UIWindow>) windowForOSWindowHandle:(void *) os_window;
+- (id <UIWindow>) windowForOSWindowHandle:(void *) os_window   MULLE_UI_MAIN_THREAD_ONLY;
 
 
 //
@@ -99,9 +119,21 @@
 //
 // Cursors can't be removed currently, so don't stream
 // videos into your cursor bitmap (would waste lotsa leaks)...
+// Standard shape cursors are readonly, so considered threadsafe (though
+// not locking)
 //
-- (UICursor *) cursorWithStandardShape:(UICursorStandardShape) shape;
+- (UICursor *) cursorWithStandardShape:(UICursorStandardShape) shape MULLE_OBJC_THREADSAFE_METHOD;
 
+// add your own cursors with a name
+ - (UICursor *) registerCursorBitmap:(struct CGBitmap) bitmap
+                             hotSpot:(CGPixelPoint) hotSpot
+                    forKeyUTF8String:(char *) key
+                 scaleToStandardSize:(BOOL) flag                       MULLE_UI_MAIN_THREAD_ONLY;
+
+- (UICursor *) cursorForKeyUTF8String:(char *) s                     MULLE_OBJC_THREADSAFE_METHOD;
+
+// this is likely to be some hardcoded value, depending on platform
+- (CGPixelSize) standardCursorSize;
 
 //
 // NSTimer:
@@ -110,17 +142,17 @@
 //
 
 - (void) addTimer:(NSTimer *) timer
- forTimerReceiver:(id <UITimerReceiver>) receiver;
+ forTimerReceiver:(id <UITimerReceiver>) receiver     MULLE_OBJC_THREADSAFE_METHOD;
 
 - (void) removeTimer:(NSTimer *) timer
-    forTimerReceiver:(id <UITimerReceiver>) receiver;
+    forTimerReceiver:(id <UITimerReceiver>) receiver  MULLE_OBJC_THREADSAFE_METHOD;
 
-- (void) removeAllTimersForTimerReceiver:(id <UITimerReceiver>) receiver;
+- (void) removeAllTimersForTimerReceiver:(id <UITimerReceiver>) receiver   MULLE_OBJC_THREADSAFE_METHOD;
 
-- (void) removeAllTimers;
+- (void) removeAllTimers                              MULLE_OBJC_THREADSAFE_METHOD;
 
 // like re-adding a timer, the timer is reset to now + offset
-- (void) resetTimer:(NSTimer *) timer;
+- (void) resetTimer:(NSTimer *) timer                 MULLE_OBJC_THREADSAFE_METHOD;
 
 
 //
@@ -128,55 +160,60 @@
 // This is the way to do window functionality which needs to run on the
 // main thread. This is async, so you don't get a return value.
 //
-- (void) invokeOnMainThread:(NSInvocation *) invocation;
+- (void) invokeOnMainThread:(NSInvocation *) invocation  MULLE_OBJC_THREADSAFE_METHOD;
 
 // this will actually block the calling thread, not recommended
 - (void) invokeOnMainThread:(NSInvocation *) invocation
-              waitUntilDone:(BOOL) flag;
+              waitUntilDone:(BOOL) flag                  MULLE_OBJC_THREADSAFE_METHOD;
 
 // called during runLoop
-- (void) runInvocations;
+- (void) runInvocations                                  MULLE_UI_MAIN_THREAD_ONLY;
+
+// only call during tests
+- (void) removeAllInvocations                            MULLE_UI_MAIN_THREAD_ONLY;
 
 
 // this will return and the app will terminate some time later, 
 // except if called on the mainThread
-- (void) requestTerminate;
+- (void) requestTerminate                                MULLE_OBJC_THREADSAFE_METHOD;
 
 // call terminate on all windows and then remove all of them
 // must be called from mainThread
-- (int) terminate;
+- (int) terminate                                        MULLE_UI_MAIN_THREAD_ONLY;
 
 // must be called from mainThread
-- (void) runLoop;
+- (void) runLoop                                         MULLE_UI_MAIN_THREAD_ONLY;
 
 // calls runLoop and then when all have closed, calls terminate
 // must be called from mainThread
-- (int) run;
+// can not be called -run because thats a different signature
+- (int) runApp                                           MULLE_UI_MAIN_THREAD_ONLY;
 
 // like UIApplicationRunWindow
-- (int) runWindow:(id <UIWindow>) window;
+- (int) runWindow:(id <UIWindow>) window                 MULLE_UI_MAIN_THREAD_ONLY;
 
 // this window gets the events, if UIApplication can not decide which
 // window should get it (this does not imply ordering at all)
-@property( retain, setter=setOSKeyWindow:) id <UIOSWindow>  osKeyWindow;
+@property( retain, setter=setOSKeyWindow:) id <UIOSWindow>  osKeyWindow    MULLE_UI_MAIN_THREAD_ONLY;
 
 @end
 
 
 @interface UIApplication( OS)
 
-+ (void) os_initialize;
-+ (void) os_deinitialize;
++ (void) os_initialize           MULLE_UI_MAIN_THREAD_ONLY;
++ (void) os_deinitialize         MULLE_UI_MAIN_THREAD_ONLY;
 
-- (void) os_init;
-- (void) os_finalize;
+- (void) os_init                 MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_finalize             MULLE_UI_MAIN_THREAD_ONLY;
 
-- (void *) os_createStandardCursor:(UICursorStandardShape) shape;
-- (void) os_destroyCursor:(void *) cursor;
+- (void *) os_createStandardCursor:(UICursorStandardShape) shape  MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_destroyCursor:(void *) cursor                         MULLE_UI_MAIN_THREAD_ONLY;
 
-- (void) os_waitEventsWithTimeout:(mulle_relativetime_t) seconds;
-- (void) os_pollEvents;
-- (void) os_sendEmptyEvent;
+- (void) os_waitEventsWithTimeout:(mulle_relativetime_t) seconds  MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_pollEvents                                            MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_pollGamepads                                          MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_sendEmptyEvent       MULLE_OBJC_THREADSAFE_METHOD;
 
 @end
 
@@ -196,6 +233,9 @@ int  UIApplicationRunWindow( id <UIWindow> window);
 
 //UI_APPLICATION_EXTERN_GLOBAL
 extern UIApplication   *UIApp;
+
+// use this during runApp, if you want to terminate from a signal handler
+extern BOOL   UIApplicationRequestRunLoopBreak;
 
 
 #define UIApplicationSizeOfSpace   (sizeof( double) * N_UIApplicationSpaceDoubles)

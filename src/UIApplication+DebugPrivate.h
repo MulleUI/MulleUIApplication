@@ -13,19 +13,19 @@ enum
 
 @interface NSObject ( UIApplication)
 
-- (BOOL) __isUIApplication;
+- (BOOL) __isUIApplication    MULLE_OBJC_THREADSAFE_METHOD;
 
 @end
 
 
 
-#if ! defined( UI_WINDOW_DEBUG_DISABLED)
+#if ! defined( UI_WINDOW_LOG_DISABLED)
 
 #define UIApplicationLog( format, ...)                                      \
 do                                                                          \
 {                                                                           \
    assert( [self __isUIApplication]);                                       \
-   if( self->_debugEnabled & UIApplicationDebug)                            \
+   if( self->_debuggingFlags & UIApplicationDebug)                          \
       mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
                                        (char *) format, ## __VA_ARGS__);    \
 }                                                                           \
@@ -35,7 +35,7 @@ while( 0)
 do                                                                          \
 {                                                                           \
    assert( [self __isUIApplication]);                                       \
-   if( self->_debugEnabled & UIApplicationDebugVerbose)                     \
+   if( self->_debuggingFlags & UIApplicationDebugVerbose)                   \
       mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
                                        (char *) format, ## __VA_ARGS__);    \
 }                                                                           \
@@ -46,7 +46,7 @@ while( 0)
 do                                                                          \
 {                                                                           \
    assert( [self __isUIApplication]);                                       \
-   if( self->_debugEnabled & UIApplicationDebugLayout)                      \
+   if( self->_debuggingFlags & UIApplicationDebugLayout)                    \
       mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
                                        (char *) format, ## __VA_ARGS__);    \
 }                                                                           \
@@ -57,7 +57,7 @@ while( 0)
 do                                                                                   \
 {                                                                                    \
    assert( [self __isUIApplication]);                                                \
-   if( self->_debugEnabled & UIApplicationDebugEvent)                                \
+   if( self->_debuggingFlags & UIApplicationDebugEvent)                              \
       if( ! event || ([event eventType] & ~(UIEventTypeMotion|UIEventTypeTracking))) \
          mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,              \
                                           (char *) format, ## __VA_ARGS__);          \
@@ -69,7 +69,7 @@ while( 0)
 do                                                                                   \
 {                                                                                    \
    assert( [self __isUIApplication]);                                                \
-   if( self->_debugEnabled & UIApplicationDebugEventVerbose)                         \
+   if( self->_debuggingFlags & UIApplicationDebugEventVerbose)                       \
       if( ! event || ([event eventType] & ~(UIEventTypeMotion|UIEventTypeTracking))) \
          mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,              \
                                           (char *) format, ## __VA_ARGS__);          \
@@ -80,7 +80,7 @@ while( 0)
 do                                                                                   \
 {                                                                                    \
    assert( [self __isUIApplication]);                                                \
-   if( self->_debugEnabled & UIApplicationDebugMouseTrackingEvent)                   \
+   if( self->_debuggingFlags & UIApplicationDebugMouseTrackingEvent)                 \
       if( ! event || [event eventType] == UIEventTypeTracking)                       \
          mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,              \
                                           (char *) format, ## __VA_ARGS__);          \
@@ -91,7 +91,7 @@ while( 0)
 do                                                                          \
 {                                                                           \
    assert( [self __isUIApplication]);                                       \
-   if( self->_debugEnabled & UIApplicationDebugMouseMotionEvent)            \
+   if( self->_debuggingFlags & UIApplicationDebugMouseMotionEvent)          \
       if( ! event || [event eventType] == UIEventTypeMotion)                \
          mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,     \
                                           (char *) format, ## __VA_ARGS__); \

@@ -15,7 +15,7 @@ NS_OPTIONS_TABLE( UIControlState, 6) =
    NS_OPTIONS_ITEM( UIControlStateDisabled),
    NS_OPTIONS_ITEM( UIControlStateSelecting),  // need this
    NS_OPTIONS_ITEM( UIControlStateSelected),
-   NS_OPTIONS_ITEM( UIControlStateFocused)
+   NS_OPTIONS_ITEM( UIControlStateFirstResponder)
 };
 
 
@@ -43,7 +43,7 @@ PROTOCOLCLASS_IMPLEMENTATION( UIControl)
 {
    UIControlEventLog( nil, "didBecomeFirstResponder");
 
-   setStateBit( self, UIControlStateFocused, YES);
+   setStateBit( self, UIControlStateFirstResponder, YES);
 }
 
 
@@ -54,7 +54,7 @@ PROTOCOLCLASS_IMPLEMENTATION( UIControl)
 {
    UIControlEventLog( nil, "didResignFirstResponder");
 
-   setStateBit( self, UIControlStateFocused, NO);
+   setStateBit( self, UIControlStateFirstResponder, NO);
 }
 
 
@@ -128,10 +128,10 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
       */
       assert( state != (UIControlStateHighlighted|UIControlStateDisabled));
       assert( state != (UIControlStateHighlighted|UIControlStateDisabled|UIControlStateSelected));
-      assert( state != (UIControlStateDisabled|UIControlStateFocused));
-      assert( state != (UIControlStateHighlighted|UIControlStateDisabled|UIControlStateFocused));
-      assert( state != (UIControlStateDisabled|UIControlStateSelected|UIControlStateFocused));
-      assert( state != (UIControlStateHighlighted|UIControlStateDisabled|UIControlStateSelected|UIControlStateFocused));
+      assert( state != (UIControlStateDisabled|UIControlStateFirstResponder));
+      assert( state != (UIControlStateHighlighted|UIControlStateDisabled|UIControlStateFirstResponder));
+      assert( state != (UIControlStateDisabled|UIControlStateSelected|UIControlStateFirstResponder));
+      assert( state != (UIControlStateHighlighted|UIControlStateDisabled|UIControlStateSelected|UIControlStateFirstResponder));
 
       [self setState:newState];
    }
@@ -196,11 +196,13 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 - (BOOL) reflectState
 {
    NSUInteger   state;
+   NSUInteger   reflectedState;
 
-   state = [self state];
+   state          = [self state];
+   reflectedState = [self reflectedState];
    UIControlEventLog( nil, "%s", NS_OPTIONS_PRINT( UIControlState, state));
 
-   if( state != [self reflectedState])
+   if( state != reflectedState)
    {
       [self setReflectedState:state];
       return( YES);
@@ -297,17 +299,34 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 //
 - (UIInputEvent *) mouseDown:(UIMouseButtonEvent *) event
 {
-   UIInputEvent   *inputEvent;
+   UIInputEvent                  *inputEvent;
+   UIControlSelectionBehaviour   behaviour;
 
    UIControlEventLog( event, "%#@", event);
 
-   [self becomeFirstResponder];
+   // this should be a safe bet in all cases
+   behaviour = [self selectionBehaviour];
+
+   if( ! (behaviour & UIControlSelectionBehaviourBitFirstResponder))
+      [self becomeFirstResponder];
+
+   if( behaviour & UIControlSelectionBehaviourBitHighlight)
+      [self setHighlighted:YES];
+
+   if( ! (behaviour & UIControlSelectionBehaviourBitSelecting))
+      [self setSelecting:YES];
+
+
+   switch( behaviour & 0x3)
+   {
+   case UIControlSelectionBehaviourBitSelect   : [self setSelected:YES]; break;
+   case UIControlSelectionBehaviourBitDeselect : [self setSelected:NO]; break;
+   case UIControlSelectionBehaviourBitsToggle  : [self mulleToggleSelectedState]; break;
+   }
 
    inputEvent = nil;
    if( [self eventMask] & UIControlEventLeftMouseDown)
       inputEvent = [self performClickAndTargetActionCallbacks:event];
-   else
-      [self setSelecting:YES];
 
 // MEMO: done in didAcceptEvent:
 
@@ -333,6 +352,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
       assert( inputEvent == nil || inputEvent == (UIInputEvent *) event);
       MULLE_C_UNUSED( inputEvent);
    }
+
    return( nil);
 }
 
@@ -342,23 +362,39 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 //
 - (UIInputEvent *) mouseUp:(UIMouseButtonEvent *) event
 {
-   UIInputEvent   *inputEvent;
+   UIInputEvent                  *inputEvent;
+   UIControlSelectionBehaviour   behaviour;
 
    UIControlEventLog( event, "%#@", event);
 
    // this should be a safe bet in all cases
-   [self setSelecting:NO];
+   behaviour = [self selectionBehaviour] >> 8;
+   if( ! (behaviour & UIControlSelectionBehaviourBitSelecting))
+      [self setSelecting:NO];
+   if( behaviour & UIControlSelectionBehaviourBitHighlight)
+      [self setHighlighted:NO];
 
    // do this first, so that event can keep firstResponder, if so desired
    // can we get a mouseUp: event without a previous mouseDown: ?
    // unlikely. but then we don't do anything
-   if( ! getStateBit( self, UIControlStateFocused))
+   if( ! getStateBit( self, UIControlStateFirstResponder))
       return( nil);
 
-   [self resignFirstResponder];
+   if( ! (behaviour & UIControlSelectionBehaviourBitFirstResponder))
+      [self resignFirstResponder];
+
+   switch( behaviour & 0x3)
+   {
+   case UIControlSelectionBehaviourBitSelect    : [self setSelected:YES]; break;
+   case UIControlSelectionBehaviourBitDeselect  : [self setSelected:NO]; break;
+   case UIControlSelectionBehaviourBitsToggle   : [self mulleToggleSelectedState]; break;
+   }
+
    inputEvent = ([self eventMask] & UIControlEventLeftMouseUp)
                 ? [self performClickAndTargetActionCallbacks:event]
                 : nil;
+
+
 // MEMO: done in didAcceptEvent:
 //   [self reflectState];
 //   [self setNeedsDisplay];
@@ -370,7 +406,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 {
    UIControlMouseTrackingEventLog( event, "%#@", event);
 
-   [self mulleToggleHighlightedState]; // what if already set ???
+   [self setHighlighted:YES]; // what if already set ???
    [self reflectState];
 }
 
@@ -385,7 +421,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 {
    UIControlMouseTrackingEventLog( event, "%#@", event);
 
-   [self mulleToggleHighlightedState]; // what if already set ???
+   [self setHighlighted:NO]; // what if already set ???
    [self reflectState];
 }
 
@@ -432,9 +468,9 @@ PROTOCOLCLASS_END()
 }
 
 // hmm
-- (NSUInteger) debugEnabled
+- (NSUInteger) debuggingFlags
 {
-   return( NO);
+   return( 0);
 }
 
 

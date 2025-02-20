@@ -12,12 +12,12 @@ enum
 
 
 
-#if ! defined( UI_CONTROL_DEBUG_DISABLED)
+#if ! defined( UI_CONTROL_LOG_DISABLED)
 
 @interface NSObject ( UIControl)
 
-- (BOOL) __isUIControl;
-- (NSUInteger) debugEnabled;
+- (BOOL) __isUIControl           MULLE_OBJC_THREADSAFE_METHOD;
+- (NSUInteger) debuggingFlags    MULLE_OBJC_THREADSAFE_METHOD;
 
 @end
 
@@ -26,7 +26,7 @@ enum
 do                                                                          \
 {                                                                           \
    assert( [(NSObject *) self __isUIControl]);                              \
-   if( [(NSObject *) self debugEnabled] & UIControlDebug)                   \
+   if( [(NSObject *) self debuggingFlags] & UIControlDebug)                 \
       mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
                                        (char *) format, ## __VA_ARGS__);    \
 }                                                                           \
@@ -36,7 +36,7 @@ while( 0)
 do                                                                          \
 {                                                                           \
    assert( [(NSObject *) self __isUIControl]);                              \
-   if( [(NSObject *) self debugEnabled]  & UIControlDebugVerbose)           \
+   if( [(NSObject *) self debuggingFlags]  & UIControlDebugVerbose)         \
       mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
                                        (char *) format, ## __VA_ARGS__);    \
 }                                                                           \
@@ -47,7 +47,7 @@ while( 0)
 do                                                                          \
 {                                                                           \
    assert( [(NSObject *) self __isUIControl]);                              \
-   if( [(NSObject *) self debugEnabled]  & UIControlDebugEvent)             \
+   if( [(NSObject *) self debuggingFlags]  & UIControlDebugEvent)           \
       if( ! event || ([event eventType] & ~(UIEventTypeMotion|UIEventTypeTracking)))     \
          mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,     \
                                           (char *) format, ## __VA_ARGS__); \
@@ -59,29 +59,29 @@ while( 0)
 do                                                                          \
 {                                                                           \
    assert( [(NSObject *) self __isUIControl]);                              \
-   if( [(NSObject *) self debugEnabled] & UIControlDebugEventVerbose)       \
+   if( [(NSObject *) self debuggingFlags] & UIControlDebugEventVerbose)     \
       if( ! event || ([event eventType] & ~(UIEventTypeMotion|UIEventTypeTracking)))     \
          mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,     \
                                           (char *) format, ## __VA_ARGS__); \
 }                                                                           \
 while( 0)
 
-#define UIControlMouseTrackingEventLog( event, format, ...)                   \
-do                                                                            \
-{                                                                             \
-   assert( [(NSObject *) self __isUIControl]);                                \
-   if( [(NSObject *) self debugEnabled]  & UIControlDebugMouseTrackingEvent)  \
-      if( [event eventType] == UIEventTypeTracking)                           \
-         mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,       \
-                                          (char *) format, ## __VA_ARGS__);   \
-}                                                                             \
+#define UIControlMouseTrackingEventLog( event, format, ...)                    \
+do                                                                             \
+{                                                                              \
+   assert( [(NSObject *) self __isUIControl]);                                 \
+   if( [(NSObject *) self debuggingFlags]  & UIControlDebugMouseTrackingEvent) \
+      if( [event eventType] == UIEventTypeTracking)                            \
+         mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
+                                          (char *) format, ## __VA_ARGS__);    \
+}                                                                              \
 while( 0)
 
 #define UIControlMouseMotionEventLog( event, format, ...)                     \
 do                                                                            \
 {                                                                             \
    assert( [(NSObject *) self __isUIControl]);                                \
-   if( [(NSObject *) self debugEnabled]  & UIControlDebugMouseMotionEvent)    \
+   if( [(NSObject *) self debuggingFlags]  & UIControlDebugMouseMotionEvent)  \
       if( [event eventType] == UIEventTypeMotion)                             \
          mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,       \
                                           (char *) format, ## __VA_ARGS__);   \
