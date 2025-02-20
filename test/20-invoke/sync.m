@@ -13,9 +13,11 @@
 // no leaks or crashes
 //
 - (char *) callMeWithInteger:(NSInteger) value
-              textUTF8String:(char *) s
+              textUTF8String:(char *) s   MULLE_UI_MAIN_THREAD_ONLY
 {
    char   *result;
+
+   assert( [NSThread mulleIsMainThread]);
 
    result = MulleObjC_asprintf( "%s %td", s, value);
    if( value == 1848)
@@ -34,7 +36,7 @@
 }
 
 
-- (void) _callSynchronousTest:(NSUInteger) value
+- (void) _callSynchronousTest:(NSUInteger) value   MULLE_OBJC_THREADSAFE_METHOD
 {
    NSMethodSignature   *signature;
    NSInvocation        *invocation;
@@ -58,19 +60,19 @@
       [self invokeOnMainThread:invocation
                  waitUntilDone:YES];
       memset( auto_s, 0xAA, sizeof( auto_s)); // clobber
-
       [invocation getReturnValue:&rval];
       printf( "%s\n", (char *) rval);
    }
    // notice how the autoreleased invocations lifetime is done now
 }
 
-- (void) synchronousTest:(id) unused
+- (void) synchronousTest:(id) unused   MULLE_OBJC_THREADSAFE_METHOD
 {
    NSUInteger   i;
 
    for( i = 1; i <= 1848; i++)
       [self _callSynchronousTest:i];
+   mulle_fprintf( stderr, "thread dies\n");
 }
 
 @end

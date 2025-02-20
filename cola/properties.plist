@@ -1,0 +1,39 @@
+{
+   project =
+   {
+      description="𝄢 MulleUIApplication provides abstract classes like UIApplication and UIEvent";
+      domain="github";
+      name="MulleUIApplication";
+      user="MulleUI";
+      repo="MulleUIApplication";
+      homepage="https://github.com/MulleUI/MulleUIBase";
+      license="BSD-3-License";
+   };
+   dependencies =
+   (
+      {
+         description="🧱 MulleFoundationBase amalgamates Foundations projects";
+         domain="github";
+         name="MulleFoundationBase";
+         repo="MulleFoundationBase";
+         url="https://github.com/MulleFoundation/MulleFoundationBase";
+         user="MulleFoundation";
+      },
+      {
+         description="💺 MulleUIBase adds Objective-C to mulle-geometry and friends";
+         domain="github";
+         name="MulleUIBase";
+         repo="MulleUIBase";
+         url="https://github.com/MulleUI/MulleUIBase";
+         user="MulleUI";
+      },
+      {
+         description="📒 Lists mulle-objc runtime information contained in executables.";
+         domain="github";
+         name="mulle-objc-list";
+         repo="mulle-objc-list";
+         url="https://github.com/mulle-objc/mulle-objc-list";
+         user="mulle-objc";
+      }
+   );
+}

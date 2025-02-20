@@ -9,7 +9,7 @@
 @implementation UIApplication ( Hacky)
 
 - (void) callMeWithInteger:(NSInteger) value
-            textUTF8String:(char *) s
+            textUTF8String:(char *) s   MULLE_UI_MAIN_THREAD_ONLY
 {
    printf( "%s %td\n", s, value);
    if( value == 1848)
@@ -26,7 +26,7 @@
 }
 
 
-- (void) _callAsynchronousTest:(NSUInteger) value
+- (void) _callAsynchronousTest:(NSUInteger) value  MULLE_OBJC_THREADSAFE_METHOD
 {
    NSMethodSignature   *signature;
    NSInvocation        *invocation;
@@ -53,7 +53,7 @@
 }
 
 
-- (void) callAsynchronousTest:(id) unused
+- (void) callAsynchronousTest:(id) unused  MULLE_OBJC_THREADSAFE_METHOD
 {
    NSUInteger   i;
 

@@ -8,7 +8,9 @@
 @class UIMouseTrackingEvent;
 
 
-// used by UIControl
+//
+// used by UIControl. The eventMask will filter out events that are not set
+//
 typedef NS_ENUM( NSUInteger, UIControlEvents)
 {
    UIControlEventLeftMouseDown      = 0x00001,
@@ -39,19 +41,42 @@ typedef NS_ENUM( NSUInteger, UIControlEvents)
 
 typedef NS_OPTIONS( NSUInteger, UIControlState)
 {
-	UIControlStateNormal      = 0x0,
+	UIControlStateNormal         = 0x0,
 
    // these 16 combinations are handled by MulleControlBackgroundPaint
-	UIControlStateHighlighted = 0x1,
-	UIControlStateDisabled    = 0x2,
-	UIControlStateSelected    = 0x4,
-   UIControlStateSelecting   = 0x8,
+	UIControlStateHighlighted    = 0x1,
+	UIControlStateDisabled       = 0x2,
+	UIControlStateSelected       = 0x4,
+   UIControlStateSelecting      = 0x8,
 
-   UIControlStateFocused     = 0x10
+   UIControlStateFirstResponder = 0x10    // should be
 };
 
 
+#define UIControlSelectionBehaviourBitSelect         0x1     // enables
+#define UIControlSelectionBehaviourBitDeselect       0x2     // enables
+#define UIControlSelectionBehaviourBitHighlight      0x10    // enables
+#define UIControlSelectionBehaviourBitSelecting      0x20    // disables
+#define UIControlSelectionBehaviourBitFirstResponder 0x40    // disables
+
+#define UIControlSelectionBehaviourBitsToggle        0x3
+
+
+typedef NS_ENUM( NSUInteger, UIControlSelectionBehaviour)
+{
+   UIControlSelectionBehaviourPush          = 0x1 | ((0x2 | 0x10) << 8),  // select on mouseDown: deselect on mouseUp:
+   UIControlSelectionBehaviourRelease       = 0x0 | ((0x1 | 0x10) << 8),  // select on mouseUp:   (stays "selecting" until mouseUp:)
+   UIControlSelectionBehaviourPushSwitch    = 0x3 | ((0x0 | 0x10) << 8),  // toggle on mouseDown: :
+   UIControlSelectionBehaviourReleaseSwitch = 0x0 | ((0x3 | 0x10) << 8)   // toggle on mouseUp:
+};
+
+
+// UIControlStateFocused is a "legacy" name for UIControlStateFirstResponder
+// but UIControlStateFirstResponder is more clear
+#define UIControlStateFocused   UIControlStateFirstResponder
+
 extern NS_OPTIONS_TABLE( UIControlState, 6);
+
 
 static inline char   *UIControlStateUTF8String( NSUInteger state)
 {
@@ -93,23 +118,25 @@ Focus==FirstResponder
 // UISwitch is event handling-wise is almost a pure UIControl subclass.
 //So use this as a reference to get the behaviour right.
 // _reflectedState is private and used by -reflectState
-#define UIControlIvars                       \
-   UIControlState          _state;           \
-   UIControlState          _reflectedState;  \
-   UIControlEvents         _eventMask;       \
-   id                      _target;          \
-   SEL                     _action;          \
-   UIControlClickHandler   *_click
+#define UIControlIvars                               \
+   UIControlSelectionBehaviour  _selectionBehaviour; \
+   UIControlState               _state;              \
+   UIControlState               _reflectedState;     \
+   UIControlEvents              _eventMask;          \
+   id                           _target;             \
+   SEL                          _action;             \
+   UIControlClickHandler        *_click
 
 // put these into your UIControl adopting class property block
 
-#define UIControlProperties                                   \
-   @property( assign) UIControlState          state;          \
-   @property( assign) UIControlState          reflectedState; \
-   @property( assign) NSUInteger              eventMask;      \
-   @property( assign) id                      target;         \
-   @property( assign) SEL                     action;         \
-   @property( assign) UIControlClickHandler   *click
+#define UIControlProperties                                             \
+   @property( assign) UIControlSelectionBehaviour   selectionBehaviour; \
+   @property( assign) UIControlState                state;              \
+   @property( assign) UIControlState                reflectedState;     \
+   @property( assign) NSUInteger                    eventMask;          \
+   @property( assign) id                            target;             \
+   @property( assign) SEL                           action;             \
+   @property( assign) UIControlClickHandler         *click
 
 //
 // A UIControl translates event into target/Action or click Events. Though
@@ -127,7 +154,7 @@ typedef UIInputEvent   *UIControlClickHandler( id <UIControl> control,
 
 UIControlProperties;
 
-- (void) setNeedsDisplay;
+- (void) setNeedsDisplay  MULLE_OBJC_THREADSAFE_METHOD;
 
 @optional
 
@@ -164,7 +191,7 @@ UIControlProperties;
 
 - (void) sendActionOn:(UIControlEvents) mask;
 
-- (BOOL) __isUIControl;
+- (BOOL) __isUIControl     MULLE_OBJC_THREADSAFE_METHOD;
 
 PROTOCOLCLASS_END()
 

@@ -12,6 +12,8 @@ endif()
 #
 set( SOURCES
 src/main-application-subclass.m
+src/main-custom-cursor.m
+src/main-gamepad.m
 src/main-two-windows.m
 src/main-window-cursor.m
 src/main-window-events.m

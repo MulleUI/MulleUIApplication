@@ -14,12 +14,12 @@ enum
 };
 
 
-#if ! defined( UI_RESPONDER_DEBUG_DISABLED)
+#if ! defined( UI_RESPONDER_LOG_DISABLED)
 
 #define UIResponderEventLog( format, ...)                                  \
 do                                                                         \
 {                                                                          \
-   if( Self._debugEnabled & UIResponderDebugEvent)                         \
+   if( Self._debuggingFlags & UIResponderDebugEvent)                         \
       mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,       \
                                        (char *) format, ## __VA_ARGS__);   \
 }                                                                          \
@@ -28,7 +28,7 @@ while( 0);
 #define UIResponderMouseMotionEventLog( format, ...)                       \
 do                                                                         \
 {                                                                          \
-   if( Self._debugEnabled & UIResponderDebugMouseMotionEvent)              \
+   if( Self._debuggingFlags & UIResponderDebugMouseMotionEvent)              \
       mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,       \
                                        (char *) format, ## __VA_ARGS__);   \
 }                                                                          \
@@ -49,7 +49,7 @@ PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
 
 static struct
 {
-   NSUInteger   _debugEnabled;
+   NSUInteger   _debuggingFlags;
 } Self;
 
 
@@ -58,21 +58,21 @@ static struct
 {
    char   *s;
 
-   s = getenv( "UIResponderDebugEnabled");
+   // don't run again for subclass
+   if( MulleObjCClassGetID( self) != @selector( UIResponder))
+      return;
+
+   s = getenv( MULLE_C_STRINGIFY( UIResponder) "DebuggingFlags");
+   if( ! s)
+      s = getenv( "UIDebuggingFlags");
    if( s)
-      Self._debugEnabled = strtol( s, NULL, 0);
-   else
-   {
-#ifdef UIRESPONDER_DEBUG_ENABLED
-      Self._debugEnabled = UIRESPONDER_DEBUG_ENABLED;
-#endif
-   }
+      Self._debuggingFlags = strtol( s, NULL, 0);
 }
 
 
-+ (void) setDebugEnabled:(NSUInteger) flag
++ (void) setDebuggingFlags:(NSUInteger) flag    MULLE_OBJC_THREADSAFE_METHOD
 {
-   Self._debugEnabled = flag;
+   Self._debuggingFlags = flag;
 }
 
 
@@ -478,6 +478,12 @@ static id   performSelectorIfResponding( UIResponder *self,
       motionEvent = newEvent;
    }
    return( motionEvent);
+}
+
+
+- (UIInputEvent *) handleInputEvent:(UIInputEvent *) event
+{
+   return( nil);  // let it be handled by handleEvent: below
 }
 
 

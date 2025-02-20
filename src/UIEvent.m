@@ -4,8 +4,29 @@
 
 #import "import-project.h"
 
+#include <ctype.h>
 
-// #define EVENT_DEBUG
+
+char   *UIEventKeyUTF8String( NSUInteger key)
+{
+   char   *s;
+
+   //
+   // prefer output like this
+   //
+   if( key < 127 && isprint( (char) key))
+   {
+      s = MulleObjC_asprintf( "'%c'", (char) key);
+      return( s);
+   }
+
+   s = _UIEventKeyUTF8String( key);
+   if( s)
+      return( s);
+
+   s = MulleObjC_asprintf( "0x%tu", key);
+   return( s);
+}
 
 
 #pragma clang diagnostic ignored "-Wobjc-missing-super-calls"
@@ -17,7 +38,8 @@ enum
    UIKeyboardEventIndex,     // Keyboard
    UIUnicodeEventIndex,      // Unicode char (interpreted Keyboard)
    UIMouseButtonEventIndex,  // Mouse click
-   UIMouseMotionEventIndex,  // Mouse movemeent
+   UIMouseMotionEventIndex,  // Mouse movement
+   UIMouseMotionNonPhysicalEventIndex,  // Mouse movement fakes
    UIMouseScrollEventIndex,  // Mouse Scrollwheel
    UIActionEventIndex        // Mouse Scrollwheel
 };
@@ -252,6 +274,11 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 }
 
 
+- (BOOL) isPhysicalEvent
+{
+   return( YES);
+}
+
 - (BOOL) isInputEvent
 {
    return( YES);
@@ -326,12 +353,14 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
                                 key:(NSUInteger) key
                            scanCode:(NSUInteger) scanCode
                              action:(NSUInteger) action
+                          isARepeat:(BOOL) isARepeat
 {
    self = [self initWithInputState:state];
 
    _key       = key;
    _scanCode  = scanCode;
    _action    = action;
+   _isARepeat = isARepeat;
 
    return( self);
 }
@@ -348,24 +377,15 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
    char   *s;
    char   *keyName;
 
-   keyName = _UIEventKeyUTF8String( _key);
-   if( keyName)
-      s = MulleObjC_asprintf( "key=%s scancode=%td action=%td modifiers=0x%tx",
-                     keyName,
-                     _scanCode,
-                     _action,
-                     _inputState.keyModifiers);
-   else
-      s = MulleObjC_asprintf( "key=%td scancode=%td action=%td modifiers=0x%tx",
-                     _key,
-                     _scanCode,
-                     _action,
-                     _inputState.keyModifiers);
+   keyName = UIEventKeyUTF8String( _key);
+   s       = MulleObjC_asprintf( "key=%s scancode=%td action=%td",
+                                 keyName,
+                                 _scanCode,
+                                 _action);
    return( s);
 }
 
 @end
-
 
 
 // Receive a OS unicode character (w/o key press)
@@ -430,6 +450,29 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
    return( MulleObjC_asprintf( "buttonStates=0x%tx", _inputState.buttonStates));
 }
 
+
+@end
+
+
+@implementation UIMouseMotionNonPhysicalEvent
+
++ (id) alloc
+{
+   return( allocateEventWithIndex( self, UIMouseMotionNonPhysicalEventIndex));
+}
+
+- (void) dealloc
+{
+   deallocateEventWithIndex( self, UIMouseMotionNonPhysicalEventIndex);
+}
+
+
+
+- (BOOL) isPhysicalEvent
+{
+   return( NO);
+}
+
 @end
 
 
@@ -463,6 +506,12 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 - (UIEventType) eventType
 {
    return( UIEventTypeTouches);
+}
+
+
+- (BOOL) isPhysical
+{
+   return( YES);
 }
 
 
@@ -607,6 +656,39 @@ static struct
 @end
 
 
+
+@implementation UIGamepadEvent
+
+- (instancetype) initWithGamepad:(id <UIGamepad>) gamepad
+                gamepadEventType:(UIGamepadEventType) gamepadEventType
+{
+   self              = [self init];
+   _gamepad          = [gamepad retain];
+   _gamepadEventType = gamepadEventType;
+   return( self);
+}
+
+
+- (void) dealloc
+{
+   [_gamepad release];
+   [super dealloc];
+}
+
+
+- (char *) _payloadUTF8String
+{
+   return( UIGamepadEventTypeUTF8String( _gamepadEventType));
+}
+
+
+- (UIEventType) eventType
+{
+   return( UIEventTypeGamepad);
+}
+
+@end
+
 // 95% renderzeit
 //  5% eventzeit
 //  30 FPS
@@ -671,7 +753,7 @@ static struct
 
 @implementation UIWindowMoveEvent
 
-- (instancetype) initWithOrigin:(struct MulleIntegerPoint) origin
+- (instancetype) initWithOrigin:(CGPixelPoint) origin
 {
    self = [self init];
    _origin = origin;
@@ -695,7 +777,7 @@ static struct
 
 @implementation UIWindowResizeEvent : UIWindowEvent
 
-- (instancetype) initWithSize:(struct MulleIntegerSize) size
+- (instancetype) initWithSize:(CGPixelSize) size
 {
    self  = [self init];
    _size = size;

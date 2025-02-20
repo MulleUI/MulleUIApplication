@@ -51,7 +51,7 @@ int   main( int argc, char *argv[])
       [app addTimer:timer
    forTimerReceiver:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

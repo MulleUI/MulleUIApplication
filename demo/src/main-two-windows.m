@@ -93,7 +93,7 @@ static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *context)
 
    numberOfFrames = [context numberOfFrames];
 
-   MulleUICLog( "layer: %#@ context: %#@ numberOfFrames: %tu", layer, context, numberOfFrames);
+   // MulleUICLog( "layer: %#@ context: %#@ numberOfFrames: %tu", layer, context, numberOfFrames);
 
    canvas         = [layer canvas];
    rect           = UIEdgeInsetsInsetRect( canvas, UIEdgeInsetsMake( 10, 10, 10, 10));
@@ -175,8 +175,6 @@ int   main( int argc, char *argv[])
          window[ i] = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 200.0, 200.0)
                                 titleUTF8String:buf
                                       styleMask:styleMask];
-         [window[ i] setDebugNameUTF8String:buf];
-
          switch( mode)
          {
          case Vsync :
@@ -206,7 +204,7 @@ int   main( int argc, char *argv[])
       }
    }
 
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

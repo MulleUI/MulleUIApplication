@@ -10,7 +10,7 @@
 
 @implementation EventLogger
 
-- (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event
+- (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event MULLE_OBJC_THREADSAFE_METHOD
 {
    assert( _window);
 
@@ -18,7 +18,8 @@
    return( [_window handleWindowEvent:event]);
 }
 
-- (void) receiveRetainedEvent:(UIEvent *) NS_CONSUMED event;
+
+- (void) receiveRetainedEvent:(UIEvent *) NS_CONSUMED event
 {
    assert( _window);
 
@@ -33,7 +34,7 @@
 //       der ja auch eine textureID hat. Dann ist aber ev. noch das CGImage
 //       dazu vorhanden und wird dann die texture nochmal wegwerfen, weil die
 //       texture vom Framebuffer nicht als CGImage verwaltet wird. Vermutlich
-//       muss der Framebuffer ein CGLayer werden damit da auch ein CGImage für
+//       muss der Framebuffer ein CGFramebuffer werden damit da auch ein CGImage für
 //       die Framebuffertextur da ist.
 
 int   main( int argc, char *argv[])
@@ -49,14 +50,13 @@ int   main( int argc, char *argv[])
 
    @autoreleasepool
    {
-      styleMask = UIWindowStyleMaskDefault & ~UIWindowStyleRetained;
+      styleMask = UIWindowStyleMaskDefault; //  & ~UIWindowStyleRetained;
       window    = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 400.0, 400.0)
                             titleUTF8String:"Demo"
                                   styleMask:styleMask];
 
       [window setFrameRate:UIWindowFrameRateAsync];
       [window setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 1.0, 1.0)];
-      [app addWindow:window];
 
       logger = [EventLogger object];
       [logger setWindow:window];
@@ -64,7 +64,11 @@ int   main( int argc, char *argv[])
       osWindow = [window OSWindow];
       [osWindow setWindowEventsReceiver:logger];
       [osWindow setEventsReceiver:logger];
-      rval = [app run];
+
+      // MEMO: add window after being setup, as this will start multithreading
+      [app addWindow:window];
+
+      rval = [app runApp];
    }
    return( rval);
 }

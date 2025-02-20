@@ -32,6 +32,18 @@ src/include-private.h
 )
 
 #
+# contents selected with patternfile ??-header--project-only-headers
+#
+set( PROJECT_ONLY_HEADERS
+src/help-cursor.inc
+src/helpsel_eoa_1_48x48x32.png.inc
+src/helpsel_eoa_2_72x72x32.png.inc
+src/helpsel_eoa_3_96x96x32.png.inc
+src/helpsel_eoa_4_144x144x32.png.inc
+src/helpsel_eoa_5_192x192x32.png.inc
+)
+
+#
 # contents selected with patternfile ??-header--public-generated-headers
 #
 set( PUBLIC_GENERATED_HEADERS

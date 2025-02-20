@@ -4,3 +4,4 @@ keyModifiers     : 4
 key              : 5
 scanCode         : 6
 action           : 7
+isARepeat        : YES

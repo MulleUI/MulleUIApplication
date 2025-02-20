@@ -16,6 +16,9 @@
 #define UIWindowFrameRateSynced     -INFINITY  // tied to monitor frame rate (or 1/60.0 if not available)
 
 
+char  *UIWindowFrameRateUTF8String( double frameRate);
+
+
 // this constant creates 0.016677889899999999, which we then recognize more
 // easily as a "default" rate.
 #define UIScreenAssumedRefreshRate    (1.0 / 0.0166778899)
@@ -45,7 +48,7 @@
 typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
 {
 // All
-   UIWindowStyleNop                = 0x40000000, // if all bits are 0, use this to avoid getting default values
+   UIWindowStyleNop                  = 0x40000000, // if all bits are 0, use this to avoid getting default values
 
 // SDL
 //   UIWindowStyleClosable           = 0x001,    // there are no SDL hints for them
@@ -57,7 +60,8 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
    UIWindowStyleTransparent          = 0x040,
    UIWindowStyleFloating             = 0x080,
    UIWindowStyleBare                 = 0x100,      // window bar, resizer gone
-   UIWindowStylePanes                = 0x200,
+   UIWindowStylePlanes               = 0x200,
+   UIWindowStyleNoView               = 0x400,      // no UIView will be generated
 
 // CG
    UIWindowStyleAntiAlias            = 0x1000,     // nanovg or glfw
@@ -75,11 +79,14 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
    UIWindowOpenGLForward             = 0x0400000,  // non-deprecated functions only
    UIWindowOpenGLLibraryFallback     = 0x0800000,  // try other openGL libraries as fallback
 
-   UIWindowOpenGLDeprecated          = 0x1000000   // if this is set, GLES can't be used
+   UIWindowOpenGLDeprecated          = 0x1000000,   // if this is set, GLES can't be used
+
+// Notcurses
+   UIWindowNotcursesMouseDisable     = 0x10000000   // do not use terminal mouse
 };
 
 
-extern NS_OPTIONS_TABLE( UIWindowStyle, 19);
+extern NS_OPTIONS_TABLE( UIWindowStyle, 20);
 
 static inline char  *UIWindowStyleUTF8String( UIWindowStyle style)
 {
@@ -145,43 +152,12 @@ typedef NSUInteger   UIWindowDisplayBits;
 
 
 
-@protocol UIWindow < NSObject>
 
-@property( assign, readonly) id <UIGraphicsContext>  renderGraphicsContext;
+@protocol UIWindowRenderDelegate
 
-// return primary OSWindow this window is using (or nil if none)
-// if you return nil, you may not get many events
-- (id <UIOSWindow>) OSWindow;
-
-// return underlying SDL/GLFW window or whatever
-- (void *) os_window;
-
-// obsolete ?
-//- (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
-
-- (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now;
-
-- (void) writeOSWindowPropertyChangesIfNeeded;
-
-// the framebuffer is dirty and needs repainting, but the geometry has not
-// neccesarily changed. If you have a copy of the window contents around
-// just blit it
-// these are threadsafe
-- (void) setNeedsRefresh;
-- (BOOL) shouldClose;
-
-// sent by the application on add/remove when a window will be removed
-// the application might be gone immediately afterwards if this is the
-// last window (taking the graphics system with it!)
-- (void) applicationDidAddWindow:(UIApplication *) app;
-- (void) applicationDidRemoveWindow:(UIApplication *) app;
+- (UIWindowDisplayBits) willRenderWithAbsoluteTime:(mulle_absolutetime_t) renderStart;
 
 @end
-
-
-
-// just like 0x800000FF for middle red, full alpha. Sparingly used...
-typedef NSUInteger   UIHexColor;
 
 
 @class UIEvent;
@@ -189,8 +165,8 @@ typedef NSUInteger   UIHexColor;
 
 @protocol UIEventReceiver <NSObject>
 
-- (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event;
-- (void) receiveRetainedEvent:(UIEvent *) NS_CONSUMED event;
+- (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event   MULLE_OBJC_THREADSAFE_METHOD;
+- (void) receiveRetainedEvent:(UIEvent *) NS_CONSUMED event     MULLE_OBJC_THREADSAFE_METHOD;
 
 @end
 
@@ -198,7 +174,51 @@ typedef NSUInteger   UIHexColor;
 
 @protocol UITimerReceiver <NSObject>
 
-- (void) handleRetainedTimer:(NSTimer *) NS_CONSUMED event;
+- (void) handleRetainedTimer:(NSTimer *) NS_CONSUMED event     MULLE_OBJC_THREADSAFE_METHOD;
+
+@end
+
+
+@protocol UIWindow < NSObject, UIEventReceiver>
+
+@property( assign, readonly) id <UIGraphicsContext>  renderGraphicsContext;
+
+// return primary OSWindow this window is using (or nil if none)
+// if you return nil, you may not get many events
+- (id <UIOSWindow>) OSWindow  MULLE_OBJC_THREADSAFE_METHOD;
+
+// return underlying SDL/GLFW window or whatever
+- (void *) os_window          MULLE_OBJC_THREADSAFE_METHOD;
+
+// obsolete ?
+//- (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
+
+//
+// this method must be called from the main thread only
+// in this sense its threadsafe, because other threads abort
+//
+- (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now   MULLE_OBJC_THREADSAFE_METHOD;
+
+- (void) writeOSWindowPropertyChangesIfNeeded                              MULLE_OBJC_THREADSAFE_METHOD;
+
+// the framebuffer is dirty and needs repainting, but the geometry has not
+// neccesarily changed. If you have a copy of the window contents around
+// just blit it
+// these are threadsafe
+- (void) setNeedsRefresh   MULLE_OBJC_THREADSAFE_METHOD;
+- (BOOL) shouldClose       MULLE_OBJC_THREADSAFE_METHOD;
+
+// sent by the application on add/remove when a window will be removed
+// the application might be gone immediately afterwards if this is the
+// last window (taking the graphics system with it!)
+// Implementators should assert, that its called from main thread only
+- (void) applicationDidAddWindow:(UIApplication *) app      MULLE_OBJC_THREADSAFE_METHOD;
+- (void) applicationDidRemoveWindow:(UIApplication *) app   MULLE_OBJC_THREADSAFE_METHOD;
+
+- (id) firstResponder;
+
+- (void) addToRenderDelegates:(id <UIWindowRenderDelegate>) view;
+- (void) removeFromRenderDelegates:(id <UIWindowRenderDelegate>) view;
 
 @end
 
@@ -219,7 +239,7 @@ static inline struct CGRect
 }
 
 
-static inline struct MulleIntegerSize
+static inline CGPixelSize
    UIOSWindowInfoGetFramebufferSize( struct UIOSWindowInfo *info)
 {
    return( CGWindowInfoGetFramebufferSize( info ? &info->base : NULL));
@@ -306,7 +326,15 @@ static inline mulle_relativetime_t
 
 
 @protocol UIScreen;
+@protocol UIGamepad;
 
+@class UIWindowEvent;
+@class UIEvent;
+
+
+typedef void   (*UIOSWindowEventCallback_t)( id <UIOSWindow> window, UIWindowEvent *event);
+typedef void   (*UIOSWindowRetainedEventCallback_t)( id <UIOSWindow> window, UIEvent *retainedEvent);
+typedef int    (*UIOSWindowFrameCallback_t)( id <UIOSWindow> window);
 
 @protocol UIOSWindow <NSObject>
 
@@ -315,7 +343,17 @@ static inline mulle_relativetime_t
 @property( assign) NSUInteger             discardEventsMask;
 @property( assign) id <UIWindow>          parentWindow;  // owner UIWindow
 
-@property( readonly, getter=isAntiAliasing) BOOL   antiAliasing;
+@property( readonly, getter=isAntiAliasing) BOOL     antiAliasing;
+
+// default: GLFWOSWindowEventDefaultCallback
+@property( assign) UIOSWindowEventCallback_t         windowEventsCallback;
+// default: GLFWOSWindowRetainedEventDefaultCallback
+@property( assign) UIOSWindowRetainedEventCallback_t otherRetainedEventsCallback;
+//
+// very basic rendering and event support. Does not use CGContext!
+// view port is not setup and framebuffer is not cleared!
+@property( assign) UIOSWindowFrameCallback_t         frameCallback;
+
 
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
@@ -327,25 +365,25 @@ static inline mulle_relativetime_t
 - (NSInteger) shareID;
 
 // these are threadsafe
-- (void) setFrameRateLimiter:(BOOL) flag;
+- (void) setFrameRateLimiter:(BOOL) flag  MULLE_OBJC_THREADSAFE_METHOD;
 
 // this is threadsafe
-- (BOOL) frameRateLimiter;
+- (BOOL) frameRateLimiter                 MULLE_OBJC_THREADSAFE_METHOD;
 
 // these are threadsafe
-- (void) setFrameRate:(mulle_relativetime_t) frameRate;
+- (void) setFrameRate:(mulle_relativetime_t) frameRate   MULLE_OBJC_THREADSAFE_METHOD;
 
 // this is threadsafe
-- (mulle_relativetime_t) frameRate;
+- (mulle_relativetime_t) frameRate              MULLE_OBJC_THREADSAFE_METHOD;
 
 // these are threadsafe
-- (void) setFrameRateHz:(CGFloat) frameRateHz;
+- (void) setFrameRateHz:(CGFloat) frameRateHz   MULLE_OBJC_THREADSAFE_METHOD;
 
 // this is threadsafe
-- (CGFloat) frameRateHz;
+- (CGFloat) frameRateHz                         MULLE_OBJC_THREADSAFE_METHOD;
 
 // this is threadsafe, for OpenGL will give enum for OpenGL3, OpenGL ES etc.
-- (NSUInteger) backend;
+- (NSUInteger) backend                          MULLE_OBJC_THREADSAFE_METHOD;
 
 // return self
 - (id <UIOSWindow>) OSWindow;
@@ -354,24 +392,13 @@ static inline mulle_relativetime_t
 - (id <UIScreen>) screen;
 
 
+- (id <UIGamepad>) gamepadAtIndex:(NSUInteger) index;
+
 // this is threadsafe
-- (void) getOSWindowInfo:(struct UIOSWindowInfo *) info;
-
-
-- (void) os_requestClose;
-- (void) os_destroyWindow;
-
-- (CGPoint) os_windowPosition;
-- (void) os_setWindowPosition:(CGPoint) position;
-- (CGSize) os_windowSize;
-- (void) os_setWindowSize:(CGSize) size;
-- (CGRect) os_windowFrame;
-- (void) os_setWindowFrame:(CGRect) rect;
-
-- (struct MulleIntegerSize) os_framebufferSize;
+- (void) getOSWindowInfo:(struct UIOSWindowInfo *) info  MULLE_OBJC_THREADSAFE_METHOD;
 
 // https://www.glfw.org/docs/latest/group__context.html#ga6d4e0cdf151b5e579bd67f13202994ed
-- (void) os_setSwapInterval:(NSUInteger) value;
+- (void) os_setSwapInterval:(NSUInteger) value           MULLE_OBJC_THREADSAFE_METHOD;
 
 // bind GL context of the window to the current thread
 // synonymous with activate
@@ -380,22 +407,32 @@ static inline mulle_relativetime_t
 - (void) os_deactivateGraphicsContext;
 - (void) os_swapBuffers;
 
-- (void) os_requestClose;
-- (BOOL) os_windowShouldClose;
+- (void) os_requestClose                          MULLE_OBJC_THREADSAFE_METHOD;
+- (BOOL) os_windowShouldClose                     MULLE_OBJC_THREADSAFE_METHOD;
 
-- (void) os_show;
-- (void) os_hide;
+- (void) os_show                                  MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_hide                                  MULLE_UI_MAIN_THREAD_ONLY;
 
-- (void) os_initEvents;
-- (void) os_finalizeEvents;
+- (CGPoint) os_windowPosition                     MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_setWindowPosition:(CGPoint) position  MULLE_UI_MAIN_THREAD_ONLY;
+- (CGSize) os_windowSize                          MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_setWindowSize:(CGSize) size           MULLE_UI_MAIN_THREAD_ONLY;
+- (CGRect) os_windowFrame                         MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_setWindowFrame:(CGRect) rect          MULLE_UI_MAIN_THREAD_ONLY;
+- (CGPixelSize) os_framebufferSize    MULLE_UI_MAIN_THREAD_ONLY;
 
-- (void) os_setTitleUTF8String:(char *) s;
-- (void) os_setCursor:(void *) cursor;
+- (void) os_initEvents                            MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_finalizeEvents                        MULLE_UI_MAIN_THREAD_ONLY;
+
+- (void) os_setTitleUTF8String:(char *) s         MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_setCursor:(void *) cursor             MULLE_UI_MAIN_THREAD_ONLY;
+
+- (void *) os_createCursorWithBitmap:(struct CGBitmap) bitmap
+                             hotSpot:(struct CGPixelPoint) hotSpot   MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_destroyCursor:(void *) cursor         MULLE_UI_MAIN_THREAD_ONLY;
 
 // glfw window
-- (void *) os_window;
-
-- (void) getOSWindowInfo:(struct UIOSWindowInfo *) info;  // owner UIWindow
+- (void *) os_window                              MULLE_OBJC_THREADSAFE_METHOD;
 
 - (mulle_absolutetime_t) lastSwapBuffersTimestamp;
 
@@ -405,7 +442,25 @@ static inline mulle_relativetime_t
 struct mulle_pointerarray;
 struct CGPath;
 
+
+@protocol UIImage <NSObject>
+
+- (Class) preferredImageLayerClass;
+- (CGSize) size;
+- (BOOL) isMultiSample;
+
+@end
+
+
+// this is an abstraction on CGFramebuffer, but UILayer is already in use because
+// of CALayer, and we probably gonna rename CGFramebuffer to CGFramebuffer anyway
+@protocol UIFramebuffer <NSObject>
+@end
+
+
 @protocol UIGraphicsContext <NSObject>
+
+@property( assign) char  *mulleNameUTF8String    MULLE_OBJC_THREADSAFE_PROPERTY;
 
 @property( assign) BOOL                          rendersOffScreen;
 @property( assign) NSUInteger                    framebufferBits;
@@ -424,6 +479,7 @@ struct CGPath;
 
 - (void) setActive:(BOOL) yes;
 - (BOOL) isActive;
+- (NSThread *) activeThread; // wo set it active
 
 - (void) clearFramebufferNoColor; // keep color information
 - (void) clearFramebufferWithHexColor:(NSUInteger) color;        // black all zero
@@ -443,14 +499,14 @@ struct CGPath;
 // rename to something else, maybe combine and just reset
 - (void) reset;
 
-- (id) acquireOffscreenFramebuffer;
-- (void) recycleFramebuffer:(id) layer;
+- (id) acquireOffscreenFramebuffer        MULLE_OBJC_THREADSAFE_METHOD;
+- (BOOL) recycleFramebuffer:(id) layer    MULLE_OBJC_THREADSAFE_METHOD;
 
-- (id) shareImage:(id) framebufferImage
-      withContext:(id <UIGraphicsContext>) context;
+//- (id) shareImage:(id) framebufferImage
+//      withContext:(id <UIGraphicsContext>) context;
 
 // this is used for making screenshots
-- (struct CGBitmap) readFramebufferBitmap:(struct MulleIntegerRect) rect
+- (struct CGBitmap) readFramebufferBitmap:(CGPixelRect) rect
                     framebufferBitmapType:(CGFramebufferBitmapType) type
                                 allocator:(struct mulle_allocator *) allocator;
 
@@ -475,20 +531,12 @@ struct CGPath;
             image:(id) image
             scale:(BOOL) scale;
 
+- (id <UIImage>) imageWithFramebuffer:(id <UIFramebuffer>) layer;
 
 // support for some demos
 - (CGPoint) mouseLocation;
 - (NSUInteger) keyModifiers;
 - (NSUInteger) buttonStates;
-
-@end
-
-
-@protocol UIImage <NSObject>
-
-- (id) shareWithContext:(id) context;
-- (CGSize) size;
-- (BOOL) isMultiSample;
 
 @end
 
@@ -541,5 +589,133 @@ static inline double   UIScreenInfoGetPPI( struct UIScreenInfo *info)
 - (CGRect) frame;
 - (CGRect) canvas;
 - (char *) nameUTF8String;
+
+@end
+
+
+#define UIGamepadInfoMaxButtons  32    // 32 buttons (A B X Y)
+#define UIGamepadInfoMaxAxes     6     // two analog sticks
+#define UIGamepadInfoMaxSticks   4     // four digital sticks (hats) why not
+
+//
+// 24 bytes axes
+// 32 bytes buttons
+//  4 bytes sticks
+//  3 bytes number
+//  1 byte isJoystick
+//
+// 64 bytes total
+//
+struct UIGamepadInfo
+{
+   float            axes[ UIGamepadInfoMaxAxes];         // 2 * 3D
+   unsigned char    buttons[ UIGamepadInfoMaxButtons];   // BOOL
+   unsigned char    sticks[ UIGamepadInfoMaxSticks];     // CADirection
+
+   unsigned char    numberOfSticks;    // standard digital joysticks
+   unsigned char    numberOfButtons;   // on off buttons
+   unsigned char    numberOfAxes;      // standard analog joystick axes (3 per)
+   char             isJoystick;
+};
+
+
+// values like GLFW (but Dpad is in sticks and not duplicated in buttons)
+typedef NS_ENUM( NSUInteger, UIGamepadButton)
+{
+   UIGamepadButtonA           = 0,
+   UIGamepadButtonB           = 1,
+   UIGamepadButtonX           = 2,
+   UIGamepadButtonY           = 3,
+   UIGamepadButtonLeftBumper  = 4,
+   UIGamepadButtonRightBumper = 5,
+   UIGamepadButtonBack        = 6,
+   UIGamepadButtonStart       = 7,
+   UIGamepadButtonGuide       = 8,
+   UIGamepadButtonLeftThumb   = 9,
+   UIGamepadButtonRightThumb  = 10,
+   UIGamepadButtonCross       = UIGamepadButtonA,
+   UIGamepadButtonCircle      = UIGamepadButtonB,
+   UIGamepadButtonSquare      = UIGamepadButtonX,
+   UIGamepadButtonTriangle    = UIGamepadButtonY
+};
+
+//
+// if you use a variable for button, then wrap this in a function
+//
+static inline BOOL   UIGamepadInfoGetButton( struct UIGamepadInfo *info,
+                                             UIGamepadButton button)
+{
+   assert( button < UIGamepadInfoMaxButtons);
+   return( info->buttons[ button]);
+}
+
+
+static inline CADirection   UIGamepadInfoGetDigitalStick( struct UIGamepadInfo *info,
+                                                          NSUInteger index)
+{
+   assert( index < UIGamepadInfoMaxSticks);
+
+   return( (CADirection) info->sticks[ index]);
+}
+
+
+static inline CADirection   UIGamepadInfoGetDPad( struct UIGamepadInfo *info)
+{
+   return( UIGamepadInfoGetDigitalStick( info, 0));
+}
+
+
+static inline BOOL   UIGamepadInfoIsJoystick( struct UIGamepadInfo *info)
+{
+   return( info->isJoystick);
+}
+
+
+
+static inline void   UIGamepadInfoGetAnalogStick( struct UIGamepadInfo *info,
+                                                  NSUInteger index,
+                                                  float  axes[ 3])
+{
+   assert( index == 0 || index == 1);
+
+   axes[ 0] = info->axes[ 0 + index * 3];
+   axes[ 1] = info->axes[ 1 + index * 3];
+   axes[ 2] = info->axes[ 2 + index * 3];
+}
+
+
+
+@protocol UIGamepad <NSObject>
+
+@property( readonly) char        *nameUTF8String;
+@property( readonly) char        *guidUTF8String;
+
+@property( readonly) BOOL        isJoystick;
+@property( readonly) NSInteger   osIndex;
+
+// returns nil, the osIndex is not the same as the index used by
+// UIApplication, because UIApplication ensures 0-... where as GLFW
+// produces holes, because non-gamepads are also in there which need to
+// be filtered out
++ (id <UIGamepad>) gamepadAtOSIndex:(NSUInteger) i;
++ (NSRange) osIndexRange;
+
+// this is thread safe. it is slightly faster (less locking) if you query
+// the UIGamepadInfo with the C functions above
+- (void) getGamepadInfo:(struct UIGamepadInfo *) info    MULLE_OBJC_THREADSAFE_METHOD;
+
+
+
+// convenience interface
+- (CADirection) direction                                MULLE_OBJC_THREADSAFE_METHOD;
+- (BOOL) stateOfGamepadButton:(UIGamepadButton) button   MULLE_OBJC_THREADSAFE_METHOD;
+
+- (BOOL) getAnalogStickWithIndex:(NSUInteger) index
+                            axes:(float [ 3]) axes       MULLE_OBJC_THREADSAFE_METHOD;
+
+- (BOOL) getDigitalStickWithIndex:(NSUInteger) index
+                        direction:(CADirection *) direction  MULLE_OBJC_THREADSAFE_METHOD;
+
+- (void) os_pollGamepadInfo;
 
 @end

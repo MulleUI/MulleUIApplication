@@ -14,11 +14,12 @@ typedef NS_OPTIONS( NSUInteger, UIEventType)
    UIEventTypeMotion   = 0x08,  // Mouse movement
    UIEventTypeScroll   = 0x10,  // Mouse Scrollwheel
    UIEventTypeWindow   = 0x20,  // Window event (close, resize, move etc)
-   UIEventTypeScreen   = 0x40,  // Screen event
-   UIEventTypeUser     = 0x80,  // User event
-   UIEventTypeAction   = 0x100, // Action event (e.g. menu event)
-   _UIEventTypeTimer   = 0x200,  // (This is not a real UIEvent)
-   UIEventTypeTracking = 0x400 // Mouse tracking event (is this UIEventTypeMotion)
+   UIEventTypeScreen   = 0x40,  // Screen event (connect/disconnect)
+   UIEventTypeGamepad  = 0x80,  // Gamepad event (connect/disconnect)
+   UIEventTypeUser     = 0x100,  // User event
+   UIEventTypeAction   = 0x200, // Action event (e.g. menu event)
+   _UIEventTypeTimer   = 0x400,  // (This is not a real UIEvent)
+   UIEventTypeTracking = 0x800 // Mouse tracking event (is this UIEventTypeMotion)
 };
 
 
@@ -33,6 +34,7 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
    case UIEventTypeScroll   : return( "UIEventTypeScroll");
    case UIEventTypeWindow   : return( "UIEventTypeWindow");
    case UIEventTypeScreen   : return( "UIEventTypeScreen");
+   case UIEventTypeGamepad  : return( "UIEventTypeGamepad");
    case UIEventTypeUser     : return( "UIEventTypeUser");
    case UIEventTypeAction   : return( "UIEventTypeAction");
    case _UIEventTypeTimer   : return( "_UIEventTypeTimer");
@@ -109,6 +111,7 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 
 // mouseDown and initial touches are YES, default is NO
 - (BOOL) isInitialEvent;
+- (BOOL) isPhysicalEvent; // default returns YES, an actual user action
 
 @end
 
@@ -159,11 +162,13 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 @property( assign, readonly) NSUInteger   key;
 @property( assign, readonly) NSUInteger   scanCode;
 @property( assign, readonly) NSUInteger   action;
+@property( assign, readonly) BOOL         isARepeat;
 
 - (instancetype) initWithInputState:(struct UIInputState *) state
                                 key:(NSUInteger) key
                            scanCode:(NSUInteger) scanCode
-                             action:(NSUInteger) action;
+                             action:(NSUInteger) action
+                          isARepeat:(BOOL) isARepeat;
 @end
 
 
@@ -191,7 +196,11 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 
 
 @interface UIMouseMotionEvent : UIInputEvent
+@end
 
+// used by MulleUIWindow to discern "physical" events, from events
+// that are "faked" to provide highlighting in animated views
+@interface UIMouseMotionNonPhysicalEvent : UIMouseMotionEvent
 @end
 
 
@@ -263,6 +272,43 @@ static inline char   *UIScreenEventTypeUTF8String( UIScreenEventType type)
 @end
 
 
+// these are merely presence events, actuall button/and joystick events
+// are part of the InputEvent family
+//
+typedef NS_ENUM( NSUInteger, UIGamepadEventType)
+{
+   UIGamepadEventTypeConnected    = 0x01,
+   UIGamepadEventTypeDisconnected = 0x02
+};
+
+
+// static inline, because presumably its only used during debugging
+// and when linking this would be force-all linked
+static inline char   *UIGamepadEventTypeUTF8String( UIGamepadEventType type)
+{
+   switch( type)
+   {
+   case UIGamepadEventTypeConnected    : return( "UIGamepadEventTypeConnected");
+   case UIGamepadEventTypeDisconnected : return( "UIGamepadEventTypeDisconnected");
+   }
+   assert( 0);
+   return( NULL);
+}
+
+
+// a monitor event bears no data
+@interface UIGamepadEvent : UIEvent
+
+@property( assign, readonly) UIGamepadEventType  gamepadEventType;
+@property( assign, readonly) id <UIGamepad>      gamepad;
+
+- (instancetype) initWithGamepad:(id <UIGamepad>) gamepad
+                gamepadEventType:(UIGamepadEventType) eventType;
+
+@end
+
+
+
 typedef NS_OPTIONS( NSUInteger, UIWindowEventType)
 {
    UIWindowEventTypeClose             = 0x01,
@@ -303,9 +349,9 @@ static inline char   *UIWindowEventTypeUTF8String( UIWindowEventType type)
 
 @interface UIWindowMoveEvent : UIWindowEvent
 
-- (instancetype) initWithOrigin:(struct MulleIntegerPoint) pos;
+- (instancetype) initWithOrigin:(CGPixelPoint) pos;
 
-@property( assign, readonly) struct MulleIntegerPoint   origin;
+@property( assign, readonly) CGPixelPoint   origin;
 
 @end
 
@@ -320,9 +366,9 @@ static inline char   *UIWindowEventTypeUTF8String( UIWindowEventType type)
 
 @interface UIWindowResizeEvent : UIWindowEvent
 
-- (instancetype) initWithSize:(struct MulleIntegerSize) size;
+- (instancetype) initWithSize:(CGPixelSize) size;
 
-@property( assign, readonly) struct MulleIntegerSize   size;
+@property( assign, readonly) CGPixelSize   size;
 
 @end
 
@@ -858,11 +904,4 @@ static inline char   *_UIEventKeyUTF8String( NSUInteger key)
 }
 
 
-static inline char   *UIEventKeyUTF8String( NSUInteger key)
-{
-   char   *s;
-
-   s = _UIEventKeyUTF8String( key);
-   return( s ? s : "???");
-}
-
+char   *UIEventKeyUTF8String( NSUInteger key);

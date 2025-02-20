@@ -38,6 +38,7 @@ src/generic/include-private.h
 set( PRIVATE_HEADERS
 src/UIApplication+DebugPrivate.h
 src/UIControl+DebugPrivate.h
+src/UIOSWindow+DebugPrivate.h
 )
 
 #
