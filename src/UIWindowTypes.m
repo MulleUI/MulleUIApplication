@@ -44,3 +44,25 @@ char  *UIWindowFrameRateUTF8String( double frameRate)
       return( "UIWindowFrameRateSynced");
    return( MulleObjC_asprintf( "%.4gHz", 1.0 / frameRate));
 }
+
+
+PROTOCOLCLASS_IMPLEMENTATION( MulleUINamedObject)
+
+- (char *) threadSafeUTF8String
+{
+   char   *s;
+   char   *name;
+
+   mulle_buffer_do_autoreleased_string( buffer, NULL, s)
+   {
+      s = MulleObjCClassGetNameUTF8String( NSClassFromObject( self));
+      mulle_buffer_sprintf( buffer, "<%s %p", s, self);
+      name = [self nameUTF8String];
+         mulle_buffer_sprintf( buffer, " \"%s\"", name);
+      mulle_buffer_add_string( buffer, ">");
+   }
+   return( s);
+}
+
+PROTOCOLCLASS_END()
+

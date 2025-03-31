@@ -82,6 +82,24 @@ static struct
 }
 
 
+- (BOOL) becomeFirstResponder
+{
+   return( NO);
+}
+
+
+- (BOOL) resignFirstResponder
+{
+   return( YES);
+}
+
+
+- (BOOL) isFirstResponder;
+{
+   return( NO);
+}
+
+
 - (BOOL) canBecomeFirstResponder
 {
    return( NO);
@@ -92,6 +110,7 @@ static struct
 {
    return( YES);
 }
+
 
 
 //

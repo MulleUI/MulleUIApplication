@@ -152,10 +152,20 @@ typedef NSUInteger   UIWindowDisplayBits;
 
 
 
+PROTOCOLCLASS_INTERFACE( MulleUINamedObject, NSObject)
 
-@protocol UIWindowRenderDelegate
+@property( readonly) char   *nameUTF8String   MULLE_OBJC_THREADSAFE_PROPERTY;
 
-- (UIWindowDisplayBits) willRenderWithAbsoluteTime:(mulle_absolutetime_t) renderStart;
+@optional
+- (char *) threadSafeUTF8String   MULLE_OBJC_THREADSAFE_METHOD;
+
+PROTOCOLCLASS_END()
+
+
+
+@protocol UIWindowLayoutDelegate
+
+- (UIWindowDisplayBits) willLayoutWithAbsoluteTime:(mulle_absolutetime_t) renderStart;
 
 @end
 
@@ -179,7 +189,7 @@ typedef NSUInteger   UIWindowDisplayBits;
 @end
 
 
-@protocol UIWindow < NSObject, UIEventReceiver>
+@protocol UIWindow < MulleUINamedObject, UIEventReceiver>
 
 @property( assign, readonly) id <UIGraphicsContext>  renderGraphicsContext;
 
@@ -217,8 +227,8 @@ typedef NSUInteger   UIWindowDisplayBits;
 
 - (id) firstResponder;
 
-- (void) addToRenderDelegates:(id <UIWindowRenderDelegate>) view;
-- (void) removeFromRenderDelegates:(id <UIWindowRenderDelegate>) view;
+- (char *) pasteboardCString;
+- (void) setPasteboardCString:(char *) s;
 
 @end
 
@@ -334,9 +344,11 @@ static inline mulle_relativetime_t
 
 typedef void   (*UIOSWindowEventCallback_t)( id <UIOSWindow> window, UIWindowEvent *event);
 typedef void   (*UIOSWindowRetainedEventCallback_t)( id <UIOSWindow> window, UIEvent *retainedEvent);
-typedef int    (*UIOSWindowFrameCallback_t)( id <UIOSWindow> window);
 
-@protocol UIOSWindow <NSObject>
+typedef UIWindowDisplayBits   (*UIOSWindowFrameCallback_t)( id <UIOSWindow> window);
+
+
+@protocol UIOSWindow <MulleUINamedObject, UIOSGraphicsContext>
 
 @property( assign) id <UIEventReceiver>   windowEventsReceiver;
 @property( assign) id <UIEventReceiver>   eventsReceiver;
@@ -361,7 +373,7 @@ typedef int    (*UIOSWindowFrameCallback_t)( id <UIOSWindow> window);
                  graphicsHints:(NSUInteger) hints
                  sharingWindow:(id <UIOSWindow>) sharingWindow;
 
-// a shareID. Windows with shared contexts have the same shareID
+// a shareID. Windows with sharing contexts have the same shareID
 - (NSInteger) shareID;
 
 // these are threadsafe
@@ -391,11 +403,14 @@ typedef int    (*UIOSWindowFrameCallback_t)( id <UIOSWindow> window);
 - (id <UIScreen>) screenOrPrimaryScreen:(BOOL) flag;
 - (id <UIScreen>) screen;
 
-
 - (id <UIGamepad>) gamepadAtIndex:(NSUInteger) index;
 
 // this is threadsafe
 - (void) getOSWindowInfo:(struct UIOSWindowInfo *) info  MULLE_OBJC_THREADSAFE_METHOD;
+
+- (mulle_absolutetime_t) lastSwapBuffersTimestamp;
+- (NSThread *) activeThread;
+
 
 // https://www.glfw.org/docs/latest/group__context.html#ga6d4e0cdf151b5e579bd67f13202994ed
 - (void) os_setSwapInterval:(NSUInteger) value           MULLE_OBJC_THREADSAFE_METHOD;
@@ -434,7 +449,6 @@ typedef int    (*UIOSWindowFrameCallback_t)( id <UIOSWindow> window);
 // glfw window
 - (void *) os_window                              MULLE_OBJC_THREADSAFE_METHOD;
 
-- (mulle_absolutetime_t) lastSwapBuffersTimestamp;
 
 @end
 
@@ -443,7 +457,8 @@ struct mulle_pointerarray;
 struct CGPath;
 
 
-@protocol UIImage <NSObject>
+@protocol UIImage < MulleUINamedObject>
+
 
 - (Class) preferredImageLayerClass;
 - (CGSize) size;
@@ -454,33 +469,45 @@ struct CGPath;
 
 // this is an abstraction on CGFramebuffer, but UILayer is already in use because
 // of CALayer, and we probably gonna rename CGFramebuffer to CGFramebuffer anyway
-@protocol UIFramebuffer <NSObject>
+@protocol UIFramebuffer < MulleUINamedObject>
 @end
 
 
-@protocol UIGraphicsContext <NSObject>
+typedef NS_OPTIONS( NSUInteger, UIGraphicsContextState)
+{
+   UIGraphicsContextAssociated = 0x1,    // associated with current thread
+   UIGraphicsContextActive     = 0x2     // also has active OpenGL context
+};
 
-@property( assign) char  *mulleNameUTF8String    MULLE_OBJC_THREADSAFE_PROPERTY;
+
+
+@protocol UIGraphicsContext < MulleUINamedObject>
 
 @property( assign) BOOL                          rendersOffScreen;
 @property( assign) NSUInteger                    framebufferBits;
-@property( assign) id                            OSWindow;
+@property( readonly) char                        *nameUTF8String   MULLE_OBJC_THREADSAFE_PROPERTY;
+@property( assign, readonly) id <UIOSGraphicsContext> OSWindow     MULLE_OBJC_THREADSAFE_PROPERTY;
 @property( assign, readonly) UIGraphicsBackend   backend;
 @property( assign) struct UIInputState           inputState;
 @property( assign, getter=isInitializedFramebuffer) BOOL   initializedFramebuffer;
+@property( assign) UIGraphicsContextState        state; // UIGraphicsContextState
 
 + (BOOL) supportsAntiAliasing;
 
-- (instancetype) initWithBackend:(UIGraphicsBackend) backend
-                         shareID:(NSUInteger) shareID
-                         options:(UIGraphicsOptions) options;
+- (instancetype) initWithOSGraphicsContext:(id <UIOSGraphicsContext>) osContext
+                            nameUTF8String:(char *) nameUTF8String
+                                   shareID:(NSUInteger) shareID
+                                   options:(UIGraphicsOptions) options;
+
+- (instancetype) initWithOSGraphicsContext:(id <UIOSGraphicsContext>) window
+                                   shareID:(NSUInteger) shareID
+                                   options:(UIGraphicsOptions) options;
                                  
 - (char *) backendUTF8String;
 
-- (void) setActive:(BOOL) yes;
-- (BOOL) isActive;
 - (NSThread *) activeThread; // wo set it active
 
+- (BOOL) needsFramebufferClear;
 - (void) clearFramebufferNoColor; // keep color information
 - (void) clearFramebufferWithHexColor:(NSUInteger) color;        // black all zero
 
@@ -531,7 +558,8 @@ struct CGPath;
             image:(id) image
             scale:(BOOL) scale;
 
-- (id <UIImage>) imageWithFramebuffer:(id <UIFramebuffer>) layer;
+- (id <UIImage>) imageWithFramebuffer:(id <UIFramebuffer>) layer
+                       nameUTF8String:(char *) nameUTF8String;
 
 // support for some demos
 - (CGPoint) mouseLocation;
@@ -572,7 +600,7 @@ static inline double   UIScreenInfoGetPPI( struct UIScreenInfo *info)
 }
 
 
-@protocol UIScreen <NSObject>
+@protocol UIScreen < MulleUINamedObject>
 
 // threadSafe, though of course the screenAtIndex: call is not guaranteed
 // to operate on the same numberOfScreens since, that could have changed
@@ -588,7 +616,6 @@ static inline double   UIScreenInfoGetPPI( struct UIScreenInfo *info)
 - (mulle_relativetime_t) refreshRate;
 - (CGRect) frame;
 - (CGRect) canvas;
-- (char *) nameUTF8String;
 
 @end
 
@@ -685,9 +712,8 @@ static inline void   UIGamepadInfoGetAnalogStick( struct UIGamepadInfo *info,
 
 
 
-@protocol UIGamepad <NSObject>
+@protocol UIGamepad < MulleUINamedObject>
 
-@property( readonly) char        *nameUTF8String;
 @property( readonly) char        *guidUTF8String;
 
 @property( readonly) BOOL        isJoystick;
