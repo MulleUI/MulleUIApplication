@@ -1,5 +1,6 @@
       { @selector( MulleObjCLoader), @selector( MulleFoundationBase) },      // 47a9beb6;MulleObjCLoader;efab19ea;MulleFoundationBase
       { @selector( MulleObjCLoader), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCLoader;3ebba954;MulleUIBase
+      { @selector( MulleUINamedObject), MULLE_OBJC_NO_CATEGORYID },      // 9a5ed6a8;MulleUINamedObject;;
       { @selector( NSObject), @selector( UIApplication) },      // b3a66256;NSObject;48c8c9b2;UIApplication
       { @selector( NSObject), @selector( UIControl) },      // b3a66256;NSObject;55d6a4ca;UIControl
       { @selector( UIActionEvent), MULLE_OBJC_NO_CATEGORYID },      // e1189530;UIActionEvent;;
@@ -7,6 +8,7 @@
       { @selector( UIApplication), MULLE_OBJC_NO_CATEGORYID },      // 48c8c9b2;UIApplication;;
       { @selector( UIControl), MULLE_OBJC_NO_CATEGORYID },      // 55d6a4ca;UIControl;;
       { @selector( UIEvent), MULLE_OBJC_NO_CATEGORYID },      // f88bf69f;UIEvent;;
+      { @selector( UIFont), MULLE_OBJC_NO_CATEGORYID },      // a5b31a2f;UIFont;;
       { @selector( UIGamepadEvent), MULLE_OBJC_NO_CATEGORYID },      // 341273a2;UIGamepadEvent;;
       { @selector( UIInputEvent), MULLE_OBJC_NO_CATEGORYID },      // c91b6636;UIInputEvent;;
       { @selector( UIKeyboardEvent), MULLE_OBJC_NO_CATEGORYID },      // 83d7dde5;UIKeyboardEvent;;
@@ -14,6 +16,7 @@
       { @selector( UIMouseMotionEvent), MULLE_OBJC_NO_CATEGORYID },      // 92d19648;UIMouseMotionEvent;;
       { @selector( UIMouseMotionNonPhysicalEvent), MULLE_OBJC_NO_CATEGORYID },      // 9bd93565;UIMouseMotionNonPhysicalEvent;;
       { @selector( UIMouseScrollEvent), MULLE_OBJC_NO_CATEGORYID },      // 115953d2;UIMouseScrollEvent;;
+      { @selector( UIPasteboard), MULLE_OBJC_NO_CATEGORYID },      // d871deef;UIPasteboard;;
       { @selector( UIResponder), MULLE_OBJC_NO_CATEGORYID },      // 48335ff7;UIResponder;;
       { @selector( UIScreenEvent), MULLE_OBJC_NO_CATEGORYID },      // d2a3a25a;UIScreenEvent;;
       { @selector( UIUnicodeEvent), MULLE_OBJC_NO_CATEGORYID },      // 46e5ffa8;UIUnicodeEvent;;

@@ -19,6 +19,8 @@
 #import "UIControl.h"
 #import "UICursor.h"
 #import "UIEvent.h"
+#import "UIFont.h"
+#import "UIPasteboard.h"
 #import "UIResponder.h"
 #import "UIWindowTypes.h"
 

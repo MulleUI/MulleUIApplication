@@ -11,9 +11,9 @@ endif()
 # contents are derived from the file locations
 
 set( INCLUDE_DIRS
-src
-src/generic
 src/reflect
+src/generic
+src
 )
 
 #
@@ -70,6 +70,8 @@ src/UIApplication.h
 src/UIControl.h
 src/UICursor.h
 src/UIEvent.h
+src/UIFont.h
+src/UIPasteboard.h
 src/UIResponder.h
 src/UIWindowTypes.h
 src/generic/import-project.h

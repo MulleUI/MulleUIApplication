@@ -1,7 +1,9 @@
 #import "import.h"
 
 #import "UIEvent.h"
-;
+
+
+
 
 
 // https://developer.apple.com/library/archive/documentation/General/Conceptual/Devpedia-CocoaApp/Responder.html
@@ -11,9 +13,12 @@
 
 PROTOCOLCLASS_INTERFACE0( UIResponder)
 
-- (BOOL) becomeFirstResponder;
-- (BOOL) resignFirstResponder;
-- (BOOL) isFirstResponder;
+@optional
+- (BOOL) becomeFirstResponder;         // default: NO
+- (BOOL) resignFirstResponder;         // default: YES
+- (BOOL) isFirstResponder;             // default: NO
+- (BOOL) canBecomeFirstResponder;      // default: NO
+- (BOOL) canResignFirstResponder;      // default: YES
 
 - (BOOL) isFirstResponderEvent:(UIEvent *) event; // default NO
 
@@ -22,11 +27,8 @@ PROTOCOLCLASS_INTERFACE0( UIResponder)
 - (UIInputEvent *) handleInputEvent:(UIInputEvent *) event;
 - (UIMouseMotionEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) event;
 
-@optional
 
 - (id <UIResponder>) nextResponder;
-- (BOOL) canBecomeFirstResponder;
-- (BOOL) canResignFirstResponder;
 
 // default will query for implementations of one of the mouseDragged:
 // methods
@@ -74,4 +76,5 @@ PROTOCOLCLASS_END()
 - (UIMouseMotionEvent *) rightMouseDragged:(UIMouseMotionEvent *) event;
 
 @end
+
 
