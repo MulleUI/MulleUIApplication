@@ -1,6 +1,4 @@
-      { @selector( MulleObjCLoader), @selector( MulleFoundationBase) },      // 47a9beb6;MulleObjCLoader;efab19ea;MulleFoundationBase
       { @selector( MulleObjCLoader), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCLoader;3ebba954;MulleUIBase
-      { @selector( MulleUINamedObject), MULLE_OBJC_NO_CATEGORYID },      // 9a5ed6a8;MulleUINamedObject;;
       { @selector( NSObject), @selector( UIApplication) },      // b3a66256;NSObject;48c8c9b2;UIApplication
       { @selector( NSObject), @selector( UIControl) },      // b3a66256;NSObject;55d6a4ca;UIControl
       { @selector( UIActionEvent), MULLE_OBJC_NO_CATEGORYID },      // e1189530;UIActionEvent;;

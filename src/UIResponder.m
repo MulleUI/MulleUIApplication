@@ -228,9 +228,9 @@ static id   performSelectorIfResponding( UIResponder *self,
    if( state)
    {
       sel = @selector( mouseDragged:);
-      if( ! (state & (1 << UIEventMouseButtonLeft)))
+      if( ! (state & UIEventMouseButtonLeft))
       {
-         if( state & (1 << UIEventMouseButtonRight))
+         if( state & UIEventMouseButtonRight)
             sel = @selector( rightMouseDragged:);
          else
             sel = @selector( otherMouseDragged:);
@@ -334,32 +334,32 @@ static id   performSelectorIfResponding( UIResponder *self,
    {
    case UIEventTypePresses :
       event = [self acceptKeyboardEvent:(UIKeyboardEvent *) event];
-      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
+      assert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeUnicode :
       event = [self acceptUnicodeEvent:(UIUnicodeEvent *) event];
-      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
+      assert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeTouches :
       event = [self acceptMouseButtonEvent:(UIMouseButtonEvent *) event];
-      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
+      assert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeMotion :
       event = [self acceptMouseMotionEvent:(UIMouseMotionEvent *) event];
-      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
+      assert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeScroll :
       event = [self acceptMouseScrollEvent:(UIMouseScrollEvent *) event];
-      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
+      assert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    case UIEventTypeAction :
       event = [self acceptActionEvent:(UIActionEvent *) event];
-      NSParameterAssert( ! event || [event isKindOfClass:[UIInputEvent class]]);
+      assert( ! event || [event isKindOfClass:[UIInputEvent class]]);
       break;
 
    default :
@@ -399,7 +399,7 @@ static id   performSelectorIfResponding( UIResponder *self,
 {
    UIEvent   *result;
 
-   NSParameterAssert( [event isKindOfClass:[UIEvent class]]);
+   assert( [event isKindOfClass:[UIEvent class]]);
 
    //
    // when the event is changed by an event handler, we
@@ -420,12 +420,12 @@ static id   performSelectorIfResponding( UIResponder *self,
 //            return( event);
 
          result = [self acceptInputEvent:(UIInputEvent *) event];
-         NSParameterAssert( ! result || [result isKindOfClass:[UIEvent class]]);
+         assert( ! result || [result isKindOfClass:[UIEvent class]]);
       }
       else
       {
          result = [self acceptOtherEvent:event];
-         NSParameterAssert( ! result || [result isKindOfClass:[UIEvent class]]);
+         assert( ! result || [result isKindOfClass:[UIEvent class]]);
       }
 
       if( result != event)

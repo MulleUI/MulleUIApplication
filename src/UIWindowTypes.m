@@ -2,15 +2,13 @@
 
 #import "import-private.h"
 
-#import "import-project.h"
-
 
 NS_OPTIONS_TABLE( UIWindowStyle, 20) =
 {
    NS_OPTIONS_ITEM( UIWindowStyleNop),
 
    NS_OPTIONS_ITEM( UIWindowStyleResizable),
-   NS_OPTIONS_ITEM( UIWindowStyleInvisible),
+   NS_OPTIONS_ITEM( UIWindowStyleHidden),
    NS_OPTIONS_ITEM( UIWindowStyleOffscreen),
    NS_OPTIONS_ITEM( UIWindowStyleSingleBuffer),
    NS_OPTIONS_ITEM( UIWindowStyleTransparent),
@@ -46,23 +44,39 @@ char  *UIWindowFrameRateUTF8String( double frameRate)
 }
 
 
-PROTOCOLCLASS_IMPLEMENTATION( MulleUINamedObject)
-
-- (char *) threadSafeUTF8String
+char  *UIWindowDisplayBitsUTF8String( NSUInteger bits)
 {
-   char   *s;
-   char   *name;
+   NSUInteger   bit;
+   char         *hein;
+   char         *text;
+   auto char    *s;
+
+   if( ! bits)
+      return( "None");
 
    mulle_buffer_do_autoreleased_string( buffer, NULL, s)
    {
-      s = MulleObjCClassGetNameUTF8String( NSClassFromObject( self));
-      mulle_buffer_sprintf( buffer, "<%s %p", s, self);
-      name = [self nameUTF8String];
-         mulle_buffer_sprintf( buffer, " \"%s\"", name);
-      mulle_buffer_add_string( buffer, ">");
+      bit  = 0x1;
+      hein = "";
+
+      while( bits)
+      {
+         if( bits & bit)
+         {
+            text = UIWindowDisplayBitUTF8String( bit);
+            if( ! text)
+               hein = " ???";
+            else
+            {
+               mulle_buffer_add_char( buffer, ' ');
+               mulle_buffer_add_string( buffer, text);
+            }
+         }
+         bits &= ~bit;
+         bit <<= 1;
+      }
+      mulle_buffer_add_string( buffer, hein);
    }
+
    return( s);
 }
-
-PROTOCOLCLASS_END()
-

@@ -40,7 +40,7 @@
 }
 
 
-- (void) writeOSWindowPropertyChangesIfNeeded
+- (void) syncOSWindowPropertyChangesIfNeeded
 {
 }
 

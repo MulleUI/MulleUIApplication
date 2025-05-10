@@ -16,6 +16,7 @@ src/UIApplication.m
 src/UIControl.m
 src/UIEvent.m
 src/UIFont.m
+src/UIInputState+UTF8String.m
 src/UIPasteboard.m
 src/UIResponder.m
 src/UIWindowTypes.m
