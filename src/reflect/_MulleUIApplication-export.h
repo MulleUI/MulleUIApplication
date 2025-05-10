@@ -20,6 +20,7 @@
 #import "UICursor.h"
 #import "UIEvent.h"
 #import "UIFont.h"
+#import "UIInputState+UTF8String.h"
 #import "UIPasteboard.h"
 #import "UIResponder.h"
 #import "UIWindowTypes.h"

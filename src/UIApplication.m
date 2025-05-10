@@ -1147,7 +1147,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
    }
 
 #ifdef RUN_DEBUG
-   MulleUILog( "add Timer %@ (%.3f)", timer, appTimer.timestamp);
+   MulleUILog( "add Timer %#@ (%.3f)", timer, appTimer.timestamp);
 #endif
 }
 
@@ -1168,7 +1168,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
          {
             appTimer->timestamp = mulle_absolutetime_now() + [timer mulleRelativeTimeInterval];
 #ifdef RUN_DEBUG
-            MulleUILog( "reset Timer %@ (%.3f)", timer, appTimer->timestamp);
+            MulleUILog( "reset Timer %#@ (%.3f)", timer, appTimer->timestamp);
 #endif
             break;
          }
@@ -1212,7 +1212,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
          diff  = then - now;
 
 #ifdef RUN_DEBUG
-         MulleUILog( "Timer %@ %.3f (%.3f)",timer, then, now);
+         MulleUILog( "Timer %#@ %.3f (%.3f)",timer, then, now);
 #endif
          if( diff > 0.0) // time to fire
          {
@@ -1255,7 +1255,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
    mulle_structarray_for( &fireTimers, appTimer)
    {
 #if defined( RUN_DEBUG)
-       MulleUILog( "Fire Timer %@",timer);
+       MulleUILog( "Fire Timer %#@",timer);
 #endif
       timer = [appTimer->timer retain];
       [appTimer->receiver handleRetainedTimer:timer];
@@ -1381,8 +1381,9 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
             mulle_array_for( &_windows, window)
             {
                UIApplicationLogVerbose( "calls %#@ to push property changes", window);
-               // TODO: pass App as parameter
-               [window writeOSWindowPropertyChangesIfNeeded];
+
+               // this will also push mouse state if polling
+               [window syncOSWindowPropertyChangesIfNeeded];
             }
          }
 
@@ -1407,7 +1408,6 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
             [self os_pollGamepads];
             UIApplicationLogVerbose( "<- PollGamepads");
          }
-
 
 //         _state = ProcessEvents;
 //         {

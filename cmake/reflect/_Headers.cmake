@@ -71,6 +71,7 @@ src/UIControl.h
 src/UICursor.h
 src/UIEvent.h
 src/UIFont.h
+src/UIInputState+UTF8String.h
 src/UIPasteboard.h
 src/UIResponder.h
 src/UIWindowTypes.h

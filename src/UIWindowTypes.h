@@ -8,6 +8,9 @@
 // type safety with it and some info
 //
 
+// TODO: move to MulleUIBase
+
+
 // values for frameRate
 // FPS will not be exceeded, but it's OK for the app to produce
 // less frames if no change occurs
@@ -35,7 +38,7 @@ char  *UIWindowFrameRateUTF8String( double frameRate);
 //   .-----------------------------.
 //   | UIWindowStyleBare           |
 //   '-----------------------------'
-//   | UIWindowStyleInvisible      |
+//   | UIWindowStyleHidden      |
 //   | UIWindowStyleTransparent    |
 //   | UIWindowStyleFloating       |
 //   |                             |
@@ -54,7 +57,7 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
 //   UIWindowStyleClosable           = 0x001,    // there are no SDL hints for them
 //   UIWindowStyleMiniaturizable     = 0x002,
    UIWindowStyleResizable            = 0x004,
-   UIWindowStyleInvisible            = 0x008,
+   UIWindowStyleHidden            = 0x008,
    UIWindowStyleOffscreen            = 0x010,
    UIWindowStyleSingleBuffer         = 0x020,      // glfw (maybe useful with offscreen)
    UIWindowStyleTransparent          = 0x040,
@@ -73,6 +76,7 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
    UIWindowStyleRetained             = 0x10000,    // use UIWindowBackingStoreRetained
    UIWindowStyleRetainedOnMainThread = 0x20000,    // use UIWindowBackingStoreRetainedOnMainThread
    UIWindowStyleProfileQueue         = 0x40000,    // generate profile entries
+   UIWindowStyleMousePolling         = 0x80000,   // for special "X" demos
 
 // SDL/OpenGL
    UIWindowOpenGLCoreProfile         = 0x0100000,  // OpenGLCore functions only
@@ -83,6 +87,8 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
 
 // Notcurses
    UIWindowNotcursesMouseDisable     = 0x10000000   // do not use terminal mouse
+
+// UIPureWindow
 };
 
 
@@ -150,17 +156,30 @@ typedef NS_OPTIONS( NSUInteger, UIWindowDisplayBit)
 
 typedef NSUInteger   UIWindowDisplayBits;
 
+// this is only for a single bit in buttons
+static inline char   *_UIWindowDisplayBitUTF8String( NSUInteger bit)
+{
+   switch( bit)
+   {
+   case UIWindowDisplayNeedsRedraw     : return( "NeedsRedraw");
+   case UIWindowDisplayNeedsLayout     : return( "NeedsLayout");
+   case UIWindowDisplayNeedsAnimation  : return( "NeedsAnimation");
+   case UIWindowDisplayDidAnimate      : return( "DidAnimate");
+   case UIWindowDisplayNeedsMouseEvent : return( "NeedsMouseEvent");
+   }
+   return( NULL);
+}
 
 
-PROTOCOLCLASS_INTERFACE( MulleUINamedObject, NSObject)
+static inline char   *UIWindowDisplayBitUTF8String( NSUInteger bit)
+{
+   char   *s;
 
-@property( readonly) char   *nameUTF8String   MULLE_OBJC_THREADSAFE_PROPERTY;
+   s = _UIWindowDisplayBitUTF8String( bit);
+   return( s ? s : "???");
+}
 
-@optional
-- (char *) threadSafeUTF8String   MULLE_OBJC_THREADSAFE_METHOD;
-
-PROTOCOLCLASS_END()
-
+char  *UIWindowDisplayBitsUTF8String( NSUInteger displayBits);
 
 
 @protocol UIWindowLayoutDelegate
@@ -209,7 +228,7 @@ PROTOCOLCLASS_END()
 //
 - (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now   MULLE_OBJC_THREADSAFE_METHOD;
 
-- (void) writeOSWindowPropertyChangesIfNeeded                              MULLE_OBJC_THREADSAFE_METHOD;
+- (void) syncOSWindowPropertyChangesIfNeeded                              MULLE_OBJC_THREADSAFE_METHOD;
 
 // the framebuffer is dirty and needs repainting, but the geometry has not
 // neccesarily changed. If you have a copy of the window contents around
@@ -365,6 +384,7 @@ typedef UIWindowDisplayBits   (*UIOSWindowFrameCallback_t)( id <UIOSWindow> wind
 // very basic rendering and event support. Does not use CGContext!
 // view port is not setup and framebuffer is not cleared!
 @property( assign) UIOSWindowFrameCallback_t         frameCallback;
+@property( readonly) struct UIInputState             inputState;
 
 
 - (instancetype) initWithFrame:(CGRect) frame
@@ -405,11 +425,12 @@ typedef UIWindowDisplayBits   (*UIOSWindowFrameCallback_t)( id <UIOSWindow> wind
 
 - (id <UIGamepad>) gamepadAtIndex:(NSUInteger) index;
 
+- (mulle_absolutetime_t) lastSwapBuffersTimestamp;
+
 // this is threadsafe
 - (void) getOSWindowInfo:(struct UIOSWindowInfo *) info  MULLE_OBJC_THREADSAFE_METHOD;
 
-- (mulle_absolutetime_t) lastSwapBuffersTimestamp;
-- (NSThread *) activeThread;
+- (NSThread *) activeThread                              MULLE_OBJC_THREADSAFE_METHOD;
 
 
 // https://www.glfw.org/docs/latest/group__context.html#ga6d4e0cdf151b5e579bd67f13202994ed
@@ -441,6 +462,8 @@ typedef UIWindowDisplayBits   (*UIOSWindowFrameCallback_t)( id <UIOSWindow> wind
 
 - (void) os_setTitleUTF8String:(char *) s         MULLE_UI_MAIN_THREAD_ONLY;
 - (void) os_setCursor:(void *) cursor             MULLE_UI_MAIN_THREAD_ONLY;
+
+- (void) os_pollInputState:(struct UIInputState *) state   MULLE_UI_MAIN_THREAD_ONLY;
 
 - (void *) os_createCursorWithBitmap:(struct CGBitmap) bitmap
                              hotSpot:(struct CGPixelPoint) hotSpot   MULLE_UI_MAIN_THREAD_ONLY;
@@ -485,10 +508,10 @@ typedef NS_OPTIONS( NSUInteger, UIGraphicsContextState)
 
 @property( assign) BOOL                          rendersOffScreen;
 @property( assign) NSUInteger                    framebufferBits;
+@property( assign) struct UIInputState           inputState        MULLE_OBJC_THREADSAFE_PROPERTY;
 @property( readonly) char                        *nameUTF8String   MULLE_OBJC_THREADSAFE_PROPERTY;
 @property( assign, readonly) id <UIOSGraphicsContext> OSWindow     MULLE_OBJC_THREADSAFE_PROPERTY;
 @property( assign, readonly) UIGraphicsBackend   backend;
-@property( assign) struct UIInputState           inputState;
 @property( assign, getter=isInitializedFramebuffer) BOOL   initializedFramebuffer;
 @property( assign) UIGraphicsContextState        state; // UIGraphicsContextState
 
@@ -505,7 +528,7 @@ typedef NS_OPTIONS( NSUInteger, UIGraphicsContextState)
                                  
 - (char *) backendUTF8String;
 
-- (NSThread *) activeThread; // wo set it active
+- (NSThread *) activeThread      MULLE_OBJC_THREADSAFE_METHOD;     // wo set it active
 
 - (BOOL) needsFramebufferClear;
 - (void) clearFramebufferNoColor; // keep color information
@@ -517,7 +540,7 @@ typedef NS_OPTIONS( NSUInteger, UIGraphicsContextState)
 //- (void) clearFramebufferWithColor:(CGColor) color;
 
 - (void) beginRender:(struct CGFrameInfo *) info;
-- (void) drawObjects:(struct mulle_pointerarray *) array;
+- (void) renderObjects:(struct mulle_pointerarray *) array;
 - (void) suspendRender;
 - (void) resumeRender;
 - (void) _endRender;
@@ -526,8 +549,14 @@ typedef NS_OPTIONS( NSUInteger, UIGraphicsContextState)
 // rename to something else, maybe combine and just reset
 - (void) reset;
 
-- (id) acquireOffscreenFramebuffer        MULLE_OBJC_THREADSAFE_METHOD;
-- (BOOL) recycleFramebuffer:(id) layer    MULLE_OBJC_THREADSAFE_METHOD;
+//
+// These methods can not be called from the activeThread of the context.
+// They are used to move a framebuffer from and to a differen thread, also the
+// framebuffer will cease being a resource of the context or will be readded
+// to the resources.
+//
+- (id) acquireRenderedFramebuffer        MULLE_OBJC_THREADSAFE_METHOD;
+- (BOOL) recycleAcquiredRenderedFramebuffer:(id) layer    MULLE_OBJC_THREADSAFE_METHOD;
 
 //- (id) shareImage:(id) framebufferImage
 //      withContext:(id <UIGraphicsContext>) context;

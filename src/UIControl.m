@@ -30,6 +30,8 @@ PROTOCOLCLASS_IMPLEMENTATION( UIControl)
 @dynamic state;
 @dynamic target;
 
+
+
 - (BOOL) canBecomeFirstResponder
 {
    UIControlState   state;
@@ -213,7 +215,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 
 - (BOOL) willAcceptEvent:(UIEvent *) event
 {
-   NSParameterAssert( [event isKindOfClass:[UIEvent class]]);
+   assert( [event isKindOfClass:[UIEvent class]]);
 
    UIControlEventLog( event, "%#@", event);
    UIControlMouseMotionEventLog( event, "%#@", event);
@@ -226,7 +228,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 
 - (void) didAcceptEvent:(UIEvent *) event
 {
-   NSParameterAssert( [event isKindOfClass:[UIEvent class]]);
+   assert( [event isKindOfClass:[UIEvent class]]);
 
    UIControlEventLog( event, "%#@", event);
    UIControlMouseMotionEventLog( event, "%#@", event);

@@ -138,6 +138,15 @@ Focus==FirstResponder
    @property( assign) SEL                           action;             \
    @property( assign) UIControlClickHandler         *click
 
+// support for -copy : we dont copy target/action/click and state
+#define UIControlCopy( dst, src)                               \
+   do                                                          \
+   {                                                           \
+      (dst)->_selectionBehaviour = (src)->_selectionBehaviour; \
+      (dst)->_eventMask          = (src)->_eventMask;          \
+   }                                                           \
+   while( 0)
+
 //
 // A UIControl translates event into target/Action or click Events. Though
 // it provides states for selection and highlighting. It does not change them

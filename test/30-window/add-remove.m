@@ -55,7 +55,7 @@
 }
 
 
-- (void) writeOSWindowPropertyChangesIfNeeded
+- (void) syncOSWindowPropertyChangesIfNeeded
 {
 }
 

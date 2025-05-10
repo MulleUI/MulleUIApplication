@@ -393,13 +393,14 @@ static inline char   *UIWindowEventTypeUTF8String( UIWindowEventType type)
 
 typedef NS_ENUM( NSUInteger, UIEventMouseButton)
 {
-   UIEventMouseButtonLeft   = 0,
-   UIEventMouseButtonRight  = 1,
-   UIEventMouseButtonMiddle = 2
+   UIEventMouseButtonLeft   = 0x1,
+   UIEventMouseButtonRight  = 0x2,
+   UIEventMouseButtonMiddle = 0x4  // in polledEvents middle button is flakey!
 };
 
 
 
+// this is only for a single bit in buttons
 static inline char   *_UIEventMouseButtonUTF8String( NSUInteger button)
 {
    switch( button)
@@ -407,8 +408,10 @@ static inline char   *_UIEventMouseButtonUTF8String( NSUInteger button)
    case UIEventMouseButtonLeft   : return( "Left");
    case UIEventMouseButtonRight  : return( "Right");
    case UIEventMouseButtonMiddle : return( "Middle");
-   default                       : return( "Other");
+   case 0x8                      : return( "Other");
+   case 0x10                     : return( "Another");
    }
+   return( NULL);
 }
 
 
@@ -492,7 +495,7 @@ static inline char   *_UIEventKeyModifierUTF8String( NSUInteger modifier)
    return( NULL);
 }
 
-
+// this is only for a single bit in modifiers
 static inline char   *UIEventKeyModifierUTF8String( NSUInteger modifier)
 {
    char   *s;
