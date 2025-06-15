@@ -1,3 +1,4 @@
+      { @selector( MulleObjCLoader), @selector( MulleObjCTimeFoundation) },      // 47a9beb6;MulleObjCLoader;cc20d48b;MulleObjCTimeFoundation
       { @selector( MulleObjCLoader), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCLoader;3ebba954;MulleUIBase
       { @selector( NSObject), @selector( UIApplication) },      // b3a66256;NSObject;48c8c9b2;UIApplication
       { @selector( NSObject), @selector( UIControl) },      // b3a66256;NSObject;55d6a4ca;UIControl

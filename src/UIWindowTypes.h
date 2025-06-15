@@ -126,7 +126,7 @@ static inline NSUInteger
 
 
 static inline NSUInteger
-   UIWindowsStyleMaskBySetting( NSUInteger styleMask, UIWindowStyle style, int flag)
+   UIWindowStyleMaskBySetting( NSUInteger styleMask, UIWindowStyle style, int flag)
 {
    if( flag)
       return( UIWindowsStyleMaskByEnabling( styleMask, style));
@@ -597,6 +597,13 @@ typedef NS_OPTIONS( NSUInteger, UIGraphicsContextState)
 
 @end
 
+
+
+@protocol UIDrawingContext < MulleUINamedObject>
+
+- (BOOL) drawInContext:(id <UIDrawingContext>) context;
+
+@end
 
 
 //

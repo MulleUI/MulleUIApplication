@@ -98,7 +98,7 @@ static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *context)
    canvas         = [layer canvas];
    rect           = UIEdgeInsetsInsetRect( canvas, UIEdgeInsetsMake( 10, 10, 10, 10));
    diameter       = CGFloatMinimum( CGRectGetWidth( rect), CGRectGetHeight( rect));
-   rect.origin    = CGSizeGetCenterPointInRect( CGSizeMake( diameter, diameter), rect);
+   rect.origin    = CGSizeGetCenterInRect( CGSizeMake( diameter, diameter), rect);
    rect.size      = CGSizeMake( diameter, diameter);
 
    drawColorwheel( CGContextGetNVGContext( context),
