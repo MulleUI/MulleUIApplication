@@ -30,7 +30,9 @@ enum application_state
    PollGamepads,
    WindowPropertyChanges,
    ProcessEvents,
-   Finished
+   Finished,
+   Terminating,
+   Terminated
 };
 
 
@@ -286,6 +288,12 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
 {
    assert( [NSThread mulleIsMainThread]);
 
+   UIApplicationRequestRunLoopBreak = YES;
+   if( _state == Terminated)
+      return( _returnStatus);
+
+   _state = Terminating;
+
    [self removeAllInvocations];
    [self removeAllTimers];
    [self removeAllWindows];
@@ -295,6 +303,8 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
 
    [self removeCustomCursors];
    [self removeStandardCursors];
+
+   _state = Terminated;
 
    return( _returnStatus);
 }
@@ -1282,132 +1292,126 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
 // intervals, will be done with NSTimers, that sort of act like a window.
 // We also put them into the loop, query them for when they want to run.
 //
-- (void) runLoop
+
+- (BOOL) runLoopIteration
 {
-   id <UIWindow>          window;
    BOOL                   closeWindows;
-   mulle_absolutetime_t   now;
-   mulle_absolutetime_t   previous;
-   mulle_relativetime_t   timeout;
+   id <UIWindow>          window;
    mulle_relativetime_t   callAgainInSeconds;
+   mulle_relativetime_t   previous;
+   mulle_relativetime_t   now;
+   mulle_relativetime_t   timeout;
    mulle_relativetime_t   nextWindowDisplayCallInSeconds;
    mulle_relativetime_t   nextTimerFireCallInSeconds;
 
-   assert( _state == Idle || _state == Finished);
    assert( [NSThread mulleIsMainThread]);
 
-   closeWindows = NO;
-
-   for(;;)
+   _state = CheckWindows;
    {
-      @autoreleasepool
+      UIApplicationLogVerbose( "-> CheckWindows");
+      closeWindows = NO;
+
+      mulle_array_for( &_windows, window)
       {
-         _state = CheckWindows;
+         if( [window shouldClose])
          {
-            UIApplicationLogVerbose( "-> CheckWindows");
-            closeWindows = NO;
-
-            mulle_array_for( &_windows, window)
-            {
-               if( [window shouldClose])
-               {
-                  closeWindows = YES;
-                  break;
-               }
-            }
-         }
-
-         // closing is relatively rare and a bit more expensive
-         //  so I don't want to call _closeWindows all the time
-         if( closeWindows)
-         {
-            _state = CloseWindows;
-            {
-               UIApplicationLogVerbose( "-> CloseWindows");
-               [self _closeWindows];
-            }
-         }
-
-         if( ! mulle_array_get_count( &_windows))  // no windows left ?
+            closeWindows = YES;
             break;
-
-         nextWindowDisplayCallInSeconds = INFINITY;
-         previous                       = 0.0;
-         now                            = mulle_absolutetime_now();
-
-         _state = DrawAndSwap;
-         {
-            UIApplicationLogVerbose( "-> DrawAndSwap");
-            mulle_array_for( &_windows, window)
-            {
-               UIApplicationLog( "calls %#@ to refresh", window);
-
-               callAgainInSeconds = [window displayFrameIfNeeded:now];
-
-               previous = now;
-               now      = mulle_absolutetime_now();
-
-               callAgainInSeconds -= now - previous;
-               if( callAgainInSeconds < nextWindowDisplayCallInSeconds)
-                  nextWindowDisplayCallInSeconds = callAgainInSeconds;
-               else
-               // principally we'd need to reduce the actualFastestFrameRate
-               // by the drawing time spent
-                  nextWindowDisplayCallInSeconds -= now - previous;
-
-               UIApplicationLog( "%#@ will be called to refresh again in %.6gs (requested %.6gs)", window,
-                                 nextWindowDisplayCallInSeconds, callAgainInSeconds);
-            }
          }
+      }
+   }
 
-         _state = InvokeMethods;
-         {
-            UIApplicationLogVerbose( "-> InvokeMethods");
-            [self runInvocations];
-         }
+   // closing is relatively rare and a bit more expensive
+   //  so I don't want to call _closeWindows all the time
+   if( closeWindows)
+   {
+      _state = CloseWindows;
+      {
+         UIApplicationLogVerbose( "-> CloseWindows");
+         [self _closeWindows];
+      }
+   }
 
-         if( UIApplicationRequestRunLoopBreak)
-            break;
+   if( ! mulle_array_get_count( &_windows))  // no windows left ?
+      return( NO);
 
-         _state = FireTimers;
-         {
-            UIApplicationLogVerbose( "-> FireTimers");
-            nextTimerFireCallInSeconds = [self fireTimersIfNeeded:now];
-         }
+   nextWindowDisplayCallInSeconds = INFINITY;
+   previous                               = 0.0;
+   now                                    = mulle_absolutetime_now();
 
-         _state = WindowPropertyChanges;
-         {
-            UIApplicationLogVerbose( "-> WindowPropertyChanges");
-            mulle_array_for( &_windows, window)
-            {
-               UIApplicationLogVerbose( "calls %#@ to push property changes", window);
+   _state = DrawAndSwap;
+   {
+      UIApplicationLogVerbose( "-> DrawAndSwap");
+      mulle_array_for( &_windows, window)
+      {
+         UIApplicationLog( "calls %#@ to refresh", window);
 
-               // this will also push mouse state if polling
-               [window syncOSWindowPropertyChangesIfNeeded];
-            }
-         }
+         callAgainInSeconds = [window displayFrameIfNeeded:now];
 
-         _state = PollEvents;
-         {
-            timeout = nextTimerFireCallInSeconds < nextWindowDisplayCallInSeconds
-                        ? nextTimerFireCallInSeconds
-                        : nextWindowDisplayCallInSeconds;
-            if( timeout < 0.0)
-               timeout = 0.0;
+         previous = now;
+         now      = mulle_absolutetime_now();
 
-            UIApplicationLogVerbose( "-> PollEvents with timeout: %.17f", timeout);
-            [self os_waitEventsWithTimeout:timeout];
-            UIApplicationLogVerbose( "<- PollEvents returned");
-         }
+         callAgainInSeconds -= now - previous;
+         if( callAgainInSeconds < nextWindowDisplayCallInSeconds)
+            nextWindowDisplayCallInSeconds = callAgainInSeconds;
+         else
+         // principally we'd need to reduce the actualFastestFrameRate
+         // by the drawing time spent
+            nextWindowDisplayCallInSeconds -= now - previous;
 
-         // this will generate event callbacks for gamepads to the application
-         // but the event will be sent later to the
-         _state = PollGamepads;
-         {
-            UIApplicationLogVerbose( "-> PollGamepads");
-            [self os_pollGamepads];
-            UIApplicationLogVerbose( "<- PollGamepads");
-         }
+         UIApplicationLog( "%#@ will be called to refresh again in %.6gs (requested %.6gs)", window,
+                           nextWindowDisplayCallInSeconds, callAgainInSeconds);
+      }
+   }
+
+   _state = InvokeMethods;
+   {
+      UIApplicationLogVerbose( "-> InvokeMethods");
+      [self runInvocations];
+   }
+
+   if( UIApplicationRequestRunLoopBreak)
+      return( NO);
+
+   _state = FireTimers;
+   {
+      UIApplicationLogVerbose( "-> FireTimers");
+      nextTimerFireCallInSeconds = [self fireTimersIfNeeded:now];
+   }
+
+   _state = WindowPropertyChanges;
+   {
+      UIApplicationLogVerbose( "-> WindowPropertyChanges");
+      mulle_array_for( &_windows, window)
+      {
+         UIApplicationLogVerbose( "calls %#@ to push property changes", window);
+
+         // this will also push mouse state if polling
+         [window syncOSWindowPropertyChangesIfNeeded];
+      }
+   }
+
+   _state = PollEvents;
+   {
+      timeout = nextTimerFireCallInSeconds < nextWindowDisplayCallInSeconds
+                  ? nextTimerFireCallInSeconds
+                  : nextWindowDisplayCallInSeconds;
+      if( timeout < 0.0)
+         timeout = 0.0;
+
+      UIApplicationLogVerbose( "-> PollEvents with timeout: %.17f", timeout);
+      [self os_waitEventsWithTimeout:timeout];
+      UIApplicationLogVerbose( "<- PollEvents returned");
+   }
+
+   // this will generate event callbacks for gamepads to the application
+   // but the event will be sent later to the
+   _state = PollGamepads;
+   {
+      UIApplicationLogVerbose( "-> PollGamepads");
+      [self os_pollGamepads];
+      UIApplicationLogVerbose( "<- PollGamepads");
+   }
 
 //         _state = ProcessEvents;
 //         {
@@ -1423,8 +1427,26 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
 //            }
 //            mulle_arrayenumerator_done( &rover);
 //         }
+   return( YES);
+}
+
+
+- (void) runLoop
+{
+   BOOL  keepGoing;
+
+   if( _state == Terminated)
+      return;
+
+   do
+   {
+      @autoreleasepool
+      {
+         keepGoing = [self runLoopIteration];
       }
+
    }
+   while( keepGoing);
 
    _state = Finished;
 }

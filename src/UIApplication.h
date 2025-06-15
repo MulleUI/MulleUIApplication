@@ -40,6 +40,11 @@
    struct mulle_pointermultififo   _invocationList;
    NSMethodSignature *             _bouncerSignature;
 
+// some private state for the runloop, so we can have the iteration
+// run in a separate method
+@private
+   // none needed ?
+
    //
    // here is some extra space for SDL/GLFW whoever. Subclassing UIApplication
    // in general is tricky, but for SDL we need some storage space for handles
@@ -183,6 +188,10 @@
 
 // must be called from mainThread
 - (void) runLoop                                         MULLE_UI_MAIN_THREAD_ONLY;
+
+// must be called from mainThread
+- (BOOL) runLoopIteration                                MULLE_UI_MAIN_THREAD_ONLY;
+
 
 // calls runLoop and then when all have closed, calls terminate
 // must be called from mainThread
