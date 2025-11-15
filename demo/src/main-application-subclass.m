@@ -28,18 +28,22 @@
 
 @implementation CGContext( Debug)
 
-- (void) mulleGainAccess
+- (void) mulleGainAccessWithUniquingSet:(struct mulle_pointerset *) uniquing
 {
+   assert( mulle_pointerset_get( uniquing, self) == self);
+
    // more todo
    MulleUILog( "");
-   [super mulleGainAccess];
+   [super mulleGainAccessWithUniquingSet:uniquing];
 }
 
 
-- (void) mulleRelinquishAccess
+- (void) mulleRelinquishAccessWithUniquingSet:(struct mulle_pointerset *) uniquing
 {
+   assert( mulle_pointerset_get( uniquing, self) == self);
+
    MulleUILog( "");
-   [super mulleRelinquishAccess];
+   [super mulleRelinquishAccessWithUniquingSet:uniquing];
 }
 
 @end

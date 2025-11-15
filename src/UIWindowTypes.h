@@ -54,39 +54,41 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
    UIWindowStyleNop                  = 0x40000000, // if all bits are 0, use this to avoid getting default values
 
 // SDL
-//   UIWindowStyleClosable           = 0x001,    // there are no SDL hints for them
-//   UIWindowStyleMiniaturizable     = 0x002,
-   UIWindowStyleResizable            = 0x004,
-   UIWindowStyleHidden            = 0x008,
-   UIWindowStyleOffscreen            = 0x010,
-   UIWindowStyleSingleBuffer         = 0x020,      // glfw (maybe useful with offscreen)
-   UIWindowStyleTransparent          = 0x040,
-   UIWindowStyleFloating             = 0x080,
-   UIWindowStyleBare                 = 0x100,      // window bar, resizer gone
-   UIWindowStylePlanes               = 0x200,
-   UIWindowStyleNoView               = 0x400,      // no UIView will be generated
+//   UIWindowStyleClosable           = 0x0001,    // there are no SDL hints for them
+//   UIWindowStyleMiniaturizable     = 0x0002,
+   UIWindowStyleResizable            = 0x0004,
+   UIWindowStyleHidden               = 0x0008,
+   UIWindowStyleOffscreen            = 0x0010,
+   UIWindowStyleSingleBuffer         = 0x0020,      // glfw (maybe useful with offscreen)
+   UIWindowStyleTransparent          = 0x0040,
+   UIWindowStyleFloating             = 0x0080,
+   UIWindowStyleBare                 = 0x0100,      // window bar, resizer gone
+   UIWindowStylePlanes               = 0x0200,
+   UIWindowStyleNoView               = 0x0400,      // no UIView will be generated
 
 // CG
-   UIWindowStyleAntiAlias            = 0x1000,     // nanovg or glfw
-   UIWindowStyleForceEdgeAntiAlias   = 0x2000,     // nanovg
-   UIWindowStyleStencilStrokes       = 0x4000,     // nanovg
-   UIWindowStyleClearType            = 0x8000,     // nanovg
+   UIWindowStyleAntiAlias            = 0x00001000,     // nanovg or glfw
+   UIWindowStyleForceEdgeAntiAlias   = 0x00002000,     // nanovg
+   UIWindowStyleStencilStrokes       = 0x00004000,     // nanovg
+   UIWindowStyleClearType            = 0x00008000,     // nanovg
+   UIWindowStyleTraceDrawCalls       = 0x00010000,     // nanovg
+   UIWindowStyleNoDrawing            = 0x00020000,     // nanovg
 
 // UIWindow
-   UIWindowStyleRetained             = 0x10000,    // use UIWindowBackingStoreRetained
-   UIWindowStyleRetainedOnMainThread = 0x20000,    // use UIWindowBackingStoreRetainedOnMainThread
-   UIWindowStyleProfileQueue         = 0x40000,    // generate profile entries
-   UIWindowStyleMousePolling         = 0x80000,   // for special "X" demos
+   UIWindowStyleRetained             = 0x00100000,    // use UIWindowBackingStoreRetained
+   UIWindowStyleRetainedOnMainThread = 0x00200000,    // use UIWindowBackingStoreRetainedOnMainThread
+   UIWindowStyleProfileQueue         = 0x00400000,    // generate profile entries
+   UIWindowStyleMousePolling         = 0x00800000,   // for special "X" demos
 
 // SDL/OpenGL
-   UIWindowOpenGLCoreProfile         = 0x0100000,  // OpenGLCore functions only
-   UIWindowOpenGLForward             = 0x0400000,  // non-deprecated functions only
-   UIWindowOpenGLLibraryFallback     = 0x0800000,  // try other openGL libraries as fallback
+   UIWindowOpenGLCoreProfile         = 0x01000000,  // OpenGLCore functions only
+   UIWindowOpenGLForward             = 0x04000000,  // non-deprecated functions only
+   UIWindowOpenGLLibraryFallback     = 0x08000000,  // try other openGL libraries as fallback
 
-   UIWindowOpenGLDeprecated          = 0x1000000,   // if this is set, GLES can't be used
+   UIWindowOpenGLDeprecated          = 0x10000000,   // if this is set, GLES can't be used
 
 // Notcurses
-   UIWindowNotcursesMouseDisable     = 0x10000000   // do not use terminal mouse
+   UIWindowNotcursesMouseDisable     = 0x20000000   // do not use terminal mouse
 
 // UIPureWindow
 };
@@ -509,6 +511,7 @@ typedef NS_OPTIONS( NSUInteger, UIGraphicsContextState)
 @property( assign) BOOL                          rendersOffScreen;
 @property( assign) NSUInteger                    framebufferBits;
 @property( assign) struct UIInputState           inputState        MULLE_OBJC_THREADSAFE_PROPERTY;
+@property( readonly) NSUInteger                  debuggingFlags    MULLE_OBJC_THREADSAFE_PROPERTY;
 @property( readonly) char                        *nameUTF8String   MULLE_OBJC_THREADSAFE_PROPERTY;
 @property( assign, readonly) id <UIOSGraphicsContext> OSWindow     MULLE_OBJC_THREADSAFE_PROPERTY;
 @property( assign, readonly) UIGraphicsBackend   backend;

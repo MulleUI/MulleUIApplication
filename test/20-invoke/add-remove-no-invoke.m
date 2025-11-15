@@ -55,7 +55,7 @@ int   main( int argc, char *argv[])
    //
    @autoreleasepool
    {
-      foo = [Foo object];
+      foo = [Foo instance];
 
       for( i = 0; i < 16; i++)
       {

@@ -88,12 +88,12 @@ int   main( void)
       exit( 1);
    }
 
-   window = [MyWindow object];
+   window = [MyWindow instance];
    [app addWindow:window];
    [app removeWindow:window];
 
    [app addWindow:window];
-   window = [MyWindow object];
+   window = [MyWindow instance];
    [app addWindow:window];
 
    [app requestTerminate];
