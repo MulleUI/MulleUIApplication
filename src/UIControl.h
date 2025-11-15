@@ -139,13 +139,28 @@ Focus==FirstResponder
    @property( assign) UIControlClickHandler         *click
 
 // support for -copy : we dont copy target/action/click and state
-#define UIControlCopy( dst, src)                               \
-   do                                                          \
-   {                                                           \
-      (dst)->_selectionBehaviour = (src)->_selectionBehaviour; \
-      (dst)->_eventMask          = (src)->_eventMask;          \
-   }                                                           \
+#define UIControlCopy( dst, src)                                  \
+   do                                                             \
+   {                                                              \
+      if( dst && src)                                             \
+      {                                                           \
+         (dst)->_selectionBehaviour = (src)->_selectionBehaviour; \
+         (dst)->_eventMask          = (src)->_eventMask;          \
+      }                                                           \
+   }                                                              \
    while( 0)
+
+// support for -init setup reasonable default values for UIControl
+#define UIControlInit( self)                                      \
+   do                                                             \
+   {                                                              \
+      if( self)                                                   \
+         (self)->_eventMask = UIControlEventLeftMouseDown;        \
+   }                                                              \
+   while( 0)
+
+
+#define UIControlDone( self)                                      
 
 //
 // A UIControl translates event into target/Action or click Events. Though

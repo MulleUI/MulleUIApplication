@@ -25,7 +25,7 @@ else()
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUI${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUI${CMAKE_STATIC_LIBRARY_SUFFIX}
          MulleUI
-         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
+         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
       )
       if( NOT MULLE_UI_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
          find_library( MULLE_UI_LIBRARY NAMES
@@ -91,7 +91,9 @@ else()
          endif()
       else()
          # Disable with: `mulle-sourcetree mark MulleUI no-require-link`
-         message( SEND_ERROR "MULLE_UI_LIBRARY was not found")
+         message( SEND_ERROR "MULLE_UI_LIBRARY was not found in ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUI${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+${CMAKE_STATIC_LIBRARY_PREFIX}MulleUI${CMAKE_STATIC_LIBRARY_SUFFIX}
+MulleUI")
       endif()
    endif()
 endif()
@@ -110,7 +112,7 @@ else()
       find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
-         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
+         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
       )
       if( NOT MULLE_OBJC__STARTUP_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
          find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
@@ -140,7 +142,8 @@ else()
          #
       else()
          # Disable with: `mulle-sourcetree mark MulleObjC-startup no-require-link`
-         message( SEND_ERROR "MULLE_OBJC__STARTUP_LIBRARY was not found")
+         message( SEND_ERROR "MULLE_OBJC__STARTUP_LIBRARY was not found in ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}")
       endif()
    endif()
 endif()

@@ -1364,6 +1364,18 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
       }
    }
 
+   _state = WindowPropertyChanges;
+   {
+      UIApplicationLogVerbose( "-> WindowPropertyChanges");
+      mulle_array_for( &_windows, window)
+      {
+         UIApplicationLogVerbose( "calls %#@ to push property changes", window);
+
+         // this will also push mouse state if polling
+         [window syncOSWindowPropertyChangesIfNeeded];
+      }
+   }
+
    _state = InvokeMethods;
    {
       UIApplicationLogVerbose( "-> InvokeMethods");
@@ -1377,18 +1389,6 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
    {
       UIApplicationLogVerbose( "-> FireTimers");
       nextTimerFireCallInSeconds = [self fireTimersIfNeeded:now];
-   }
-
-   _state = WindowPropertyChanges;
-   {
-      UIApplicationLogVerbose( "-> WindowPropertyChanges");
-      mulle_array_for( &_windows, window)
-      {
-         UIApplicationLogVerbose( "calls %#@ to push property changes", window);
-
-         // this will also push mouse state if polling
-         [window syncOSWindowPropertyChangesIfNeeded];
-      }
    }
 
    _state = PollEvents;
@@ -1438,6 +1438,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
    if( _state == Terminated)
       return;
 
+   // TODO:  call delegate -applicationDidFinishLaunching here ?
    do
    {
       @autoreleasepool

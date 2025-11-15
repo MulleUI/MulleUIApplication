@@ -131,6 +131,9 @@ static struct
       buttonEvent = (UIMouseButtonEvent *) event;
       if( [buttonEvent action] == UIEventButtonActionDown)
       {
+         // Even if the event is "over" the first responder, we resign here
+         // for simplicity. If the click actually hits the first responder
+         // eventually, he will become firstResponder again, no harm no foul
          [self resignFirstResponder];
          return( NO);
       }
@@ -139,16 +142,24 @@ static struct
 }
 
 
-static id   performSelectorIfResponding( UIResponder *self,
-                                         SEL sel,
-                                         UIInputEvent *event)
+// full name looks nicer in stacktraces anf logs
+static id   UIResponderPerformSelectorIfResponding( UIResponder *self,
+                                                    SEL sel,
+                                                    UIInputEvent *event)
 {
+   BOOL   doesRespond;
+
    assert( event);
 
-   if( sel && [self respondsToSelector:sel])
+   if( sel)
    {
-      event = MulleObjCObjectPerformSelector( self, sel, event);
-   }   
+      doesRespond = [self respondsToSelector:sel];
+      UIResponderEventLog( "responds%s to %s", doesRespond ? "" : "not ",
+                                               MulleObjCSelectorUTF8String( sel));
+      if( doesRespond)
+         event = MulleObjCObjectPerformSelector( self, sel, event);
+   }
+
    return( event);
 }
 
@@ -206,7 +217,7 @@ static id   performSelectorIfResponding( UIResponder *self,
          }
    }
 
-   return( performSelectorIfResponding( self, sel, event));
+   return( UIResponderPerformSelectorIfResponding( self, sel, event));
 }
 
 
@@ -237,7 +248,7 @@ static id   performSelectorIfResponding( UIResponder *self,
       }
    }
 
-   return( performSelectorIfResponding( self, sel, event));
+   return( UIResponderPerformSelectorIfResponding( self, sel, event));
 
 #if 0
    //
@@ -263,7 +274,7 @@ static id   performSelectorIfResponding( UIResponder *self,
    // scrollWheel: taken from AppKit
    // https://developer.apple.com/documentation/appkit/nsscrollview/1403494-scrollwheel?language=objc
    //
-   return( performSelectorIfResponding( self, @selector( scrollWheel:), event));
+   return( UIResponderPerformSelectorIfResponding( self, @selector( scrollWheel:), event));
 }
 
 
@@ -279,7 +290,7 @@ static id   performSelectorIfResponding( UIResponder *self,
    case UIEventButtonActionRepeat  :  // do keyUp: and keyDown:
       // keep UIEventKeyRepeat as action, don't create new event
       // event return value ignored,as to not accidentally prohibit keyDown:
-      performSelectorIfResponding( self, @selector( keyUp:), event);
+      UIResponderPerformSelectorIfResponding( self, @selector( keyUp:), event);
       // fall thru
 
    case UIEventButtonActionDown   :
@@ -291,7 +302,7 @@ static id   performSelectorIfResponding( UIResponder *self,
       break;
    }
 
-   return( performSelectorIfResponding( self, sel, event));
+   return( UIResponderPerformSelectorIfResponding( self, sel, event));
 }
 
 
@@ -299,7 +310,7 @@ static id   performSelectorIfResponding( UIResponder *self,
 {
    UIResponderEventLog( "%#@", event);
 
-   return( performSelectorIfResponding( self, @selector( unicodeCharacterEvent:), event));
+   return( UIResponderPerformSelectorIfResponding( self, @selector( unicodeCharacterEvent:), event));
 }
 
 

@@ -56,7 +56,7 @@ int   main( int argc, char *argv[])
    //
    @autoreleasepool
    {
-      foo = [Foo object];
+      foo = [Foo instance];
 
       signature  = [foo methodSignatureForSelector:@selector( callMe:)];
       invocation = [NSInvocation invocationWithMethodSignature:signature];

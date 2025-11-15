@@ -178,8 +178,9 @@
 - (void) removeAllInvocations                            MULLE_UI_MAIN_THREAD_ONLY;
 
 
-// this will return and the app will terminate some time later, 
-// except if called on the mainThread
+// this will return and the app will terminate some time later. So this
+// method returns, except when called on the mainThread, when it is free not to
+// return
 - (void) requestTerminate                                MULLE_OBJC_THREADSAFE_METHOD;
 
 // call terminate on all windows and then remove all of them

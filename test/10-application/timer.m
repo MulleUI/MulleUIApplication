@@ -33,7 +33,7 @@ int   main( void)
 
    [app addTimer:[NSTimer mulleTimerWithRelativeTimeInterval:0.0
                                               repeatInterval:2.0
-                                                  invocation:[NSInvocation object]]
+                                                  invocation:[NSInvocation instance]]
 forTimerReceiver:app];
 
    [app release];

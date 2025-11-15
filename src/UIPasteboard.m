@@ -12,7 +12,7 @@
 {
    UIPasteboard   *pasteboard;
 
-   pasteboard = [UIPasteboard object];
+   pasteboard = [UIPasteboard instance];
    [pasteboard setWindow:window];
    return( pasteboard);
 }

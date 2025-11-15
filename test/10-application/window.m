@@ -70,7 +70,7 @@ int   main( void)
       exit( 1);
    }
 
-   [app addWindow:[MyWindow object]];
+   [app addWindow:[MyWindow instance]];
 
    [app release];
 

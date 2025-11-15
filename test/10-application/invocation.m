@@ -13,7 +13,7 @@ int   main( void)
       exit( 1);
    }
 
-   [app invokeOnMainThread:[NSInvocation object]];
+   [app invokeOnMainThread:[NSInvocation instance]];
 
    [app release];
 
