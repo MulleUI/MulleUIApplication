@@ -148,8 +148,9 @@ typedef NS_OPTIONS( NSUInteger, UIWindowDisplayBit)
 {
    // user setable bits
    UIWindowDisplayNeedsRedraw     = 0x1,   // needs immediate attention
-   UIWindowDisplayNeedsLayout     = 0x2,   // needs immediate attention, will force redraw
-   UIWindowDisplayNeedsAnimation  = 0x4,   // needs attention according to animationRate
+   UIWindowDisplayNeedsStyling    = 0x2,   // needs immediate attention, will force layout
+   UIWindowDisplayNeedsLayout     = 0x4,   // needs immediate attention, will force redraw
+   UIWindowDisplayNeedsAnimation  = 0x5,   // needs attention according to animationRate
 
    // this bits are set during render, they will be ignored if set by user
    UIWindowDisplayDidAnimate      = 0x10000,   // animation code did changes (will redraw next frame)
@@ -164,6 +165,7 @@ static inline char   *_UIWindowDisplayBitUTF8String( NSUInteger bit)
    switch( bit)
    {
    case UIWindowDisplayNeedsRedraw     : return( "NeedsRedraw");
+   case UIWindowDisplayNeedsStyling    : return( "NeedsStyling");
    case UIWindowDisplayNeedsLayout     : return( "NeedsLayout");
    case UIWindowDisplayNeedsAnimation  : return( "NeedsAnimation");
    case UIWindowDisplayDidAnimate      : return( "DidAnimate");
@@ -619,7 +621,7 @@ struct UIScreenInfo
    CGRect                 canvas;         // workarea
    CGVector               contentScale;
    CGSize                 physicalSize;
-   CGFloat                dpi;            // convenience for printing, dont use
+   CGFloat                dpi;
    char                   colorBits[ 4];
    mulle_relativetime_t   refreshRate;
 };
@@ -627,15 +629,9 @@ struct UIScreenInfo
 
 static inline double   UIScreenInfoGetPPI( struct UIScreenInfo *info)
 {
-   double   ppi;
+   assert( ! info || info->dpi != 0.0);
 
-   if( ! info || info->physicalSize.height == 0.0)
-      return( 72.0);
-
-   // need to convert h in mm to inches
-   // https://en.wikipedia.org/wiki/Inch
-   ppi = info->frame.size.height / (info->physicalSize.height * (1.0 / 25.4));
-   return( ppi);
+   return( info ? info->dpi : 72.0);
 }
 
 

@@ -53,6 +53,20 @@ typedef NS_OPTIONS( NSUInteger, UIControlState)
 };
 
 
+// UIControlStateFocused is a "legacy" name for UIControlStateFirstResponder
+// but UIControlStateFirstResponder is more clear
+#define UIControlStateFocused   UIControlStateFirstResponder
+
+extern NS_OPTIONS_TABLE( UIControlState, 6);
+
+
+static inline char   *UIControlStateUTF8String( NSUInteger state)
+{
+   return( NS_OPTIONS_PRINT( UIControlState, state));
+}
+
+
+
 #define UIControlSelectionBehaviourBitSelect         0x1     // enables
 #define UIControlSelectionBehaviourBitDeselect       0x2     // enables
 #define UIControlSelectionBehaviourBitHighlight      0x10    // enables
@@ -70,18 +84,6 @@ typedef NS_ENUM( NSUInteger, UIControlSelectionBehaviour)
    UIControlSelectionBehaviourReleaseSwitch = 0x0 | ((0x3 | 0x10) << 8)   // toggle on mouseUp:
 };
 
-
-// UIControlStateFocused is a "legacy" name for UIControlStateFirstResponder
-// but UIControlStateFirstResponder is more clear
-#define UIControlStateFocused   UIControlStateFirstResponder
-
-extern NS_OPTIONS_TABLE( UIControlState, 6);
-
-
-static inline char   *UIControlStateUTF8String( NSUInteger state)
-{
-   return( NS_OPTIONS_PRINT( UIControlState, state));
-}
 
 /*
 Possible state combinations.

@@ -62,6 +62,9 @@
 @property( assign) int          returnStatus    MULLE_UI_MAIN_THREAD_ONLY;
 @property( assign) NSUInteger   debuggingFlags  MULLE_OBJC_THREADSAFE_PROPERTY;
 
+// UIEventPlayer ownership
+@property( retain) id           eventPlayer     MULLE_UI_MAIN_THREAD_ONLY;
+
 //
 // UIScreen:
 //
@@ -112,6 +115,7 @@
 - (NSUInteger) getWindows:(id <UIWindow> *) buf
                    length:(NSUInteger) length                  MULLE_UI_MAIN_THREAD_ONLY;
 
+- (id <UIWindow>) windowAtIndex:(NSUInteger) index             MULLE_UI_MAIN_THREAD_ONLY;
 - (id <UIWindow>) windowForOSWindowHandle:(void *) os_window   MULLE_UI_MAIN_THREAD_ONLY;
 
 
@@ -155,6 +159,7 @@
 - (void) removeAllTimersForTimerReceiver:(id <UITimerReceiver>) receiver   MULLE_OBJC_THREADSAFE_METHOD;
 
 - (void) removeAllTimers                              MULLE_OBJC_THREADSAFE_METHOD;
+
 
 // like re-adding a timer, the timer is reset to now + offset
 - (void) resetTimer:(NSTimer *) timer                 MULLE_OBJC_THREADSAFE_METHOD;
@@ -228,11 +233,13 @@
 @end
 
 
+MULLE_UI_APPLICATION_GLOBAL
 int  UIApplicationMain( int argc, char **argv, Class appClass, id delegate);
 
 
 // A shortcut for +sharedInstance, addWindow: and runLoop and terminate.
 // This must be called from mainThread
+MULLE_UI_APPLICATION_GLOBAL
 int  UIApplicationRunWindow( id <UIWindow> window);
 
 
@@ -241,11 +248,12 @@ int  UIApplicationRunWindow( id <UIWindow> window);
 // UIWindow initWithFrame:... is guaranteed to call 
 // [UIApplication sharedInstance]
 
-//UI_APPLICATION_EXTERN_GLOBAL
-extern UIApplication   *UIApp;
+MULLE_UI_APPLICATION_GLOBAL
+UIApplication   *UIApp;
 
 // use this during runApp, if you want to terminate from a signal handler
-extern BOOL   UIApplicationRequestRunLoopBreak;
+MULLE_UI_APPLICATION_GLOBAL
+BOOL   UIApplicationRequestRunLoopBreak;
 
 
 #define UIApplicationSizeOfSpace   (sizeof( double) * N_UIApplicationSpaceDoubles)

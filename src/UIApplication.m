@@ -44,7 +44,10 @@ enum application_state
 
 
 
+MULLE_UI_APPLICATION_GLOBAL_VAR
 UIApplication   *UIApp;
+
+MULLE_UI_APPLICATION_GLOBAL_VAR
 BOOL            UIApplicationRequestRunLoopBreak;
 
 
@@ -181,6 +184,7 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
                             allocator);
    _gamepadsLock = [NSLock new];
 
+
    mulle_map_init( &_standardCursors,
                    n_UICursorStandardShapes,
                    (struct mulle_container_keyvaluecallback *) &_MulleObjCContainerIntegerKeyPointerValueCallback,
@@ -263,6 +267,8 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
    }
    mulle_pointerarray_done( &_gamepads);
 
+   [_eventPlayer release];
+
    [_screensLock release];
    mulle_array_done( &_screens);
 
@@ -294,6 +300,7 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
 
    _state = Terminating;
 
+   [self setEventPlayer:nil];
    [self removeAllInvocations];
    [self removeAllTimers];
    [self removeAllWindows];
@@ -450,6 +457,25 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
    // we can't get exceptions from the invocation anyway, and I want the
    // lock to be gone ASAP, because there could be OS limits...
    [lock release];
+}
+
+
+
+- (void) setEventPlayer:(id) player
+{
+   assert( [NSThread mulleIsMainThread]);
+   if( player == _eventPlayer)
+      return;
+   if( _eventPlayer)
+      [_eventPlayer autorelease];
+   _eventPlayer = [player retain];
+}
+
+
+- (id) eventPlayer
+{
+   assert( [NSThread mulleIsMainThread]);
+   return( _eventPlayer);
 }
 
 
@@ -838,7 +864,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
                      mulle_array_get_count( &_windows),
                      mulle_array_get_callback( &_windows),
                      NULL);
-   mulle_array_add_array( &tmp, &_windows, mulle_range_make( 0, -1));
+   mulle_array_add_array( &tmp, &_windows, mulle_range_make_all());
 
    mulle_array_for( &tmp, window)
    {
@@ -866,6 +892,23 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
       if( [window os_window] == os_window)
          break;
    }
+
+   return( window);
+}
+
+
+- (id <UIWindow>) windowAtIndex:(NSUInteger) index
+{
+   id <UIWindow>    window;
+   NSUInteger       count;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   count = mulle_array_get_count( &_windows);
+   if( index >= count)
+      return( nil);
+
+   window = mulle_array_get( &_windows, index);
 
    return( window);
 }

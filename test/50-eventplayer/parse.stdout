@@ -1,0 +1,30 @@
+Test 1: Parse comprehensive string
+  Parse from string: SUCCESS
+
+Test 2: Parse comprehensive file
+  Parse from file: SUCCESS
+
+Test 3: Abort flag
+  Abort flag set to NO: SUCCESS
+  Abort flag set to YES: SUCCESS
+
+Test 4: Comment and blank line handling
+  Comment handling: SUCCESS
+
+Test 5: All mouse buttons
+  All mouse buttons: SUCCESS
+
+Test 6: Modifier combinations
+  Modifier combinations: SUCCESS
+
+Test 7: Special keys
+  Special keys: SUCCESS
+
+Test 8: Function keys
+  Function keys: SUCCESS
+
+Test 9: Window indexing
+  Window indexing: SUCCESS
+
+=== All tests completed ===
+
