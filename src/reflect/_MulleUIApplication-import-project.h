@@ -13,7 +13,7 @@
 #define _mulle_ui_application__import__project_h__
 
 
-#import "MulleObjCLoader+MulleUIApplication.h"
+#import "MulleObjCDeps+MulleUIApplication.h"
 #import "UIApplication+UIEvent.h"
 #import "UIApplication.h"
 #import "UICursor.h"

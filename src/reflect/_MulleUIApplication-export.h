@@ -13,14 +13,17 @@
 #define _mulle_ui_application__export_h__
 
 
-#import "MulleObjCLoader+MulleUIApplication.h"
+#import "MulleObjCDeps+MulleUIApplication.h"
 #import "UIApplication+UIEvent.h"
 #import "UIApplication.h"
 #import "UIControl.h"
 #import "UICursor.h"
+#import "UIEventPlayer.h"
 #import "UIEvent.h"
 #import "UIFont.h"
 #import "UIInputState+UTF8String.h"
+#import "UINullOSWindow.h"
+#import "UINullWindow.h"
 #import "UIPasteboard.h"
 #import "UIResponder.h"
 #import "UIWindowTypes.h"

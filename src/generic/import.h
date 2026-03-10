@@ -6,7 +6,7 @@
 */
 
 /* This is a central include file to keep dependencies out of the library
-   Objective-C files. It is usally imported by Objective-C .h files only.
+   Objective-C files. It is usually imported by Objective-C .h files only.
    .m and .aam use import-private.h.
 */
 

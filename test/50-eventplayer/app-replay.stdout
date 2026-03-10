@@ -1,0 +1,15 @@
+=== UIEventPlayer with UINullWindow Test ===
+
+Got UIApplication
+Created UINullOSWindow
+Set event logger
+Created UINullWindow
+Added window to UIApplication
+
+Loaded 3 mouse events
+Starting playback...
+
+
+Ran event loop until terminate
+
+SUCCESS: UIEventPlayer integrated with UIApplication

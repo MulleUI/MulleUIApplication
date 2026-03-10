@@ -69,22 +69,25 @@ else()
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_UI_DIR}")
                #
                unset( MULLE_UI_DEFINITIONS)
+               unset( MULLE_UI_RENDEZVOUS_GLOBALS)
                include( "${_TMP_MULLE_UI_DIR}/Definitions.cmake" OPTIONAL)
                list( APPEND INHERITED_DEFINITIONS ${MULLE_UI_DEFINITIONS})
+               include( "${_TMP_MULLE_UI_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND RENDEZVOUS_GLOBALS ${MULLE_UI_RENDEZVOUS_GLOBALS})
                break()
             else()
                message( STATUS "${_TMP_MULLE_UI_DIR} not found")
             endif()
          endforeach()
          #
-         # Search for "MulleObjCLoader+<name>.h" in include directory.
+         # Search for "MulleObjCDeps+<name>.h" in include directory.
          # Disable with: `mulle-sourcetree mark MulleUI no-cmake-loader`
          #
-         if( NOT NO_INHERIT_OBJC_LOADERS)
+         if( NOT NO_INHERIT_OBJC_DEPS)
             foreach( _TMP_MULLE_UI_NAME "MulleUI")
-               set( _TMP_MULLE_UI_FILE "${_TMP_MULLE_UI_ROOT}/include/${_TMP_MULLE_UI_NAME}/MulleObjCLoader+${_TMP_MULLE_UI_NAME}.h")
+               set( _TMP_MULLE_UI_FILE "${_TMP_MULLE_UI_ROOT}/include/${_TMP_MULLE_UI_NAME}/MulleObjCDeps+${_TMP_MULLE_UI_NAME}.h")
                if( EXISTS "${_TMP_MULLE_UI_FILE}")
-                  list( APPEND INHERITED_OBJC_LOADERS ${_TMP_MULLE_UI_FILE})
+                  list( APPEND INHERITED_OBJC_DEPS ${_TMP_MULLE_UI_FILE})
                   break()
                endif()
             endforeach()

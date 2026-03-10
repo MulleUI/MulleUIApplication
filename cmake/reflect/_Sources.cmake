@@ -14,9 +14,12 @@ set( SOURCES
 src/UIApplication+UIEvent.m
 src/UIApplication.m
 src/UIControl.m
+src/UIEventPlayer.m
 src/UIEvent.m
 src/UIFont.m
 src/UIInputState+UTF8String.m
+src/UINullOSWindow.m
+src/UINullWindow.m
 src/UIPasteboard.m
 src/UIResponder.m
 src/UIWindowTypes.m
@@ -26,5 +29,5 @@ src/UIWindowTypes.m
 # contents selected with patternfile ??-source--stage2-sources
 #
 set( STAGE2_SOURCES
-src/MulleObjCLoader+MulleUIApplication.m
+src/MulleObjCDeps+MulleUIApplication.m
 )

@@ -303,6 +303,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 {
    UIInputEvent                  *inputEvent;
    UIControlSelectionBehaviour   behaviour;
+   NSUInteger                    eventMask;
 
    UIControlEventLog( event, "%#@", event);
 
@@ -326,9 +327,10 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
    case UIControlSelectionBehaviourBitsToggle  : [self mulleToggleSelectedState]; break;
    }
 
-   inputEvent = nil;
-   if( [self eventMask] & UIControlEventLeftMouseDown)
-      inputEvent = [self performClickAndTargetActionCallbacks:event];
+   eventMask  = [self eventMask];
+   inputEvent = (eventMask & UIControlEventLeftMouseDown)
+                ? [self performClickAndTargetActionCallbacks:event]
+                : nil;
 
 // MEMO: done in didAcceptEvent:
 
@@ -366,6 +368,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 {
    UIInputEvent                  *inputEvent;
    UIControlSelectionBehaviour   behaviour;
+   NSUInteger                    eventMask;
 
    UIControlEventLog( event, "%#@", event);
 
@@ -392,7 +395,8 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
    case UIControlSelectionBehaviourBitsToggle   : [self mulleToggleSelectedState]; break;
    }
 
-   inputEvent = ([self eventMask] & UIControlEventLeftMouseUp)
+   eventMask  = [self eventMask];
+   inputEvent = (eventMask & UIControlEventLeftMouseUp)
                 ? [self performClickAndTargetActionCallbacks:event]
                 : nil;
 

@@ -154,7 +154,7 @@ static id   UIResponderPerformSelectorIfResponding( UIResponder *self,
    if( sel)
    {
       doesRespond = [self respondsToSelector:sel];
-      UIResponderEventLog( "responds%s to %s", doesRespond ? "" : "not ",
+      UIResponderEventLog( "responds%s to %s", doesRespond ? "" : " not",
                                                MulleObjCSelectorUTF8String( sel));
       if( doesRespond)
          event = MulleObjCObjectPerformSelector( self, sel, event);

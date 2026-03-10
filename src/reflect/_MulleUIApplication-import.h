@@ -19,7 +19,7 @@
 //    remove #import      : `mulle-sde dependency mark MulleObjCTimeFoundation no-header`
 //    rename              : `mulle-sde dependency|library set MulleObjCTimeFoundation include whatever.h`
 //    reorder             : `mulle-sde dependency move MulleObjCTimeFoundation <up|down>`
-//    toggle #import      : `mulle-sde dependency mark MulleObjCTimeFoundation [no-]import`
+//    toggle objc         : `mulle-sde dependency mark MulleObjCTimeFoundation [no-]import`
 //    toggle public       : `mulle-sde dependency mark MulleObjCTimeFoundation [no-]public`
 //    toggle optional     : `mulle-sde dependency mark MulleObjCTimeFoundation [no-]require`
 //    remove for platform : `mulle-sde dependency mark MulleObjCTimeFoundation no-platform-<uname>`
@@ -39,7 +39,7 @@
 //    remove #import      : `mulle-sde dependency mark MulleUIBase no-header`
 //    rename              : `mulle-sde dependency|library set MulleUIBase include whatever.h`
 //    reorder             : `mulle-sde dependency move MulleUIBase <up|down>`
-//    toggle #import      : `mulle-sde dependency mark MulleUIBase [no-]import`
+//    toggle objc         : `mulle-sde dependency mark MulleUIBase [no-]import`
 //    toggle public       : `mulle-sde dependency mark MulleUIBase [no-]public`
 //    toggle optional     : `mulle-sde dependency mark MulleUIBase [no-]require`
 //    remove for platform : `mulle-sde dependency mark MulleUIBase no-platform-<uname>`
