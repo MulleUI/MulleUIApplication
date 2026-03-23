@@ -8,7 +8,9 @@ Added window to UIApplication
 
 Loaded 3 mouse events
 Starting playback...
-
+Event 1: type=8
+Event 2: type=4
+Event 3: type=4
 
 Ran event loop until terminate
 

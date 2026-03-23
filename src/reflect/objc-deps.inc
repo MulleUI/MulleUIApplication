@@ -1,5 +1,3 @@
-      { @selector( MulleObjCDeps), @selector( MulleObjCTimeFoundation) },      // 47a9beb6;MulleObjCDeps;cc20d48b;MulleObjCTimeFoundation
-      { @selector( MulleObjCDeps), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCDeps;3ebba954;MulleUIBase
       { @selector( NSObject), @selector( UIApplication) },      // b3a66256;NSObject;48c8c9b2;UIApplication
       { @selector( NSObject), @selector( UIControl) },      // b3a66256;NSObject;55d6a4ca;UIControl
       { @selector( UIActionEvent), MULLE_OBJC_NO_CATEGORYID },      // e1189530;UIActionEvent;;

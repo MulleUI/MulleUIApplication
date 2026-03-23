@@ -427,8 +427,6 @@ typedef UIWindowDisplayBits   (*UIOSWindowFrameCallback_t)( id <UIOSWindow> wind
 - (id <UIScreen>) screenOrPrimaryScreen:(BOOL) flag;
 - (id <UIScreen>) screen;
 
-- (id <UIGamepad>) gamepadAtIndex:(NSUInteger) index;
-
 - (mulle_absolutetime_t) lastSwapBuffersTimestamp;
 
 // this is threadsafe
@@ -468,10 +466,6 @@ typedef UIWindowDisplayBits   (*UIOSWindowFrameCallback_t)( id <UIOSWindow> wind
 - (void) os_setCursor:(void *) cursor             MULLE_UI_MAIN_THREAD_ONLY;
 
 - (void) os_pollInputState:(struct UIInputState *) state   MULLE_UI_MAIN_THREAD_ONLY;
-
-- (void *) os_createCursorWithBitmap:(struct CGBitmap) bitmap
-                             hotSpot:(struct CGPixelPoint) hotSpot   MULLE_UI_MAIN_THREAD_ONLY;
-- (void) os_destroyCursor:(void *) cursor         MULLE_UI_MAIN_THREAD_ONLY;
 
 // glfw window
 - (void *) os_window                              MULLE_OBJC_THREADSAFE_METHOD;

@@ -43,6 +43,9 @@
                  graphicsHints:(NSUInteger) hints
                  sharingWindow:(id <UIOSWindow>) sharingWindow
 {
+   MULLE_C_UNUSED( title);
+   MULLE_C_UNUSED( hints);
+   MULLE_C_UNUSED( sharingWindow);
    char   *s;
 
    if( self = [super init])
@@ -181,6 +184,8 @@
 - (void *) os_createCursorWithBitmap:(struct CGBitmap) bitmap
                              hotSpot:(struct CGPixelPoint) hotSpot
 {
+   MULLE_C_UNUSED( bitmap);
+   MULLE_C_UNUSED( hotSpot);
    return( NULL);
 }
 
