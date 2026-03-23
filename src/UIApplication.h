@@ -223,6 +223,8 @@
 - (void) os_finalize             MULLE_UI_MAIN_THREAD_ONLY;
 
 - (void *) os_createStandardCursor:(UICursorStandardShape) shape  MULLE_UI_MAIN_THREAD_ONLY;
+- (void *) os_createCursorWithBitmap:(struct CGBitmap) bitmap
+                             hotSpot:(struct CGPixelPoint) hotSpot   MULLE_UI_MAIN_THREAD_ONLY;
 - (void) os_destroyCursor:(void *) cursor                         MULLE_UI_MAIN_THREAD_ONLY;
 
 - (void) os_waitEventsWithTimeout:(mulle_relativetime_t) seconds  MULLE_UI_MAIN_THREAD_ONLY;
