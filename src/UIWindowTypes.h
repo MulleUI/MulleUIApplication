@@ -88,13 +88,16 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
    UIWindowOpenGLDeprecated          = 0x10000000,   // if this is set, GLES can't be used
 
 // Notcurses
-   UIWindowNotcursesMouseDisable     = 0x20000000   // do not use terminal mouse
+   UIWindowNotcursesMouseDisable     = 0x20000000,  // do not use terminal mouse
 
 // UIPureWindow
+   UIWindowStyleNoDelayedShow        = 0x02000000,  // do not hide window initially; skip delayed show-after-first-swap
+
 };
 
 
-extern NS_OPTIONS_TABLE( UIWindowStyle, 20);
+MULLE_UI_APPLICATION_GLOBAL
+NS_OPTIONS_TABLE( UIWindowStyle, 24);
 
 static inline char  *UIWindowStyleUTF8String( UIWindowStyle style)
 {
@@ -183,6 +186,7 @@ static inline char   *UIWindowDisplayBitUTF8String( NSUInteger bit)
    return( s ? s : "???");
 }
 
+MULLE_UI_APPLICATION_GLOBAL
 char  *UIWindowDisplayBitsUTF8String( NSUInteger displayBits);
 
 

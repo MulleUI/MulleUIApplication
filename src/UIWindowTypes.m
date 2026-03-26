@@ -2,8 +2,8 @@
 
 #import "import-private.h"
 
-
-NS_OPTIONS_TABLE( UIWindowStyle, 20) =
+MULLE_UI_APPLICATION_GLOBAL_VAR
+NS_OPTIONS_TABLE( UIWindowStyle, 24) =
 {
    NS_OPTIONS_ITEM( UIWindowStyleNop),
 
@@ -28,7 +28,9 @@ NS_OPTIONS_TABLE( UIWindowStyle, 20) =
    NS_OPTIONS_ITEM( UIWindowOpenGLForward),
    NS_OPTIONS_ITEM( UIWindowOpenGLLibraryFallback),
 
-   NS_OPTIONS_ITEM( UIWindowOpenGLDeprecated)
+   NS_OPTIONS_ITEM( UIWindowOpenGLDeprecated),
+
+   NS_OPTIONS_ITEM( UIWindowStyleNoDelayedShow)
 };
 
 
