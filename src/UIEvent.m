@@ -183,12 +183,6 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 }
 
 
-- (instancetype) init
-{
-   _timestamp = mulle_absolutetime_now();
-   return( self);
-}
-
 
 + (void) sendEmptyEvent
 {
@@ -248,7 +242,7 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
                   MulleObjCInstanceGetClassNameUTF8String( self),
                   self,
                   payload,
-                  _timestamp);
+                  [self timestamp]);
    return( s);
 }
 
@@ -264,8 +258,6 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 
 - (instancetype) initWithInputState:(struct UIInputState *) state
 {
-   self = [self init];
-
    _inputState   = *state;
    _location.x   = CGFLOAT_MIN; // not set
    _locationView = nil;
@@ -303,6 +295,12 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 }
 
 
+- (mulle_absolutetime_t) timestamp
+{
+   return( _inputState.timestamp);
+}
+
+
 //static int   UIEventIsFirstResponderPointSet( UIInputEvent *event)
 //{
 //   return( event->_location.x != CGFLOAT_MIN);
@@ -322,7 +320,7 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
                   payload,
                   _inputState.locationInWindow.x,
                   _inputState.locationInWindow.y,
-                  _timestamp);
+                  _inputState.timestamp);
    return( s);
 }
 
@@ -393,7 +391,7 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 
 + (id) alloc
 {
-   return(  allocateEventWithIndex( self, UIUnicodeEventIndex));
+   return( allocateEventWithIndex( self, UIUnicodeEventIndex));
 }
 
 - (void) dealloc
@@ -480,7 +478,8 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 
 + (id) alloc
 {
-   return( allocateEventWithIndex( self, UIMouseButtonEventIndex));
+   // cast needed: @property( class) changes self type (mulle-objc compiler bug)
+   return( allocateEventWithIndex( (Class) self, UIMouseButtonEventIndex));
 }
 
 
@@ -493,11 +492,13 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 - (instancetype) initWithInputState:(struct UIInputState *) state
                              button:(NSUInteger) button
                              action:(NSUInteger) action
+                         clickCount:(NSUInteger) clickCount
 {
    self = [self initWithInputState:state];
 
-   _button = button;
-   _action = action;
+   _button     = button;
+   _action     = action;
+   _clickCount = clickCount;
 
    return( self);
 }
@@ -522,6 +523,21 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
                UIEventButtonActionUTF8String( _action)));
 }
 
+
+static NSTimeInterval   UIMouseButtonEvent_doubleClickInterval = 0.4;
+
+
++ (NSTimeInterval) doubleClickInterval
+{
+   return( UIMouseButtonEvent_doubleClickInterval);
+}
+
+
++ (void) setDoubleClickInterval:(NSTimeInterval) interval
+{
+   UIMouseButtonEvent_doubleClickInterval = interval;
+}
+
 @end
 
 
@@ -542,7 +558,7 @@ static void   deallocateEventWithIndex( UIEvent *self, unsigned int index)
 static struct
 {
    CGFloat   _acceleration;
-} Self =
+} ClassStatic =
 {
    3.0
 };
@@ -566,13 +582,13 @@ static struct
 
 + (CGFloat) scrollWheelAcceleration
 {
-   return( Self._acceleration);
+   return( ClassStatic._acceleration);
 }
 
 
 + (void) setScrollWheelAcceleration:(CGFloat) value
 {
-   Self._acceleration = value;
+   ClassStatic._acceleration = value;
 }
 
 
@@ -594,8 +610,8 @@ static struct
 
    if( accelerate)
    {
-      offset.x = offset.x * Self._acceleration;
-      offset.y = offset.y * Self._acceleration;
+      offset.x = offset.x * ClassStatic._acceleration;
+      offset.y = offset.y * ClassStatic._acceleration;
    }
 
    // TODO: could use shift for coarser and ctrl for finer scrolling
@@ -712,6 +728,13 @@ static struct
 
 @implementation UIWindowEvent
 
+- (instancetype) init
+{
+   _timestamp = mulle_absolutetime_now();
+   return( self);
+}
+
+
 - (UIEventType) eventType
 {
    return( UIEventTypeWindow);
@@ -730,6 +753,8 @@ static struct
    case UIWindowEventTypeResize            : color = 127; break;
    case UIWindowEventTypeMove              : color = 129; break;
    case UIWindowEventTypeFramebufferResize : color = 135; break;
+   case UIWindowEventTypeFocusGained       : color = 148; break;
+   case UIWindowEventTypeFocusLost         : color = 136; break;
    default                                 : return( NULL);
    }
 
@@ -819,11 +844,31 @@ static struct
 @end
 
 
+@implementation UIWindowFocusGainedEvent
+
+- (UIWindowEventType) windowEventType
+{
+   return( UIWindowEventTypeFocusGained);
+}
+
+@end
+
+
+@implementation UIWindowFocusLostEvent
+
+- (UIWindowEventType) windowEventType
+{
+   return( UIWindowEventTypeFocusLost);
+}
+
+@end
+
+
 @implementation UIUserEvent
 
 - (instancetype) initWithEventIdentifier:(NSUInteger) identifier
 {
-   self = [self init];
+   _timestamp       = mulle_absolutetime_now();
    _eventIdentifier = identifier;
    return( self);
 }

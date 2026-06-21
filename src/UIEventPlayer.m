@@ -3,31 +3,11 @@
 #import "UIApplication.h"
 #import "UIEvent.h"
 #import "UIWindowTypes.h"
+#import "UIEventPlayer+DebugPrivate.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-
-
-
-#define UIEventPlayerLog( format, ...)                                      \
-do                                                                          \
-{                                                                           \
-   if( self->_debuggingFlags & 0x1)                                         \
-      mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
-                                       (char *) format, ## __VA_ARGS__);    \
-}                                                                           \
-while( 0)
-
-#define UIEventPlayerEventLog( event, format, ...)                                   \
-do                                                                                   \
-{                                                                                    \
-   if( self->_debuggingFlags & 0x2)                                                  \
-      if( ! event || ([event eventType] & ~(UIEventTypeMotion|UIEventTypeTracking))) \
-         mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,              \
-                                          (char *) format, ## __VA_ARGS__);          \
-}                                                                                    \
-while( 0)
 
 
 // Private enum for script event types
@@ -38,12 +18,13 @@ typedef NS_ENUM( NSUInteger, UIScriptedEventType)
    UIScriptedEventTypeMouseUp,
    UIScriptedEventTypeKeyDown,
    UIScriptedEventTypeKeyUp,
-   UIScriptedEventTypeTerminate
+   UIScriptedEventTypeTerminate,
+   UIScriptedEventTypeCloseButton
 };
 
 
 // Table defined in .m file
-extern NS_ENUM_TABLE( UIScriptedEventType, 6);
+static NS_ENUM_TABLE( UIScriptedEventType, 7);
 
 
 // Private enum for modifier shortcuts in scripts
@@ -59,7 +40,7 @@ typedef NS_OPTIONS( NSUInteger, UIScriptModifier)
 
 
 // Table defined in .m file
-extern NS_OPTIONS_TABLE( UIScriptModifier, 6);
+static NS_OPTIONS_TABLE( UIScriptModifier, 6);
 
 
 // windows defines this (argh) #1#
@@ -127,7 +108,7 @@ typedef NS_ENUM( NSUInteger, UIScriptKey)
 
 
 // Table defined in .m file
-extern NS_ENUM_TABLE( UIScriptKey, 60);
+static NS_ENUM_TABLE( UIScriptKey, 60);
 
 
 // Private enum for mouse button shortcuts in scripts
@@ -140,7 +121,7 @@ typedef NS_ENUM( NSUInteger, UIScriptMouseButton)
 
 
 // Table defined in .m file
-extern NS_ENUM_TABLE( UIScriptMouseButton, 3);
+static NS_ENUM_TABLE( UIScriptMouseButton, 3);
 
 
 struct UIScriptedEvent
@@ -180,7 +161,7 @@ struct UIScriptedEvent
 static struct
 {
    NSUInteger   _debuggingFlags;
-} Self;
+} ClassStatic;
 
 
 static void   UIEventPlayerInitializeDebuggingFlags( Class self)
@@ -196,13 +177,13 @@ static void   UIEventPlayerInitializeDebuggingFlags( Class self)
    if( ! s)
       s = getenv( "UIDebuggingFlags");
    if( s)
-      Self._debuggingFlags = strtol( s, NULL, 0);
+      ClassStatic._debuggingFlags = strtol( s, NULL, 0);
 }
 
 
 + (void) setDebuggingFlags:(NSUInteger) flag   MULLE_OBJC_THREADSAFE_METHOD
 {
-   Self._debuggingFlags = flag;
+   ClassStatic._debuggingFlags = flag;
 }
 
 
@@ -215,8 +196,8 @@ static void   UIEventPlayerInitializeDebuggingFlags( Class self)
 
 - (instancetype) init
 {
-   _debuggingFlags            = Self._debuggingFlags;
-   _abortOnInvalidWindowIndex = YES;
+   _debuggingFlags            = ClassStatic._debuggingFlags;
+   _stopOnInvalidWindowIndex = YES;
    _currentWindowIndex        = 0;
 
    mulle_structarray_init( &_events,
@@ -238,13 +219,13 @@ static void   UIEventPlayerInitializeDebuggingFlags( Class self)
 
 - (void) setAbortOnInvalidWindowIndex:(BOOL) flag
 {
-   _abortOnInvalidWindowIndex = flag;
+   _stopOnInvalidWindowIndex = flag;
 }
 
 
 - (BOOL) abortOnInvalidWindowIndex
 {
-   return( _abortOnInvalidWindowIndex);
+   return( _stopOnInvalidWindowIndex);
 }
 
 
@@ -371,8 +352,9 @@ static NSUInteger   parseModifiers( char *name)
       return( NO);
    }
    
-   // Terminate event has no parameters
-   if( event->eventType == UIScriptedEventTypeTerminate)
+   // Terminate and closeButton events have no parameters
+   if( event->eventType == UIScriptedEventTypeTerminate ||
+       event->eventType == UIScriptedEventTypeCloseButton)
       return( YES);
    
    // Skip to parameters
@@ -420,47 +402,60 @@ static NSUInteger   parseModifiers( char *name)
    case UIScriptedEventTypeKeyDown:
    case UIScriptedEventTypeKeyUp:
       {
-         char   keyName[ 64];
-         char   modsName[ 256];
-         int    scancode;
-         
+         char   name[ 64];
+         char   value[ 256];
+         char   *q;
+
          // Set defaults
          event->params.keyboard.scancode = 0;
          event->params.keyboard.mods     = 0;
-         
-         // Parse key (required)
-         if( sscanf( p, "key=%63s", keyName) != 1)
+
+         // Parse key=value tokens until end of line
+         q = p;
+         while( q < lineEnd)
          {
-            mulle_fprintf( stderr, "UIEventPlayer: Line %lu: Failed to parse key parameter: %s\n", lineNum, p);
-            return( NO);
-         }
-         
-         event->params.keyboard.key = parseKey( keyName);
-         if( event->params.keyboard.key == NSUIntegerMax)
-         {
-            mulle_fprintf( stderr, "UIEventPlayer: Line %lu: Invalid key name: %s\n", lineNum, keyName);
-            return( NO);
-         }
-         
-         // Parse optional mods
-         if( strstr( p, "mods="))
-         {
-            if( sscanf( strstr( p, "mods="), "mods=%255s", modsName) == 1)
+            // skip whitespace
+            while( q < lineEnd && isspace( (unsigned char) *q))
+               q++;
+            if( q >= lineEnd)
+               break;
+
+            // read name=value token
+            if( sscanf( q, "%63[^= ]=%255s", name, value) != 2)
+               break;
+
+            if( ! strcmp( name, "key"))
             {
-               event->params.keyboard.mods = parseModifiers( modsName);
-               if( event->params.keyboard.mods == NSUIntegerMax)
+               event->params.keyboard.key = parseKey( value);
+               if( event->params.keyboard.key == NSUIntegerMax)
                {
-                  mulle_fprintf( stderr, "UIEventPlayer: Line %lu: Invalid modifiers: %s\n", lineNum, modsName);
+                  mulle_fprintf( stderr, "UIEventPlayer: Line %lu: Invalid key name: %s\n", lineNum, value);
                   return( NO);
                }
             }
+            else if( ! strcmp( name, "mods"))
+            {
+               event->params.keyboard.mods = parseModifiers( value);
+               if( event->params.keyboard.mods == NSUIntegerMax)
+               {
+                  mulle_fprintf( stderr, "UIEventPlayer: Line %lu: Invalid modifiers: %s\n", lineNum, value);
+                  return( NO);
+               }
+            }
+            else if( ! strcmp( name, "scancode"))
+            {
+               event->params.keyboard.scancode = (NSUInteger) strtoul( value, NULL, 0);
+            }
+
+            // advance past this token
+            while( q < lineEnd && ! isspace( (unsigned char) *q))
+               q++;
          }
-         
-         // Parse optional scancode
-         if( strstr( p, "scancode="))
+
+         if( ! event->params.keyboard.key)
          {
-            if( sscanf( strstr( p, "scancode="), "scancode=%d", &scancode) == 1)
-               event->params.keyboard.scancode = (NSUInteger) scancode;
+            mulle_fprintf( stderr, "UIEventPlayer: Line %lu: Missing key parameter\n", lineNum);
+            return( NO);
          }
       }
       break;
@@ -473,7 +468,7 @@ static NSUInteger   parseModifiers( char *name)
 }
 
 
-- (BOOL) loadScriptFromUTF8String:(char *) scriptText
+- (BOOL) loadScriptWithUTF8String:(char *) scriptText
 {
    char                     *p;
    char                     *lineStart;
@@ -491,6 +486,7 @@ static NSUInteger   parseModifiers( char *name)
    {
       lineNum++;
       lineStart = p;
+      memset( &event, 0, sizeof( event));
       
       // Find end of line
       while( *p && *p != '\n')
@@ -535,7 +531,10 @@ static NSUInteger   parseModifiers( char *name)
       }
       
       // Parse line (lineEnd points to \n or \0)
-      if( ! [self parseScriptLine:lineStart event:&event lineNum:lineNum lineEnd:lineEnd])
+      if( ! [self parseScriptLine:lineStart
+                            event:&event
+                            lineNum:lineNum
+                            lineEnd:lineEnd])
          return( NO);
       
       // Add event
@@ -547,52 +546,79 @@ static NSUInteger   parseModifiers( char *name)
 }
 
 
-- (BOOL) loadScriptFromFile:(char *) path
+- (BOOL) loadScriptWithFILE:(FILE *) fp
+{
+   char     *content;
+   char     *tmp;
+   size_t   cap;
+   size_t   len;
+   size_t   n;
+   BOOL     result;
+
+   cap     = 4096;
+   len     = 0;
+   content = malloc( cap);
+   if( ! content)
+   {
+      mulle_fprintf( stderr, "UIEventPlayer: out of memory reading script\n");
+      return( NO);
+   }
+
+   for( ;;)
+   {
+      n = fread( content + len, 1, cap - len - 1, fp);
+      if( ! n)
+      {
+         if( ferror( fp))
+         {
+            mulle_fprintf( stderr, "UIEventPlayer: Failed to read script\n");
+            free( content);
+            return( NO);
+         }
+         break;
+      }
+      len += n;
+      if( cap - len < 1024)
+      {
+         cap *= 2;
+         tmp  = realloc( content, cap);
+         if( ! tmp)
+         {
+            mulle_fprintf( stderr, "UIEventPlayer: out of memory reading script\n");
+            free( content);
+            return( NO);
+         }
+         content = tmp;
+      }
+   }
+   content[ len] = '\0';
+
+   result = [self loadScriptWithUTF8String:content];
+   free( content);
+   return( result);
+}
+
+
+// MEMO: could be using NSData but we dont't have it
+- (BOOL) loadScriptWithContentsOfFile:(char *) path
 {
    FILE   *fp;
-   char   *content;
-   long   size;
    BOOL   result;
-   
+
    fp = fopen( path, "r");
    if( ! fp)
    {
-      mulle_fprintf( stderr, "UIEventPlayer: Failed to open script file '%s': %s\n", 
+      mulle_fprintf( stderr, "UIEventPlayer: Failed to open script file '%s': %s\n",
                path, strerror( errno));
       return( NO);
    }
    
-   // Get file size
-   fseek( fp, 0, SEEK_END);
-   size = ftell( fp);
-   fseek( fp, 0, SEEK_SET);
-   
-   // Read file
-   content = malloc( size + 1);
-   if( ! content)
-   {
-      mulle_fprintf( stderr, "UIEventPlayer: Failed to allocate %ld bytes for script file\n", size);
-      fclose( fp);
-      return( NO);
-   }
-   
-   if( fread( content, 1, size, fp) != (size_t) size)
-   {
-      mulle_fprintf( stderr, "UIEventPlayer: Failed to read script file '%s'\n", path);
-      free( content);
-      fclose( fp);
-      return( NO);
-   }
-   
-   content[ size] = '\0';
+   result = [self loadScriptWithFILE:fp];
    fclose( fp);
-   
-   // Parse with filename for better error messages
-   result = [self loadScriptFromUTF8String:content];
-   free( content);
-   
+
    return( result);
 }
+
 
 
 #pragma mark - Playback
@@ -653,6 +679,11 @@ forTimerReceiver:self];
    
    if( delay < 0.0)
       delay = 0.0;
+
+   UIEventPlayerLog( "index=%lu relativeTime=%.3f delay=%.3f",
+                     (unsigned long) _nextIndex,
+                     event->relativeTime,
+                     delay);
    
    timer = [NSTimer mulleTimerWithRelativeTimeInterval:delay
                                          repeatInterval:0.0
@@ -685,14 +716,32 @@ forTimerReceiver:self];
       
    case UIScriptedEventTypeMouseDown:
    case UIScriptedEventTypeMouseUp:
+      inputState.timestamp        = mulle_absolutetime_now();
       inputState.locationInWindow = CGPointMake( scriptEvent->params.mouseButton.x,
                                                   scriptEvent->params.mouseButton.y);
       inputState.buttonStates     = scriptEvent->params.mouseButton.button;
+
+      if( scriptEvent->eventType == UIScriptedEventTypeMouseDown)
+      {
+         CGFloat  dx  = inputState.locationInWindow.x - _lastMouseButtonPressLocation.x;
+         CGFloat  dy  = inputState.locationInWindow.y - _lastMouseButtonPressLocation.y;
+         BOOL     isMultiClick;
+
+         isMultiClick = dx * dx + dy * dy < 5.0 * 5.0
+                        && inputState.timestamp - _lastMouseButtonPressTime < [UIMouseButtonEvent doubleClickInterval];
+         if( ! isMultiClick)
+            _mouseButtonClickCount = 0;
+         ++_mouseButtonClickCount;
+         _lastMouseButtonPressTime     = inputState.timestamp;
+         _lastMouseButtonPressLocation = inputState.locationInWindow;
+      }
+
       event = [[UIMouseButtonEvent alloc] initWithInputState:&inputState
-                                                        button:scriptEvent->params.mouseButton.button
-                                                        action:scriptEvent->eventType == UIScriptedEventTypeMouseDown
-                                                                 ? UIEventButtonActionDown
-                                                                 : UIEventButtonActionUp];
+                                                      button:scriptEvent->params.mouseButton.button
+                                                      action:scriptEvent->eventType == UIScriptedEventTypeMouseDown
+                                                               ? UIEventButtonActionDown
+                                                               : UIEventButtonActionUp
+                                                  clickCount:_mouseButtonClickCount];
       break;
       
    case UIScriptedEventTypeKeyDown:
@@ -719,6 +768,17 @@ forTimerReceiver:self];
 }
 
 
+- (void) stopPlayback
+{
+   UIApplication   *app;
+
+   app = [UIApplication sharedInstance];
+
+   [app removeAllTimersForTimerReceiver:self];
+   [app setEventPlayer:nil];
+}
+
+
 - (void) timerFired:(NSTimer *) timer
 {
    UIApplication             *app;
@@ -733,44 +793,50 @@ forTimerReceiver:self];
    
    // Get current event
    scriptEvent = mulle_structarray_get( &_events, _nextIndex);
-   
-   // Handle terminate event
-   if( scriptEvent->eventType == UIScriptedEventTypeTerminate)
+   switch( scriptEvent->eventType)
    {
-      [app requestTerminate];
-      return;
+   case UIScriptedEventTypeTerminate :
+      if( _stopAction != UIEventPlayerIgnoresTerminationScriptEvent)
+      {
+         UIEventPlayerLog( "terminate event firing, calling requestTerminate");
+         [app requestTerminate];
+      }
+      goto next;
    }
-   
-   // Validate window index
+
    windowCount = [app numberOfWindows];
    if( scriptEvent->windowIndex >= windowCount)
    {
-      if( _abortOnInvalidWindowIndex)
+      mulle_fprintf( stderr, "Event script error: window index %lu invalid (only %lu windows)\n",
+               scriptEvent->windowIndex, windowCount);
+
+      if( _stopOnInvalidWindowIndex)
       {
-         mulle_fprintf( stderr, "Event script error: window index %lu invalid (only %lu windows)\n",
-                  scriptEvent->windowIndex, windowCount);
-         [app requestTerminate];
+         [self stopPlayback];
          return;
       }
-      else
-      {
-         mulle_fprintf( stderr, "Event script warning: skipping event for invalid window %lu\n",
-                  scriptEvent->windowIndex);
-         _nextIndex++;
-         [self scheduleNextEvent];
-         return;
-      }
+      goto next;
    }
-   
-   // Get target window
+
    window = [app windowAtIndex:scriptEvent->windowIndex];
    if( ! window)
    {
       mulle_fprintf( stderr, "Event script error: failed to get window at index %lu\n",
                scriptEvent->windowIndex);
-      _nextIndex++;
-      [self scheduleNextEvent];
-      return;
+      if( _stopOnInvalidWindowIndex)
+      {
+         [self stopPlayback];
+         return;
+      }
+      goto next;
+   }
+
+   switch( scriptEvent->eventType)
+   {
+   case UIScriptedEventTypeCloseButton :
+      UIEventPlayerLog( "closeButton event firing, calling requestClose on window");
+      [window os_requestClose];
+      goto next;
    }
    
    // Create UIEvent from script
@@ -779,28 +845,23 @@ forTimerReceiver:self];
    if( ! event)
    {
       mulle_fprintf( stderr, "Event script error: failed to create event\n");
-      _nextIndex++;
-      [self scheduleNextEvent];
-      return;
+      goto next;
    }
    
    UIEventPlayerEventLog( event, "Dispatching scripted event");
-
-   // Dispatch event to window
    [window receiveRetainedEvent:event];
    
+next:
    _nextIndex++;
-   if( _nextIndex >= mulle_structarray_get_count( &_events))
+   if( _nextIndex < mulle_structarray_get_count( &_events))
    {
-      UIApplication  *app;
-
-      app = [UIApplication sharedInstance];
-      [app removeAllTimersForTimerReceiver:self];
-      [app setEventPlayer:nil];
-      [app requestTerminate];
-   }
-   else
       [self scheduleNextEvent];
+      return;
+   }
+
+   [self stopPlayback];
+   if( _stopAction == UIEventPlayerTerminates)
+      [app requestTerminate];
 }
 
 
@@ -808,19 +869,20 @@ forTimerReceiver:self];
 
 
 // Event type table for parsing
-NS_ENUM_TABLE( UIScriptedEventType, 6) =
+static NS_ENUM_TABLE( UIScriptedEventType, 7) =
 {
    { "mouseMove", UIScriptedEventTypeMouseMove },
    { "mouseDown", UIScriptedEventTypeMouseDown },
    { "mouseUp",   UIScriptedEventTypeMouseUp },
    { "keyDown",   UIScriptedEventTypeKeyDown },
    { "keyUp",     UIScriptedEventTypeKeyUp },
-   { "terminate", UIScriptedEventTypeTerminate }
+   { "terminate", UIScriptedEventTypeTerminate },
+   { "closeButton", UIScriptedEventTypeCloseButton }
 };
 
 
 // Modifier shortcuts table for parsing
-NS_OPTIONS_TABLE( UIScriptModifier, 6) =
+static NS_OPTIONS_TABLE( UIScriptModifier, 6) =
 {
    NS_OPTIONS_ITEM( Shift),
    NS_OPTIONS_ITEM( Control),
@@ -832,7 +894,7 @@ NS_OPTIONS_TABLE( UIScriptModifier, 6) =
 
 
 // Key shortcuts table for parsing
-NS_ENUM_TABLE( UIScriptKey, 60) =
+static NS_ENUM_TABLE( UIScriptKey, 60) =
 {
    NS_ENUM_ITEM( Space),
    NS_ENUM_ITEM( Enter),
@@ -889,9 +951,9 @@ NS_ENUM_TABLE( UIScriptKey, 60) =
    NS_ENUM_ITEM( Z)
 };
 
-
+// Not sure who uses this this
 // Mouse button shortcuts table for parsing (manual entries for custom names)
-struct UIScriptMouseButton__item UIScriptMouseButton__table[ 3] =
+static NS_ENUM_TABLE( UIScriptMouseButton, 3) =
 {
    { "Left",   UIEventMouseButtonLeft },
    { "Right",  UIEventMouseButtonRight },

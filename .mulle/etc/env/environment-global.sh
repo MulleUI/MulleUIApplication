@@ -49,7 +49,7 @@ export MULLE_SDE_CRAFT_STYLE="Release"
 #
 #
 #
-export MULLE_CRAFT_PLATFORMS="${MULLE_UNAME}:windows"
+export MULLE_CRAFT_PLATFORMS="${MULLE_UNAME}"
 
 
 #

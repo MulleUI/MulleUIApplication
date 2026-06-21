@@ -1,3 +1,5 @@
+      { @selector( MulleObjCDeps), @selector( MulleObjCTimeFoundation) },      // 3c20656f;MulleObjCDeps;cc20d48b;MulleObjCTimeFoundation
+      { @selector( MulleObjCDeps), @selector( MulleUIBase) },      // 3c20656f;MulleObjCDeps;3ebba954;MulleUIBase
       { @selector( NSObject), @selector( UIApplication) },      // b3a66256;NSObject;48c8c9b2;UIApplication
       { @selector( NSObject), @selector( UIControl) },      // b3a66256;NSObject;55d6a4ca;UIControl
       { @selector( UIActionEvent), MULLE_OBJC_NO_CATEGORYID },      // e1189530;UIActionEvent;;
@@ -17,12 +19,13 @@
       { @selector( UINullOSWindow), MULLE_OBJC_NO_CATEGORYID },      // 9f4224c1;UINullOSWindow;;
       { @selector( UINullWindow), MULLE_OBJC_NO_CATEGORYID },      // d7aa7e24;UINullWindow;;
       { @selector( UIPasteboard), MULLE_OBJC_NO_CATEGORYID },      // d871deef;UIPasteboard;;
-      { @selector( UIResponder), MULLE_OBJC_NO_CATEGORYID },      // 48335ff7;UIResponder;;
       { @selector( UIScreenEvent), MULLE_OBJC_NO_CATEGORYID },      // d2a3a25a;UIScreenEvent;;
       { @selector( UIUnicodeEvent), MULLE_OBJC_NO_CATEGORYID },      // 46e5ffa8;UIUnicodeEvent;;
       { @selector( UIUserEvent), MULLE_OBJC_NO_CATEGORYID },      // f3739e04;UIUserEvent;;
       { @selector( UIWindowCloseEvent), MULLE_OBJC_NO_CATEGORYID },      // faf97331;UIWindowCloseEvent;;
       { @selector( UIWindowEvent), MULLE_OBJC_NO_CATEGORYID },      // a7cfe718;UIWindowEvent;;
+      { @selector( UIWindowFocusGainedEvent), MULLE_OBJC_NO_CATEGORYID },      // 6ee8c3d4;UIWindowFocusGainedEvent;;
+      { @selector( UIWindowFocusLostEvent), MULLE_OBJC_NO_CATEGORYID },      // 8c34ca97;UIWindowFocusLostEvent;;
       { @selector( UIWindowFramebufferResizeEvent), MULLE_OBJC_NO_CATEGORYID },      // 79c0dd24;UIWindowFramebufferResizeEvent;;
       { @selector( UIWindowMoveEvent), MULLE_OBJC_NO_CATEGORYID },      // b739be6d;UIWindowMoveEvent;;
       { @selector( UIWindowRefreshEvent), MULLE_OBJC_NO_CATEGORYID },      // 4edd472c;UIWindowRefreshEvent;;

@@ -27,16 +27,21 @@ else()
 endif()
 
 #
-# Generated from sourcetree: 26C43919-C9E7-449B-84AF-1509B91623DE;MulleObjCTimeFoundation;no-require,no-singlephase;
+# Generated from sourcetree: 8E2E35B1-7B96-4B5C-86B7-9426217270F1;MulleObjCTimeFoundation;no-singlephase;MulleFoundationBase,MulleObjCTimeFoundation
 # Disable with : `mulle-sourcetree mark MulleObjCTimeFoundation no-link`
 # Disable for this platform: `mulle-sourcetree mark MulleObjCTimeFoundation no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark MulleObjCTimeFoundation no-cmake-sdk-<name>`
 #
 if( COLLECT_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
-   list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES "MulleObjCTimeFoundation")
+   list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES "MulleFoundationBase")
 else()
    if( NOT MULLE_OBJC_TIME_FOUNDATION_LIBRARY)
       find_library( MULLE_OBJC_TIME_FOUNDATION_LIBRARY NAMES
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleFoundationBase${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleFoundationBase${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleFoundationBase${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleFoundationBase${MULLE_FALLBACK_LIBRARY_SUFFIX}
+         MulleFoundationBase
          ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleObjCTimeFoundation${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
          ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleObjCTimeFoundation${MULLE_PREFERRED_LIBRARY_SUFFIX}
          ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleObjCTimeFoundation${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
@@ -46,6 +51,11 @@ else()
       )
       if( NOT MULLE_OBJC_TIME_FOUNDATION_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
          find_library( MULLE_OBJC_TIME_FOUNDATION_LIBRARY NAMES
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleFoundationBase${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleFoundationBase${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleFoundationBase${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleFoundationBase${MULLE_FALLBACK_LIBRARY_SUFFIX}
+            MulleFoundationBase
             ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleObjCTimeFoundation${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
             ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleObjCTimeFoundation${MULLE_PREFERRED_LIBRARY_SUFFIX}
             ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleObjCTimeFoundation${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
@@ -77,14 +87,22 @@ else()
          # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
          # Disable with: `mulle-sourcetree mark MulleObjCTimeFoundation no-cmake-dependency`
          #
-         foreach( _TMP_MULLE_OBJC_TIME_FOUNDATION_NAME "MulleObjCTimeFoundation")
+         foreach( _TMP_MULLE_OBJC_TIME_FOUNDATION_NAME "MulleFoundationBase" "MulleObjCTimeFoundation")
             set( _TMP_MULLE_OBJC_TIME_FOUNDATION_DIR "${_TMP_MULLE_OBJC_TIME_FOUNDATION_ROOT}/include/${_TMP_MULLE_OBJC_TIME_FOUNDATION_NAME}/cmake")
             # use explicit path to avoid "surprises"
             if( IS_DIRECTORY "${_TMP_MULLE_OBJC_TIME_FOUNDATION_DIR}")
                list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_OBJC_TIME_FOUNDATION_DIR}")
+               # we only want top level INHERIT_OBJC_DEPS, so disable them
+               if( NOT NO_INHERIT_OBJC_DEPS)
+                  set( NO_INHERIT_OBJC_DEPS OFF)
+               endif()
+               list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+               set( NO_INHERIT_OBJC_DEPS ON)
                #
                include( "${_TMP_MULLE_OBJC_TIME_FOUNDATION_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                #
+               list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_OBJC_TIME_FOUNDATION_DIR}")
                #
                unset( MULLE_OBJC_TIME_FOUNDATION_DEFINITIONS)
@@ -103,7 +121,7 @@ else()
          # Disable with: `mulle-sourcetree mark MulleObjCTimeFoundation no-cmake-loader`
          #
          if( NOT NO_INHERIT_OBJC_DEPS)
-            foreach( _TMP_MULLE_OBJC_TIME_FOUNDATION_NAME "MulleObjCTimeFoundation")
+            foreach( _TMP_MULLE_OBJC_TIME_FOUNDATION_NAME "MulleFoundationBase" "MulleObjCTimeFoundation")
                set( _TMP_MULLE_OBJC_TIME_FOUNDATION_FILE "${_TMP_MULLE_OBJC_TIME_FOUNDATION_ROOT}/include/${_TMP_MULLE_OBJC_TIME_FOUNDATION_NAME}/MulleObjCDeps+${_TMP_MULLE_OBJC_TIME_FOUNDATION_NAME}.h")
                if( EXISTS "${_TMP_MULLE_OBJC_TIME_FOUNDATION_FILE}")
                   list( APPEND INHERITED_OBJC_DEPS ${_TMP_MULLE_OBJC_TIME_FOUNDATION_FILE})
@@ -112,8 +130,17 @@ else()
             endforeach()
          endif()
       else()
-         # Enable with: `mulle-sourcetree mark MulleObjCTimeFoundation require`
-         message( STATUS "MULLE_OBJC_TIME_FOUNDATION_LIBRARY is missing but it is marked as \"no-require\"")
+         # Disable with: `mulle-sourcetree mark MulleObjCTimeFoundation no-require-link`
+         message( SEND_ERROR "MULLE_OBJC_TIME_FOUNDATION_LIBRARY was not found in ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleFoundationBase${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_PREFERRED_LIBRARY_PREFIX}MulleFoundationBase${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleFoundationBase${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleFoundationBase${MULLE_FALLBACK_LIBRARY_SUFFIX}
+MulleFoundationBase
+${MULLE_PREFERRED_LIBRARY_PREFIX}MulleObjCTimeFoundation${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_PREFERRED_LIBRARY_PREFIX}MulleObjCTimeFoundation${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleObjCTimeFoundation${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleObjCTimeFoundation${MULLE_FALLBACK_LIBRARY_SUFFIX}
+MulleObjCTimeFoundation")
       endif()
    endif()
 endif()
@@ -175,9 +202,17 @@ else()
             # use explicit path to avoid "surprises"
             if( IS_DIRECTORY "${_TMP_MULLE_UI_BASE_DIR}")
                list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_UI_BASE_DIR}")
+               # we only want top level INHERIT_OBJC_DEPS, so disable them
+               if( NOT NO_INHERIT_OBJC_DEPS)
+                  set( NO_INHERIT_OBJC_DEPS OFF)
+               endif()
+               list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+               set( NO_INHERIT_OBJC_DEPS ON)
                #
                include( "${_TMP_MULLE_UI_BASE_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                #
+               list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_UI_BASE_DIR}")
                #
                unset( MULLE_UI_BASE_DEFINITIONS)

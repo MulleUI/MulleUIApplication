@@ -1,0 +1,2 @@
+# Todo List
+Check if we can not use properties to vector the various os_ calls that GLFW and SDL provide, so its easier to patch and avoid symbol link errors

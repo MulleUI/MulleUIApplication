@@ -78,7 +78,7 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
    UIWindowStyleRetained             = 0x00100000,    // use UIWindowBackingStoreRetained
    UIWindowStyleRetainedOnMainThread = 0x00200000,    // use UIWindowBackingStoreRetainedOnMainThread
    UIWindowStyleProfileQueue         = 0x00400000,    // generate profile entries
-   UIWindowStyleMousePolling         = 0x00800000,   // for special "X" demos
+   UIWindowStyleInputPolling         = 0x00800000,   // for special "X" demos
 
 // SDL/OpenGL
    UIWindowOpenGLCoreProfile         = 0x01000000,  // OpenGLCore functions only
@@ -97,7 +97,7 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
 
 
 MULLE_UI_APPLICATION_GLOBAL
-NS_OPTIONS_TABLE( UIWindowStyle, 24);
+NS_OPTIONS_TABLE( UIWindowStyle, 21);
 
 static inline char  *UIWindowStyleUTF8String( UIWindowStyle style)
 {
@@ -153,7 +153,8 @@ typedef NS_OPTIONS( NSUInteger, UIWindowDisplayBit)
    UIWindowDisplayNeedsRedraw     = 0x1,   // needs immediate attention
    UIWindowDisplayNeedsStyling    = 0x2,   // needs immediate attention, will force layout
    UIWindowDisplayNeedsLayout     = 0x4,   // needs immediate attention, will force redraw
-   UIWindowDisplayNeedsAnimation  = 0x5,   // needs attention according to animationRate
+
+   UIWindowDisplayNeedsAnimation  = 0x8,   // needs attention according to animationRate
 
    // this bits are set during render, they will be ignored if set by user
    UIWindowDisplayDidAnimate      = 0x10000,   // animation code did changes (will redraw next frame)
@@ -374,6 +375,29 @@ typedef void   (*UIOSWindowRetainedEventCallback_t)( id <UIOSWindow> window, UIE
 
 typedef UIWindowDisplayBits   (*UIOSWindowFrameCallback_t)( id <UIOSWindow> window);
 
+//
+// Keep this layout in sync with backend-specific graphics hint structs
+// (currently GLFWGraphicsHints). The shared encoding avoids selector
+// signature mismatches for -initWithFrame:...graphicsHints:sharingWindow:.
+//
+typedef struct
+{
+   unsigned int   profile   : 2;
+   unsigned int   forward   : 1;
+   unsigned int   api       : 3;
+   unsigned int   lib       : 2;
+   unsigned int   major     : 8;
+   unsigned int   minor     : 8;
+
+   unsigned int   software  : 1;
+   unsigned int   dri_prime : 4;
+
+   const char    *glx_vendor;
+   const char    *driver;
+   const char    *lib_path;
+   const char    *egl_vendor;
+} UIOSWindowGraphicsHints;
+
 
 @protocol UIOSWindow <MulleUINamedObject, UIOSGraphicsContext>
 
@@ -398,7 +422,7 @@ typedef UIWindowDisplayBits   (*UIOSWindowFrameCallback_t)( id <UIOSWindow> wind
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
-                 graphicsHints:(NSUInteger) hints
+                 graphicsHints:(UIOSWindowGraphicsHints) hints
                  sharingWindow:(id <UIOSWindow>) sharingWindow;
 
 // a shareID. Windows with sharing contexts have the same shareID
@@ -468,8 +492,19 @@ typedef UIWindowDisplayBits   (*UIOSWindowFrameCallback_t)( id <UIOSWindow> wind
 
 - (void) os_setTitleUTF8String:(char *) s         MULLE_UI_MAIN_THREAD_ONLY;
 - (void) os_setCursor:(void *) cursor             MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_setCursorCaptured:(BOOL) captured     MULLE_UI_MAIN_THREAD_ONLY;
 
 - (void) os_pollInputState:(struct UIInputState *) state   MULLE_UI_MAIN_THREAD_ONLY;
+
+// returns number of currently pressed keys (up to count)
+// keys are UIEventKey values, polls from OS directly
+- (NSUInteger) os_pressedKeys:(NSUInteger *) keys
+                        count:(NSUInteger) count  MULLE_UI_MAIN_THREAD_ONLY;
+
+// returns number of currently pressed keys (up to count)
+// maintained from key events, resynced on focus regain (cheap, no OS call)
+- (NSUInteger) pressedKeys:(NSUInteger *) keys
+                     count:(NSUInteger) count;
 
 // glfw window
 - (void *) os_window                              MULLE_OBJC_THREADSAFE_METHOD;
@@ -594,9 +629,13 @@ typedef NS_OPTIONS( NSUInteger, UIGraphicsContextState)
                        nameUTF8String:(char *) nameUTF8String;
 
 // support for some demos
-- (CGPoint) mouseLocation;
-- (NSUInteger) keyModifiers;
-- (NSUInteger) buttonStates;
+- (CGPoint) mouseLocation             MULLE_OBJC_THREADSAFE_METHOD;
+- (NSUInteger) keyModifiers           MULLE_OBJC_THREADSAFE_METHOD;
+- (NSUInteger) buttonStates           MULLE_OBJC_THREADSAFE_METHOD;
+- (struct UIKeyStates) keyStates      MULLE_OBJC_THREADSAFE_METHOD;
+
+// TODO: keep this, delete others
+- (struct UIInputState) inputState    MULLE_OBJC_THREADSAFE_METHOD;
 
 @end
 
@@ -627,9 +666,9 @@ struct UIScreenInfo
 
 static inline double   UIScreenInfoGetPPI( struct UIScreenInfo *info)
 {
-   assert( ! info || info->dpi != 0.0);
-
-   return( info ? info->dpi : 72.0);
+   if( ! info || info->dpi == 0.0)
+      return( 72.0);
+   return( info->dpi);
 }
 
 

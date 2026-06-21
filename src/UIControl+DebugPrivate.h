@@ -22,6 +22,10 @@ enum
 @end
 
 
+//
+// MEMO: In your format strings do NOT use %@. Do use %-#@ for no-color and
+//       %#@ for color strings, because those are thread-safe
+//
 #define UIControlLog( format, ...)                                          \
 do                                                                          \
 {                                                                           \

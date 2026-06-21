@@ -38,6 +38,7 @@ src/generic/include-private.h
 set( PRIVATE_HEADERS
 src/UIApplication+DebugPrivate.h
 src/UIControl+DebugPrivate.h
+src/UIEventPlayer+DebugPrivate.h
 src/UIOSWindow+DebugPrivate.h
 )
 
@@ -73,6 +74,7 @@ src/UIEventPlayer.h
 src/UIEvent.h
 src/UIFont.h
 src/UIInputState+UTF8String.h
+src/UIKeyboardState.h
 src/UINullOSWindow.h
 src/UINullWindow.h
 src/UIPasteboard.h

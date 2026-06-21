@@ -1,0 +1,7 @@
+Event 1 received (type=4)
+Event 2 received (type=4)
+
+Events received: 2 (expected 2)
+Infinite waits:  0 (expected 0)
+Timed waits:     6
+RESULT: PASS - both events delivered

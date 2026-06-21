@@ -24,13 +24,7 @@
       [[NSThread mainThread] cancel];
 
    // do an inconvenient sleep to slow consumer down a bit
-   {
-      struct timespec   sleep;
-
-      sleep.tv_sec  = 0;
-      sleep.tv_nsec = rand() % 100000;
-      nanosleep( &sleep, NULL);
-   }
+   mulle_relativetime_sleep( (rand() % 100000) / 1000000.0);
 
    return( result);
 }

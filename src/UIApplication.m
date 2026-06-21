@@ -79,7 +79,7 @@ BOOL            UIApplicationRequestRunLoopBreak;
 static struct
 {
    NSUInteger   _debuggingFlags;
-} Self;
+} ClassStatic;
 
 
 static void   UIApplicationInitializeDebuggingFlags( Class self)
@@ -95,13 +95,13 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
    if( ! s)
       s = getenv( "UIDebuggingFlags");
    if( s)
-      Self._debuggingFlags = strtol( s, NULL, 0);
+      ClassStatic._debuggingFlags = strtol( s, NULL, 0);
 }
 
 
 + (void) setDebuggingFlags:(NSUInteger) flag   MULLE_OBJC_THREADSAFE_METHOD
 {
-   Self._debuggingFlags = flag;
+   ClassStatic._debuggingFlags = flag;
 }
 
 
@@ -163,7 +163,7 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
 #ifdef UIAPPLICATION_DEBUGGING_FLAGS
    _debuggingFlags = UIAPPLICATION_DEBUGGING_FLAGS;
 #else
-   _debuggingFlags = Self._debuggingFlags;
+   _debuggingFlags = ClassStatic._debuggingFlags;
 #endif
    if( _debuggingFlags)
       MulleUILog( "init");
@@ -294,6 +294,7 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
 {
    assert( [NSThread mulleIsMainThread]);
 
+   UIApplicationLog( "terminate called (state=%lu)", (unsigned long) _state);
    UIApplicationRequestRunLoopBreak = YES;
    if( _state == Terminated)
       return( _returnStatus);
@@ -301,9 +302,13 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
    _state = Terminating;
 
    [self setEventPlayer:nil];
+   UIApplicationLog( "terminate: removeAllInvocations");
    [self removeAllInvocations];
+   UIApplicationLog( "terminate: removeAllTimers");
    [self removeAllTimers];
+   UIApplicationLog( "terminate: removeAllWindows");
    [self removeAllWindows];
+   UIApplicationLog( "terminate: removeAllWindows done");
 
    if( [self respondsToSelector:@selector( os_finalize)])
       [self os_finalize];
@@ -1084,36 +1089,42 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
 }
 
 
-- (void) removeTimerHoles
+- (void) _removeTimerHolesUnlocked
 {
    struct mulle_structarrayenumerator   rover;
    struct UIApplicationTimer            *appTimer;
    struct mulle_structarray             tmp;
    NSUInteger                           n;
 
+   if( _timerHoles)
+   {
+      n = mulle_structarray_get_count( &_timers);
+      // old array in tmp, wipe _timers.
+
+      tmp = _timers;
+      mulle_structarray_init( &_timers,
+                              sizeof( struct UIApplicationTimer),
+                              alignof( struct UIApplicationTimer),
+                              n,
+                              mulle_structarray_get_allocator( &_timers));
+      _timerHoles = 0;
+
+      rover = mulle_structarray_enumerate( &tmp);
+      while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
+         mulle_structarray_add( &_timers, appTimer);
+      mulle_structarrayenumerator_done( &rover);
+
+      // now remove tmp
+      mulle_structarray_done( &tmp);
+   }
+}
+
+
+- (void) removeTimerHoles
+{
    NSLockingDo( _timersLock)
    {
-      if( _timerHoles)
-      {
-         n = mulle_structarray_get_count( &_timers);
-         // old array in tmp, wipe _timers.
-
-         tmp = _timers;
-         mulle_structarray_init( &_timers,
-                                 sizeof( struct UIApplicationTimer),
-                                 alignof( struct UIApplicationTimer),
-                                 n,
-                                 mulle_structarray_get_allocator( &_timers));
-         _timerHoles = 0;
-
-         rover = mulle_structarray_enumerate( &tmp);
-         while( mulle_structarrayenumerator_next( &rover, (void **) &appTimer))
-            mulle_structarray_add( &_timers, appTimer);
-         mulle_structarrayenumerator_done( &rover);
-
-         // now remove tmp
-         mulle_structarray_done( &tmp);
-      }
+      [self _removeTimerHolesUnlocked];
    }
 }
 
@@ -1188,7 +1199,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
    {
       // when we have too many holes compact
       if( _timerHoles >= MAX_TIMERHOLES)
-          [self removeTimerHoles];
+          [self _removeTimerHolesUnlocked];
 
       assert( [timer mulleIsRelativeTimer]);
 
@@ -1199,9 +1210,11 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
       mulle_structarray_add( &_timers, &appTimer);
    }
 
-#ifdef RUN_DEBUG
-   MulleUILog( "add Timer %#@ (%.3f)", timer, appTimer.timestamp);
-#endif
+   UIApplicationEventLog( nil, "addTimer %#@ fires_in=%.3f receiver=%-#@",
+                          timer,
+                          [timer mulleRelativeTimeInterval],
+                          receiver);
+
 }
 
 
@@ -1264,9 +1277,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
          then  = appTimer->timestamp;
          diff  = then - now;
 
-#ifdef RUN_DEBUG
-         MulleUILog( "Timer %#@ %.3f (%.3f)",timer, then, now);
-#endif
+         UIApplicationEventLogVerbose( nil, "Timer %#@ fires_in=%.3f", timer, diff);
          if( diff > 0.0) // time to fire
          {
             if( diff < min)
@@ -1307,10 +1318,8 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
    //
    mulle_structarray_for( &fireTimers, appTimer)
    {
-#if defined( RUN_DEBUG)
-       MulleUILog( "Fire Timer %#@",timer);
-#endif
       timer = [appTimer->timer retain];
+      UIApplicationEventLog( nil, "Fire Timer %#@ receiver=%-#@", timer, appTimer->receiver);
       [appTimer->receiver handleRetainedTimer:timer];
 
       min = 0;  // event may have caused changes (like an event)
@@ -1419,6 +1428,12 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
       }
    }
 
+   _state = FireTimers;
+   {
+      UIApplicationLogVerbose( "-> FireTimers");
+      nextTimerFireCallInSeconds = [self fireTimersIfNeeded:now];
+   }
+
    _state = InvokeMethods;
    {
       UIApplicationLogVerbose( "-> InvokeMethods");
@@ -1427,12 +1442,6 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
 
    if( UIApplicationRequestRunLoopBreak)
       return( NO);
-
-   _state = FireTimers;
-   {
-      UIApplicationLogVerbose( "-> FireTimers");
-      nextTimerFireCallInSeconds = [self fireTimersIfNeeded:now];
-   }
 
    _state = PollEvents;
    {

@@ -12,19 +12,19 @@
  */
 
 // To remove the following dependency (headers and library) completely:
-//   `mulle-sde dependency remove MulleUI`
-// (Use 1C6B2DFC-FBB7-4441-89B1-310104E2F558 instead of MulleUI, if there are duplicate entries)
+//   `mulle-sde dependency remove MulleUIOS`
+// (Use 6C779990-9110-485B-A20D-560D72E7DE30 instead of MulleUIOS, if there are duplicate entries)
 //
 // You can tweak the following #import with these commands:
-//    remove #import      : `mulle-sde dependency mark MulleUI no-header`
-//    rename              : `mulle-sde dependency|library set MulleUI include whatever.h`
-//    reorder             : `mulle-sde dependency move MulleUI <up|down>`
-//    toggle objc         : `mulle-sde dependency mark MulleUI [no-]import`
-//    toggle public       : `mulle-sde dependency mark MulleUI [no-]public`
-//    toggle optional     : `mulle-sde dependency mark MulleUI [no-]require`
-//    remove for platform : `mulle-sde dependency mark MulleUI no-platform-<uname>`
+//    remove #import      : `mulle-sde dependency mark MulleUIOS no-header`
+//    rename              : `mulle-sde dependency|library set MulleUIOS include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleUIOS <up|down>`
+//    toggle objc         : `mulle-sde dependency mark MulleUIOS [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleUIOS [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleUIOS [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleUIOS no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
-#import <MulleUI/MulleUI.h>   // MulleUI
+#import <MulleUIOS/MulleUIOS.h>   // MulleUIOS
 
 #ifdef __has_include
 # if __has_include( "_demo-include.h")

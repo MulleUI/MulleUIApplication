@@ -15,6 +15,10 @@ enum
 
 
 
+//
+// MEMO: In your format strings do NOT use %@. Do use %-#@ for no-color and
+//       %#@ for color strings, because those are thread-safe
+//
 #if ! defined( UI_OS_WINDOW_LOG_DISABLED)
 
 @interface NSObject ( UIOSWindow)

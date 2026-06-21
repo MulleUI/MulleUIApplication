@@ -12,10 +12,10 @@
 @class UINullOSWindow;
 
 
-@interface UINullWindow : NSObject <UIWindow, UIEventReceiver>
+@interface UINullWindow : NSObject < UIWindow, UIEventReceiver>
 {
-   UINullOSWindow              *_OSWindow;
-   id <UIGraphicsContext>       _renderGraphicsContext;
+   UINullOSWindow           *_OSWindow;
+   id <UIGraphicsContext>   _renderGraphicsContext;
 }
 
 + (Class) osGraphicsContextClass;
