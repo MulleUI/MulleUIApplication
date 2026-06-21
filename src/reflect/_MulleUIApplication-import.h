@@ -13,7 +13,7 @@
 
 // To remove the following dependency (headers and library) completely:
 //   `mulle-sde dependency remove MulleObjCTimeFoundation`
-// (Use 26C43919-C9E7-449B-84AF-1509B91623DE instead of MulleObjCTimeFoundation, if there are duplicate entries)
+// (Use 8E2E35B1-7B96-4B5C-86B7-9426217270F1 instead of MulleObjCTimeFoundation, if there are duplicate entries)
 //
 // You can tweak the following #import with these commands:
 //    remove #import      : `mulle-sde dependency mark MulleObjCTimeFoundation no-header`
@@ -24,12 +24,7 @@
 //    toggle optional     : `mulle-sde dependency mark MulleObjCTimeFoundation [no-]require`
 //    remove for platform : `mulle-sde dependency mark MulleObjCTimeFoundation no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
-#ifdef __has_include
-# if __has_include(<MulleObjCTimeFoundation/MulleObjCTimeFoundation.h>)
-#  import <MulleObjCTimeFoundation/MulleObjCTimeFoundation.h>   // MulleObjCTimeFoundation
-#  define HAVE_LIB_MULLE_OBJC_TIME_FOUNDATION
-# endif
-#endif
+#import <MulleObjCTimeFoundation/MulleObjCTimeFoundation.h>   // MulleObjCTimeFoundation
 
 // To remove the following dependency (headers and library) completely:
 //   `mulle-sde dependency remove MulleUIBase`

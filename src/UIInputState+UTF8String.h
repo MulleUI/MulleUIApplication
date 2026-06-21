@@ -33,7 +33,10 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 // prefer a local UIInputState over one in import.h
+#import "import.h"
+
 struct UIInputState;
 
 // same as MulleEdgeInsetsUTF8String, but we don't have MulleGraphics here
+MULLE_UI_APPLICATION_GLOBAL
 char   *UIInputStateUTF8String( struct UIInputState *state);

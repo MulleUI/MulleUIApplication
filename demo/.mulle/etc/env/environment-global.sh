@@ -7,7 +7,7 @@ export MULLE_SDE_CLEAN_DEFAULT="MulleUIApplication"
 #
 #
 #
-export MULLE_CRAFT_PLATFORMS="${MULLE_UNAME}:windows"
+export MULLE_CRAFT_PLATFORMS="${MULLE_UNAME}"
 
 
 #

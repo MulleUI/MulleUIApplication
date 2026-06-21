@@ -60,7 +60,7 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 
 // this is the time used by the render its relative to execution time
 // an NSDateInterval from the start of execution
-@property( assign, readonly) mulle_absolutetime_t   timestamp;
+@property( dynamic, assign, readonly) mulle_absolutetime_t   timestamp;
 
 + (BOOL) reuseEvents;
 + (void) setReuseEvents:(BOOL) flag;
@@ -187,10 +187,13 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 
 @property( assign, readonly) NSUInteger   button;
 @property( assign, readonly) NSUInteger   action;
+@property( assign, readonly) NSUInteger   clickCount;
+@property( class) NSTimeInterval   doubleClickInterval;
 
 - (instancetype) initWithInputState:(struct UIInputState *) state
                              button:(NSUInteger) button
-                             action:(NSUInteger) action;
+                             action:(NSUInteger) action
+                         clickCount:(NSUInteger) clickCount;
 
 @end
 
@@ -231,7 +234,8 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 
 @interface UIUserEvent : UIEvent
 
-@property( assign, readonly) NSUInteger   eventIdentifier;
+@property( assign, readonly) mulle_absolutetime_t   timestamp;
+@property( assign, readonly) NSUInteger             eventIdentifier;
 
 - (instancetype) initWithEventIdentifier:(NSUInteger) identifier;
 
@@ -263,8 +267,9 @@ static inline char   *UIScreenEventTypeUTF8String( UIScreenEventType type)
 // a monitor event bears no data
 @interface UIScreenEvent : UIEvent
 
-@property( assign, readonly) UIScreenEventType  screenEventType;
-@property( assign, readonly) id <UIScreen>      screen;
+@property( assign, readonly) mulle_absolutetime_t   timestamp;
+@property( assign, readonly) UIScreenEventType      screenEventType;
+@property( assign, readonly) id <UIScreen>          screen;
 
 - (instancetype) initWithScreen:(id <UIScreen>) screen
                 screenEventType:(UIScreenEventType) eventType;
@@ -299,6 +304,7 @@ static inline char   *UIGamepadEventTypeUTF8String( UIGamepadEventType type)
 // a monitor event bears no data
 @interface UIGamepadEvent : UIEvent
 
+@property( assign, readonly) mulle_absolutetime_t   timestamp;
 @property( assign, readonly) UIGamepadEventType  gamepadEventType;
 @property( assign, readonly) id <UIGamepad>      gamepad;
 
@@ -315,7 +321,9 @@ typedef NS_OPTIONS( NSUInteger, UIWindowEventType)
    UIWindowEventTypeRefresh           = 0x02,
    UIWindowEventTypeResize            = 0x04,
    UIWindowEventTypeMove              = 0x08,
-   UIWindowEventTypeFramebufferResize = 0x10
+   UIWindowEventTypeFramebufferResize = 0x10,
+   UIWindowEventTypeFocusGained       = 0x20,
+   UIWindowEventTypeFocusLost         = 0x40
 };
 
 
@@ -330,6 +338,8 @@ static inline char   *UIWindowEventTypeUTF8String( UIWindowEventType type)
    case UIWindowEventTypeResize            : return( "UIWindowEventTypeResize");
    case UIWindowEventTypeMove              : return( "UIWindowEventTypeMove");
    case UIWindowEventTypeFramebufferResize : return( "UIWindowEventTypeFramebufferResize");
+   case UIWindowEventTypeFocusGained       : return( "UIWindowEventTypeFocusGained");
+   case UIWindowEventTypeFocusLost         : return( "UIWindowEventTypeFocusLost");
    default                                 : return( "???");
    }
    assert( 0);
@@ -337,6 +347,9 @@ static inline char   *UIWindowEventTypeUTF8String( UIWindowEventType type)
 
 
 @interface UIWindowEvent : UIEvent
+
+@property( assign, readonly) mulle_absolutetime_t   timestamp;
+
 @end
 
 
@@ -361,6 +374,14 @@ static inline char   *UIWindowEventTypeUTF8String( UIWindowEventType type)
 
 
 @interface UIWindowRefreshEvent : UIWindowEvent
+@end
+
+
+@interface UIWindowFocusGainedEvent : UIWindowEvent
+@end
+
+
+@interface UIWindowFocusLostEvent : UIWindowEvent
 @end
 
 

@@ -22,6 +22,7 @@
 #import "UIEvent.h"
 #import "UIFont.h"
 #import "UIInputState+UTF8String.h"
+#import "UIKeyboardState.h"
 #import "UINullOSWindow.h"
 #import "UINullWindow.h"
 #import "UIPasteboard.h"

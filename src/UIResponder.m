@@ -19,7 +19,7 @@ enum
 #define UIResponderEventLog( format, ...)                                  \
 do                                                                         \
 {                                                                          \
-   if( Self._debuggingFlags & UIResponderDebugEvent)                         \
+   if( ClassStatic._debuggingFlags & UIResponderDebugEvent)                         \
       mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,       \
                                        (char *) format, ## __VA_ARGS__);   \
 }                                                                          \
@@ -28,7 +28,7 @@ while( 0);
 #define UIResponderMouseMotionEventLog( format, ...)                       \
 do                                                                         \
 {                                                                          \
-   if( Self._debuggingFlags & UIResponderDebugMouseMotionEvent)              \
+   if( ClassStatic._debuggingFlags & UIResponderDebugMouseMotionEvent)              \
       mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,       \
                                        (char *) format, ## __VA_ARGS__);   \
 }                                                                          \
@@ -45,12 +45,12 @@ while( 0);
 
 
 
-PROTOCOLCLASS_IMPLEMENTATION( UIResponder)
+@implementation UIResponder
 
 static struct
 {
    NSUInteger   _debuggingFlags;
-} Self;
+} ClassStatic;
 
 
 // have no initalize
@@ -66,13 +66,13 @@ static struct
    if( ! s)
       s = getenv( "UIDebuggingFlags");
    if( s)
-      Self._debuggingFlags = strtol( s, NULL, 0);
+      ClassStatic._debuggingFlags = strtol( s, NULL, 0);
 }
 
 
 + (void) setDebuggingFlags:(NSUInteger) flag    MULLE_OBJC_THREADSAFE_METHOD
 {
-   Self._debuggingFlags = flag;
+   ClassStatic._debuggingFlags = flag;
 }
 
 
@@ -549,5 +549,5 @@ static id   UIResponderPerformSelectorIfResponding( UIResponder *self,
    return( event);
 }
 
-PROTOCOLCLASS_END()
+@end
 

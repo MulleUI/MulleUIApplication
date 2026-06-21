@@ -1,0 +1,83 @@
+# Comprehensive event script test
+# Test all event types and features
+
+# Window 0 - Mouse events
+0.0 mouseMove x=100 y=200
+0.1 mouseDown button=Left x=100 y=200
+0.2 mouseUp button=Left x=100 y=200
+0.3 mouseDown button=Right x=150 y=250
+0.4 mouseUp button=Right x=150 y=250
+0.5 mouseDown button=Middle x=200 y=300
+0.6 mouseUp button=Middle x=200 y=300
+
+# Keyboard events with single keys
+1.0 keyDown key=A
+1.1 keyUp key=A
+1.2 keyDown key=Space
+1.3 keyUp key=Space
+1.4 keyDown key=Enter
+1.5 keyUp key=Enter
+1.6 keyDown key=Escape
+1.7 keyUp key=Escape
+1.8 keyDown key=Tab
+1.9 keyUp key=Tab
+
+# Arrow keys
+2.0 keyDown key=Left
+2.1 keyUp key=Left
+2.2 keyDown key=Right
+2.3 keyUp key=Right
+2.4 keyDown key=Up
+2.5 keyUp key=Up
+2.6 keyDown key=Down
+2.7 keyUp key=Down
+
+# Function keys
+3.0 keyDown key=F1
+3.1 keyUp key=F1
+3.2 keyDown key=F5
+3.3 keyUp key=F5
+3.4 keyDown key=F12
+3.5 keyUp key=F12
+
+# Keys with modifiers
+4.0 keyDown key=A mods=Shift
+4.1 keyUp key=A mods=Shift
+4.2 keyDown key=C mods=Control
+4.3 keyUp key=C mods=Control
+4.4 keyDown key=V mods=Control
+4.5 keyUp key=V mods=Control
+4.6 keyDown key=S mods=Control|Shift
+4.7 keyUp key=S mods=Control|Shift
+4.8 keyDown key=Z mods=Control|Alt
+4.9 keyUp key=Z mods=Control|Alt
+
+# Special keys
+5.0 keyDown key=Home
+5.1 keyUp key=Home
+5.2 keyDown key=End
+5.3 keyUp key=End
+5.4 keyDown key=PageUp
+5.5 keyUp key=PageUp
+5.6 keyDown key=PageDown
+5.7 keyUp key=PageDown
+5.8 keyDown key=Delete
+5.9 keyUp key=Delete
+6.0 keyDown key=Insert
+6.1 keyUp key=Insert
+6.2 keyDown key=Backspace
+6.3 keyUp key=Backspace
+
+# Window 1 events (if multiple windows)
+1: 7.0 mouseMove x=50 y=50
+1: 7.1 mouseDown button=Left x=50 y=50
+1: 7.2 mouseUp button=Left x=50 y=50
+
+# Comments are ignored
+# This line won't be parsed
+
+# Blank lines are also ignored
+
+# Terminate event
+8.0 terminate
+

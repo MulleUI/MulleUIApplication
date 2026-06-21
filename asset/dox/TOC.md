@@ -417,7 +417,7 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
   - `UIWindowStyleRetained` (0x100000) - Retained framebuffer on separate thread
   - `UIWindowStyleRetainedOnMainThread` (0x200000) - Retained framebuffer on main thread
   - `UIWindowStyleProfileQueue` (0x400000) - Profile queue performance
-  - `UIWindowStyleMousePolling` (0x800000) - Poll mouse instead of events
+  - `UIWindowStyleInputPolling` (0x800000) - Poll mouse instead of events
   - `UIWindowOpenGLCoreProfile` (0x1000000) - OpenGL Core profile
   - `UIWindowOpenGLForward` (0x4000000) - Forward-compatible OpenGL
   - `UIWindowOpenGLLibraryFallback` (0x8000000) - Try fallback OpenGL libraries

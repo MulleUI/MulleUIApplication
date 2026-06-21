@@ -90,6 +90,8 @@
    case UIWindowEventTypeResize            :
    case UIWindowEventTypeMove              :
    case UIWindowEventTypeRefresh           :
+   case UIWindowEventTypeFocusGained       :
+   case UIWindowEventTypeFocusLost         :
       MulleUILog( "UIApplication discards event %#@", event);
       return( nil);
    }

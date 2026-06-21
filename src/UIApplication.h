@@ -62,6 +62,9 @@
 @property( assign) int          returnStatus    MULLE_UI_MAIN_THREAD_ONLY;
 @property( assign) NSUInteger   debuggingFlags  MULLE_OBJC_THREADSAFE_PROPERTY;
 
+// Application-level style payload; UIWindow consumes this in -_initWithFrame:.
+@property( retain) id           styleSheet      MULLE_UI_MAIN_THREAD_ONLY;
+
 // UIEventPlayer ownership
 @property( retain) id           eventPlayer     MULLE_UI_MAIN_THREAD_ONLY;
 

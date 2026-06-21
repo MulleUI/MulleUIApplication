@@ -57,7 +57,8 @@ typedef NS_OPTIONS( NSUInteger, UIControlState)
 // but UIControlStateFirstResponder is more clear
 #define UIControlStateFocused   UIControlStateFirstResponder
 
-extern NS_OPTIONS_TABLE( UIControlState, 6);
+MULLE_UI_APPLICATION_GLOBAL
+NS_OPTIONS_TABLE( UIControlState, 6);
 
 
 static inline char   *UIControlStateUTF8String( NSUInteger state)
@@ -164,6 +165,13 @@ Focus==FirstResponder
 
 #define UIControlDone( self)                                      
 
+// TODO: put a userinfo into this ?
+@mixin UIControl;
+
+typedef UIInputEvent   *UIControlClickHandler( id <UIControl> control,
+                                               UIInputEvent *event);
+
+
 //
 // A UIControl translates event into target/Action or click Events. Though
 // it provides states for selection and highlighting. It does not change them
@@ -172,21 +180,14 @@ Focus==FirstResponder
 // For keyboard and mouse button events, the control will be set to
 // setNeedsDisplay
 //
-PROTOCOLCLASS_INTERFACE( UIControl, UIResponder)
-
-// TODO: put a userinfo into this ?
-typedef UIInputEvent   *UIControlClickHandler( id <UIControl> control,
-                                               UIInputEvent *event);
+@mixin UIControl < UIResponder>
 
 UIControlProperties;
 
+@required
 - (void) setNeedsDisplay  MULLE_OBJC_THREADSAFE_METHOD;
 
 @optional
-
-
-- (BOOL) shouldConsumeMouseEvent:(UIInputEvent *) event;
-
 - (UIInputEvent *) mouseUp:(UIMouseButtonEvent *) event;
 
 // returns fallbackEvent, if there is no target/action 
@@ -206,8 +207,6 @@ UIControlProperties;
 - (BOOL) isSelected;
 - (void) setSelected:(BOOL) flag;
 
-- (char *) UTF8String;
-
 /* utilities for implementors */
 - (void) mulleToggleSelectedState;
 - (void) mulleToggleHighlightedState;
@@ -219,6 +218,6 @@ UIControlProperties;
 
 - (BOOL) __isUIControl     MULLE_OBJC_THREADSAFE_METHOD;
 
-PROTOCOLCLASS_END()
+@end
 
 

@@ -19,7 +19,7 @@ NS_OPTIONS_TABLE( UIControlState, 6) =
 };
 
 
-PROTOCOLCLASS_IMPLEMENTATION( UIControl)
+@implementation  UIControl
 
 //
 // so the protocolclass can not provide implementations, as it doesn't
@@ -462,7 +462,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 }
 
 
-PROTOCOLCLASS_END()
+@end
 
 
 

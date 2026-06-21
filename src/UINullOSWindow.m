@@ -40,7 +40,7 @@
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
-                 graphicsHints:(NSUInteger) hints
+                 graphicsHints:(UIOSWindowGraphicsHints) hints
                  sharingWindow:(id <UIOSWindow>) sharingWindow
 {
    MULLE_C_UNUSED( title);
@@ -75,7 +75,7 @@
    return( [self initWithFrame:frame
                 titleUTF8String:title
                       styleMask:styleMask
-                  graphicsHints:0
+                  graphicsHints:(UIOSWindowGraphicsHints) { 0 }
                   sharingWindow:nil]);
 }
 
@@ -117,6 +117,20 @@
 - (void) os_pollInputState:(struct UIInputState *) state
 {
    memset( state, 0, sizeof( struct UIInputState));
+}
+
+
+- (NSUInteger) os_pressedKeys:(NSUInteger *) keys
+                        count:(NSUInteger) count
+{
+   return( 0);
+}
+
+
+- (NSUInteger) pressedKeys:(NSUInteger *) keys
+                     count:(NSUInteger) count
+{
+   return( 0);
 }
 
 
@@ -172,6 +186,11 @@
 - (CGPixelSize) os_framebufferSize
 {
    return( CGPixelSizeMake( _frame.size.width, _frame.size.height));
+}
+
+
+- (void) os_setCursorCaptured:(BOOL) captured
+{
 }
 
 

@@ -11,7 +11,7 @@
 // messages that have no target specified. (Action messages are sent by 
 // controls such as buttons and controls when users manipulate them.)
 
-PROTOCOLCLASS_INTERFACE0( UIResponder)
+@mixin UIResponder < NSObject>
 
 @optional
 - (BOOL) becomeFirstResponder;         // default: NO
@@ -49,7 +49,7 @@ PROTOCOLCLASS_INTERFACE0( UIResponder)
 - (UIEvent *) acceptOtherEvent:(UIEvent *) event;
 - (void) didAcceptEvent:(UIEvent *) event;
 
-PROTOCOLCLASS_END()
+@end
 
 
 

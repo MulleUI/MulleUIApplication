@@ -15,10 +15,12 @@
    return( Nil);
 }
 
+
 - (instancetype) initWithOSWindow:(UINullOSWindow *) osWindow
 {
    return( [self initWithOSWindow:osWindow styleMask:0]);
 }
+
 
 - (instancetype) initWithOSWindow:(UINullOSWindow *) osWindow
                          styleMask:(NSUInteger) styleMask
@@ -146,6 +148,7 @@
    if( cb)
       (*cb)( self, [self renderGraphicsContext], info, displayBits);
 }
+
 
 - (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now
 {

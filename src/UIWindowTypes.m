@@ -3,7 +3,7 @@
 #import "import-private.h"
 
 MULLE_UI_APPLICATION_GLOBAL_VAR
-NS_OPTIONS_TABLE( UIWindowStyle, 24) =
+NS_OPTIONS_TABLE( UIWindowStyle, 21) =
 {
    NS_OPTIONS_ITEM( UIWindowStyleNop),
 
