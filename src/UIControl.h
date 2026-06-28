@@ -115,11 +115,11 @@ Focus==FirstResponder
      1     |     1     |     1     |     1     | *impossible*
 */
 
-
+// MEMO: this was partly written before @mixin existed
 // put these into your UIControl adopting class interface ivars
 //
 // UISwitch is event handling-wise is almost a pure UIControl subclass.
-//So use this as a reference to get the behaviour right.
+// So use this as a reference to get the behaviour right.
 // _reflectedState is private and used by -reflectState
 #define UIControlIvars                               \
    UIControlSelectionBehaviour  _selectionBehaviour; \

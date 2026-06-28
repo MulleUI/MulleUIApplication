@@ -72,26 +72,32 @@ static inline BOOL   getStateBit( UIControl *self, UIControlState bit)
 - (void) mulleToggleSelectedState
 {
    UIControlState   state;
+   UIControlState   newState;
 
    state = [self state];
    if( state & UIControlStateSelected)
-      state &= ~UIControlStateSelected;
+      newState = state & ~UIControlStateSelected;
    else
-      state |= UIControlStateSelected;
-   [self setState:state];
+      newState = state | UIControlStateSelected;
+
+   UIControlLog( "state %s -> %s", UIControlStateUTF8String( state), UIControlStateUTF8String( newState));
+   [self setState:newState];
 }
 
 
 - (void) mulleToggleHighlightedState
 {
    UIControlState   state;
+   UIControlState   newState;
 
    state = [self state];
    if( state & UIControlStateHighlighted)
-      state &= ~UIControlStateHighlighted;
+      newState = state & ~UIControlStateHighlighted;
    else
-      state |= UIControlStateHighlighted;
-   [self setState:state];
+      newState = state | UIControlStateHighlighted;
+
+   UIControlLog( "state %s -> %s", UIControlStateUTF8String( state), UIControlStateUTF8String( newState));
+   [self setState:newState];
 }
 
 
@@ -135,6 +141,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
       assert( state != (UIControlStateDisabled|UIControlStateSelected|UIControlStateFirstResponder));
       assert( state != (UIControlStateHighlighted|UIControlStateDisabled|UIControlStateSelected|UIControlStateFirstResponder));
 
+      UIControlLog( "state %s -> %s", UIControlStateUTF8String( state), UIControlStateUTF8String( newState));
       [self setState:newState];
    }
 }
@@ -206,6 +213,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 
    if( state != reflectedState)
    {
+      UIControlLog( "reflected state %s -> %s", UIControlStateUTF8String( reflectedState), UIControlStateUTF8String( state));
       [self setReflectedState:state];
       return( YES);
    }
@@ -286,7 +294,6 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 
 - (UIInputEvent *) performClickAndTargetActionCallbacks:(UIInputEvent *) event
 {
-   [self mulleToggleSelectedState];
    return( [self performClickAndTargetActionCallbacks:event
                                         fallbackEvent:nil]);
 }                                          
@@ -341,26 +348,6 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 }
 
 
-- (UIMouseMotionEvent *) mouseDragged:(UIMouseMotionEvent *) event
-{
-   UIInputEvent   *inputEvent;
-
-   UIControlMouseTrackingEventLog( event, "%#@", event);
-   // remove previous mouseDown state change
-
-   if( [self eventMask] & UIControlEventLeftMouseDragged)
-   {
-      inputEvent = [self performClickAndTargetActionCallbacks:event];
-      // for mouseDragged you must return nil
-      // also don't mind if event is returned though not type correct
-      assert( inputEvent == nil || inputEvent == (UIInputEvent *) event);
-      MULLE_C_UNUSED( inputEvent);
-   }
-
-   return( nil);
-}
-
-
 //
 // as we are the firstResponder we must be getting the up event
 //
@@ -408,6 +395,28 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 }
 
 
+
+- (UIMouseMotionEvent *) mouseDragged:(UIMouseMotionEvent *) event
+{
+   UIInputEvent   *inputEvent;
+
+   UIControlMouseMotionEventLog( event, "%#@", event);
+   // remove previous mouseDown state change
+
+   if( [self eventMask] & UIControlEventLeftMouseDragged)
+   {
+      inputEvent = [self performClickAndTargetActionCallbacks:event];
+      // for mouseDragged you must return nil
+      // also don't mind if event is returned though not type correct
+      assert( inputEvent == nil || inputEvent == (UIInputEvent *) event);
+      MULLE_C_UNUSED( inputEvent);
+   }
+
+   return( nil);
+}
+
+
+
 - (void) mouseEntered:(UIMouseTrackingEvent *) event
 {
    UIControlMouseTrackingEventLog( event, "%#@", event);
@@ -419,7 +428,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 
 - (void) mouseMoved:(UIMouseTrackingEvent *) event
 {
-   UIControlMouseTrackingEventLog( event, "%#@", event);
+//   UIControlMouseTrackingEventLog( event, "%#@", event);
 }
 
 
