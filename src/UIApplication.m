@@ -90,7 +90,6 @@ static void   UIApplicationInitializeDebuggingFlags( Class self)
    if( MulleObjCClassGetID( self) != @selector( UIApplication))
       return;
 
-   // __CLASS_NAME__ is a wished for compiler feature,
    s = getenv( MULLE_C_STRINGIFY( UIApplication) "DebuggingFlags");
    if( ! s)
       s = getenv( "UIDebuggingFlags");

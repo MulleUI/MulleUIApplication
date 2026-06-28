@@ -168,11 +168,6 @@ static void   UIEventPlayerInitializeDebuggingFlags( Class self)
 {
    char   *s;
 
-   // don't rerun for subclass
-   if( MulleObjCClassGetID( self) != @selector( UIEventPlayer))
-      return;
-
-   // __CLASS_NAME__ is a wished for compiler feature,
    s = getenv( MULLE_C_STRINGIFY( UIEventPlayer) "DebuggingFlags");
    if( ! s)
       s = getenv( "UIDebuggingFlags");
@@ -189,16 +184,19 @@ static void   UIEventPlayerInitializeDebuggingFlags( Class self)
 
 + (void) initialize
 {
-   UIEventPlayerInitializeDebuggingFlags( self);
+   MulleObjCClassInitializeOnceDo( self)
+   {
+      UIEventPlayerInitializeDebuggingFlags( self);
+   }
 }
 
 
 
 - (instancetype) init
 {
-   _debuggingFlags            = ClassStatic._debuggingFlags;
+   _debuggingFlags           = ClassStatic._debuggingFlags;
    _stopOnInvalidWindowIndex = YES;
-   _currentWindowIndex        = 0;
+   _currentWindowIndex       = 0;
 
    mulle_structarray_init( &_events,
                            sizeof( struct UIScriptedEvent),
