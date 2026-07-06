@@ -80,19 +80,20 @@ typedef NS_OPTIONS( NSUInteger, UIWindowStyle)
    UIWindowStyleProfileQueue         = 0x00400000,    // generate profile entries
    UIWindowStyleInputPolling         = 0x00800000,   // for special "X" demos
 
-// SDL/OpenGL
-   UIWindowOpenGLCoreProfile         = 0x01000000,  // OpenGLCore functions only
-   UIWindowOpenGLForward             = 0x04000000,  // non-deprecated functions only
-   UIWindowOpenGLLibraryFallback     = 0x08000000,  // try other openGL libraries as fallback
+// UIPureWindow
+   UIWindowStyleNoDelayedShow        = 0x01000000,  // do not hide window initially; skip delayed show-after-first-swap
 
-   UIWindowOpenGLDeprecated          = 0x10000000,   // if this is set, GLES can't be used
+// SDL/OpenGL
+   UIWindowOpenGLCoreProfile         = 0x04000000,  // OpenGLCore functions only
+
+   UIWindowOpenGLForward             = 0x10000000,  // non-deprecated functions only
+   UIWindowOpenGLLibraryFallback     = 0x20000000,  // try other openGL libraries as fallback
+
+
+   UIWindowOpenGLDeprecated          = 0x40000000,   // if this is set, GLES can't be used
 
 // Notcurses
-   UIWindowNotcursesMouseDisable     = 0x20000000,  // do not use terminal mouse
-
-// UIPureWindow
-   UIWindowStyleNoDelayedShow        = 0x02000000,  // do not hide window initially; skip delayed show-after-first-swap
-
+   UIWindowNotcursesMouseDisable     = 0x80000000,  // do not use terminal mouse
 };
 
 
@@ -149,15 +150,23 @@ typedef NSUInteger   UIWindowStyleMask;
 
 typedef NS_OPTIONS( NSUInteger, UIWindowDisplayBit)
 {
-   // user setable bits
-   UIWindowDisplayNeedsRedraw     = 0x1,   // needs immediate attention
-   UIWindowDisplayNeedsStyling    = 0x2,   // needs immediate attention, will force layout
-   UIWindowDisplayNeedsLayout     = 0x4,   // needs immediate attention, will force redraw
+   // Pipeline stage bits (UIWindow interprets, PureWindow passes through).
+   // These form a cascade: Styling → Layout → Display.
+   // Setting a higher stage implies the lower stages will also run.
+   UIWindowDisplayNeedsDisplay    = 0x1,   // views push state to layers
+   UIWindowDisplayNeedsLayout     = 0x2,   // reposition views, cascades to NeedsDisplay
+   UIWindowDisplayNeedsStyling    = 0x4,   // restyle, cascades to NeedsLayout
 
-   UIWindowDisplayNeedsAnimation  = 0x8,   // needs attention according to animationRate
+   // Scheduling bit (PureWindow uses for frame timing).
+   // "Schedule next frame at animation rate, don't sleep indefinitely."
+   UIWindowDisplayNeedsNextFrame  = 0x8,
 
-   // this bits are set during render, they will be ignored if set by user
-   UIWindowDisplayDidAnimate      = 0x10000,   // animation code did changes (will redraw next frame)
+   // Aliases
+   UIWindowDisplayNeedsAnimation  = UIWindowDisplayNeedsNextFrame,
+   UIWindowDisplayNeedsRedraw     = UIWindowDisplayNeedsDisplay,  // deprecated alias
+
+   // These bits are set during render, they will be ignored if set by user
+   UIWindowDisplayDidAnimate      = 0x10000,   // animation code did changes (will need next frame)
    UIWindowDisplayNeedsMouseEvent = 0x20000    // layout change needs to retrack mouse
 };
 
@@ -168,10 +177,10 @@ static inline char   *_UIWindowDisplayBitUTF8String( NSUInteger bit)
 {
    switch( bit)
    {
-   case UIWindowDisplayNeedsRedraw     : return( "NeedsRedraw");
-   case UIWindowDisplayNeedsStyling    : return( "NeedsStyling");
+   case UIWindowDisplayNeedsDisplay    : return( "NeedsDisplay");
    case UIWindowDisplayNeedsLayout     : return( "NeedsLayout");
-   case UIWindowDisplayNeedsAnimation  : return( "NeedsAnimation");
+   case UIWindowDisplayNeedsStyling    : return( "NeedsStyling");
+   case UIWindowDisplayNeedsNextFrame  : return( "NeedsNextFrame");
    case UIWindowDisplayDidAnimate      : return( "DidAnimate");
    case UIWindowDisplayNeedsMouseEvent : return( "NeedsMouseEvent");
    }
@@ -228,6 +237,9 @@ char  *UIWindowDisplayBitsUTF8String( NSUInteger displayBits);
 // return underlying SDL/GLFW window or whatever
 - (void *) os_window          MULLE_OBJC_THREADSAFE_METHOD;
 
+// forwarded to OSWindow
+- (void) os_requestClose      MULLE_OBJC_THREADSAFE_METHOD;
+
 // obsolete ?
 //- (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
 
@@ -252,6 +264,12 @@ char  *UIWindowDisplayBitsUTF8String( NSUInteger displayBits);
 // Implementators should assert, that its called from main thread only
 - (void) applicationDidAddWindow:(UIApplication *) app      MULLE_OBJC_THREADSAFE_METHOD;
 - (void) applicationDidRemoveWindow:(UIApplication *) app   MULLE_OBJC_THREADSAFE_METHOD;
+
+// sent by the application (main thread) whenever the number of managed
+// windows changes, so a window can adjust state that depends on being the
+// sole window (e.g. keeping its main-thread graphics context active across
+// swaps, which is only safe with a single window).
+- (void) applicationDidChangeWindowCount:(NSUInteger) count   MULLE_OBJC_THREADSAFE_METHOD;
 
 - (id) firstResponder;
 

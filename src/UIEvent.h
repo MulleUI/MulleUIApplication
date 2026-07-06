@@ -60,6 +60,7 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 
 // this is the time used by the render its relative to execution time
 // an NSDateInterval from the start of execution
+@optional
 @property( dynamic, assign, readonly) mulle_absolutetime_t   timestamp;
 
 + (BOOL) reuseEvents;
@@ -100,6 +101,7 @@ static inline char   *UIEventTypeUTF8String( UIEventType type)
 @property( assign, readonly) struct UIInputState   inputState;
 @property( assign, readonly) CGPoint               location;
 
+@property( dynamic, assign, readonly) mulle_absolutetime_t   timestamp;
 // access inputState;
 @property( dynamic, assign, readonly) CGPoint      locationInWindow;
 // this is known state of modifier keys
@@ -929,3 +931,41 @@ static inline char   *_UIEventKeyUTF8String( NSUInteger key)
 
 
 char   *UIEventKeyUTF8String( NSUInteger key);
+
+
+//
+// Ctrl+Left Click -> Right Click emulation (macOS convention).
+// Enabled by default. Set to NO to disable.
+// Check this in your OS event translation layer before creating UIMouseButtonEvents.
+//
+MULLE_UI_APPLICATION_GLOBAL
+BOOL   UIEventCtrlClickEmulatesRightClick;
+
+
+static inline NSUInteger   UIEventMouseButtonWithModifiers( NSUInteger button,
+                                                            NSUInteger *p_keyModifiers)
+{
+   if( UIEventCtrlClickEmulatesRightClick)
+      if( button == UIEventMouseButtonLeft)
+         if( *p_keyModifiers & UIEventKeyModifierControl)
+         {
+            *p_keyModifiers &= ~UIEventKeyModifierControl;
+            return( UIEventMouseButtonRight);
+         }
+   return( button);
+}
+
+
+static inline NSUInteger   UIEventButtonStatesWithModifiers( NSUInteger buttonStates,
+                                                             NSUInteger *p_keyModifiers)
+{
+   if( UIEventCtrlClickEmulatesRightClick)
+      if( *p_keyModifiers & UIEventKeyModifierControl)
+         if( buttonStates & UIEventMouseButtonLeft)
+         {
+            buttonStates &= ~UIEventMouseButtonLeft;
+            buttonStates |= UIEventMouseButtonRight;
+            *p_keyModifiers &= ~UIEventKeyModifierControl;
+         }
+   return( buttonStates);
+}

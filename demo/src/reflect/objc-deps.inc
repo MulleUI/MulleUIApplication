@@ -10,6 +10,6 @@
 /*
  * extension : mulle-objc/objc
  * directory : project-oneshot/all
- * template  : .../objc-loader.inc
+ * template  : .../objc-deps.inc
  * Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`
  */

@@ -9,7 +9,8 @@ int   main( void)
    inputState = UIInputStateMake( CGPointMake( 2, 3), 7, 4);
    event = [[[UIMouseButtonEvent alloc] initWithInputState:&inputState
                                                     button:5
-                                                    action:6] autorelease];
+                                                    action:6
+                                                clickCount:1] autorelease];
    printf( "type             : %td\n", [event eventType]);
    printf( "locationInWindow : %s\n",  CGPointUTF8String( [event locationInWindow]));
    printf( "modifiers        : %td\n", [event keyModifiers]);

@@ -803,6 +803,19 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
 }
 
 
+- (void) _notifyWindowsOfWindowCount
+{
+   id <UIWindow>   window;
+   NSUInteger      count;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   count = mulle_array_get_count( &_windows);
+   mulle_array_for( &_windows, window)
+      [window applicationDidChangeWindowCount:count];
+}
+
+
 - (void) addWindow:(id <UIWindow>) window
 {
    assert( window);
@@ -811,6 +824,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
 
    mulle_array_add( &_windows, window);
    [window applicationDidAddWindow:self];
+   [self _notifyWindowsOfWindowCount];
 }
 
 
@@ -832,6 +846,7 @@ static NSInteger   UIApplicationIndexForSetGamepad( UIApplication *self,
 
    mulle_array_remove_in_range( &_windows, mulle_range_make( found, 1));
    [window applicationDidRemoveWindow:self];
+   [self _notifyWindowsOfWindowCount];
 }
 
 

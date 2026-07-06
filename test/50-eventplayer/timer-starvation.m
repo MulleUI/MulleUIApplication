@@ -85,7 +85,7 @@ int main( void)
       // After event 1 fires, the window is idle (INFINITY frame rate).
       // The timer for event 2 must still fire despite the idle window.
       player = [UIEventPlayer instance];
-      [player loadScriptFromUTF8String:
+      [player loadScriptWithUTF8String:
          "0.0 mouseDown button=Left x=10 y=10\n"
          "0.3 mouseUp button=Left x=10 y=10\n"
          "0.4 terminate\n"];

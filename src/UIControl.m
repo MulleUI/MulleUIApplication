@@ -221,6 +221,12 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
 }
 
 
+- (BOOL) reflectStateWithEvent:(UIInputEvent *) event
+{
+   return( [self reflectState]);
+}
+
+
 - (BOOL) willAcceptEvent:(UIEvent *) event
 {
    assert( [event isKindOfClass:[UIEvent class]]);
@@ -244,7 +250,7 @@ static void   setStateBit( UIControl *self, UIControlState bit, BOOL flag)
    if( ! [event isInputEvent])
       return;
 
-   [self reflectState];
+   [self reflectStateWithEvent:(UIInputEvent *) event];
    [self setNeedsDisplay];
 }
 

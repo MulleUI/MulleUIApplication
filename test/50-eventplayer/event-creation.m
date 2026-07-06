@@ -14,7 +14,7 @@ int   main( void)
    
    // Test: Create events from script and verify they're created
    mulle_printf( "Loading script with various events...\n");
-   result = [player loadScriptFromUTF8String:
+   result = [player loadScriptWithUTF8String:
       "0.0 mouseMove x=50 y=75\n"
       "0.1 mouseDown button=Left x=50 y=75\n"
       "0.2 mouseUp button=Left x=50 y=75\n"
