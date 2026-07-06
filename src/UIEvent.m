@@ -7,6 +7,9 @@
 #include <ctype.h>
 
 
+BOOL   UIEventCtrlClickEmulatesRightClick;
+
+
 char   *UIEventKeyUTF8String( NSUInteger key)
 {
    char   *s;
@@ -72,6 +75,8 @@ static struct
    {
       if( mulle_objc_environment_get_yes_no_default( "MULLE_UI_REUSE_EVENTS", YES))
          [self enableEventsReuse];
+      UIEventCtrlClickEmulatesRightClick =
+         mulle_objc_environment_get_yes_no_default( "MULLE_UI_CTRL_CLICK_EMULATES_RIGHT", YES);
       UIEventSelf._initialized = YES;
    }
 }
@@ -645,9 +650,16 @@ static struct
                 screenEventType:(UIScreenEventType) screenEventType
 {
    self             = [self init];
+   _timestamp       = mulle_absolutetime_now();
    _screen          = [screen retain];
    _screenEventType = screenEventType;
    return( self);
+}
+
+
+- (mulle_absolutetime_t) timestamp
+{
+   return( _timestamp);
 }
 
 
@@ -679,9 +691,16 @@ static struct
                 gamepadEventType:(UIGamepadEventType) gamepadEventType
 {
    self              = [self init];
+   _timestamp        = mulle_absolutetime_now();
    _gamepad          = [gamepad retain];
    _gamepadEventType = gamepadEventType;
    return( self);
+}
+
+
+- (mulle_absolutetime_t) timestamp
+{
+   return( _timestamp);
 }
 
 
@@ -732,6 +751,12 @@ static struct
 {
    _timestamp = mulle_absolutetime_now();
    return( self);
+}
+
+
+- (mulle_absolutetime_t) timestamp
+{
+   return( _timestamp);
 }
 
 
@@ -871,6 +896,12 @@ static struct
    _timestamp       = mulle_absolutetime_now();
    _eventIdentifier = identifier;
    return( self);
+}
+
+
+- (mulle_absolutetime_t) timestamp
+{
+   return( _timestamp);
 }
 
 

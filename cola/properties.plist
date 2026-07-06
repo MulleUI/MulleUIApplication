@@ -3,20 +3,22 @@
    {
       description="𝄢 MulleUIApplication provides abstract classes like UIApplication and UIEvent";
       domain="github";
+      language="c";
+      dialect="objc";
       name="MulleUIApplication";
       user="MulleUI";
       repo="MulleUIApplication";
       homepage="https://github.com/MulleUI/MulleUIBase";
-      license="BSD-3-License";
+      license="UNLICENSED";
    };
    dependencies =
    (
       {
-         description="🧱 MulleFoundationBase amalgamates Foundations projects";
+         description="💰 MulleObjCTimeFoundation provides time classes";
          domain="github";
-         name="MulleFoundationBase";
-         repo="MulleFoundationBase";
-         url="https://github.com/MulleFoundation/MulleFoundationBase";
+         name="MulleObjCTimeFoundation";
+         repo="MulleObjCTimeFoundation";
+         url="https://github.com/MulleFoundation/MulleObjCTimeFoundation";
          user="MulleFoundation";
       },
       {

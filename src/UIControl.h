@@ -213,6 +213,7 @@ UIControlProperties;
 
 // NO means that there has been no state change observed
 - (BOOL) reflectState;
+- (BOOL) reflectStateWithEvent:(UIInputEvent *) event;
 
 - (void) sendActionOn:(UIControlEvents) mask;
 

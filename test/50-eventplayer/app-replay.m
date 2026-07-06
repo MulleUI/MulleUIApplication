@@ -94,7 +94,7 @@ int main( void)
       
       // Create and load event player
       player = [UIEventPlayer instance];
-      result = [player loadScriptFromUTF8String:
+      result = [player loadScriptWithUTF8String:
          "window 0\n"
          "0.0 mouseMove x=100 y=100\n"
          "0.1 mouseDown button=Left x=100 y=100\n"

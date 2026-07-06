@@ -217,7 +217,7 @@
 @end
 
 
-@interface UIApplication( OS)
+@interface UIApplication( OS) < MulleObjCFuture>
 
 + (void) os_initialize           MULLE_UI_MAIN_THREAD_ONLY;
 + (void) os_deinitialize         MULLE_UI_MAIN_THREAD_ONLY;

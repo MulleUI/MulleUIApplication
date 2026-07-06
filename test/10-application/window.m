@@ -50,6 +50,11 @@
 }
 
 
+- (void) applicationDidChangeWindowCount:(NSUInteger) count
+{
+}
+
+
 - (BOOL) shouldClose
 {
    return( NO);

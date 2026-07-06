@@ -13,7 +13,7 @@ int   main( void)
    
    // Test 1: Parse from string with various event types
    mulle_printf( "Test 1: Parse comprehensive string\n");
-   result = [player loadScriptFromUTF8String:
+   result = [player loadScriptWithUTF8String:
       "# Test script\n"
       "0.0 mouseMove x=50 y=75\n"
       "0.5 mouseDown button=Left x=50 y=75\n"
@@ -42,7 +42,7 @@ int   main( void)
    // Test 2: Parse from comprehensive file
    mulle_printf( "\nTest 2: Parse comprehensive file\n");
    scriptPath = "test-script.txt";
-   result = [player loadScriptFromFile:scriptPath];
+   result = [player loadScriptWithContentsOfFile:scriptPath];
    
    if( result)
       mulle_printf( "  Parse from file: SUCCESS\n");
@@ -65,7 +65,7 @@ int   main( void)
    
    // Test 4: Test comment and blank line handling
    mulle_printf( "\nTest 4: Comment and blank line handling\n");
-   result = [player loadScriptFromUTF8String:
+   result = [player loadScriptWithUTF8String:
       "# This is a comment\n"
       "\n"
       "   # Indented comment\n"
@@ -82,7 +82,7 @@ int   main( void)
    
    // Test 5: Test all mouse buttons
    mulle_printf( "\nTest 5: All mouse buttons\n");
-   result = [player loadScriptFromUTF8String:
+   result = [player loadScriptWithUTF8String:
       "0.0 mouseDown button=Left x=1 y=1\n"
       "0.1 mouseUp button=Left x=1 y=1\n"
       "0.2 mouseDown button=Right x=2 y=2\n"
@@ -98,7 +98,7 @@ int   main( void)
    
    // Test 6: Test modifier combinations
    mulle_printf( "\nTest 6: Modifier combinations\n");
-   result = [player loadScriptFromUTF8String:
+   result = [player loadScriptWithUTF8String:
       "0.0 keyDown key=A mods=Shift\n"
       "0.1 keyDown key=B mods=Control\n"
       "0.2 keyDown key=C mods=Alt\n"
@@ -115,7 +115,7 @@ int   main( void)
    
    // Test 7: Test special keys
    mulle_printf( "\nTest 7: Special keys\n");
-   result = [player loadScriptFromUTF8String:
+   result = [player loadScriptWithUTF8String:
       "0.0 keyDown key=Space\n"
       "0.1 keyDown key=Enter\n"
       "0.2 keyDown key=Tab\n"
@@ -140,7 +140,7 @@ int   main( void)
    
    // Test 8: Test function keys
    mulle_printf( "\nTest 8: Function keys\n");
-   result = [player loadScriptFromUTF8String:
+   result = [player loadScriptWithUTF8String:
       "0.0 keyDown key=F1\n"
       "0.1 keyDown key=F2\n"
       "0.2 keyDown key=F5\n"
@@ -155,7 +155,7 @@ int   main( void)
    
    // Test 9: Test window indexing
    mulle_printf( "\nTest 9: Window indexing\n");
-   result = [player loadScriptFromUTF8String:
+   result = [player loadScriptWithUTF8String:
       "0.0 mouseMove x=10 y=10\n"
       "1: 0.1 mouseMove x=20 y=20\n"
       "2: 0.2 mouseMove x=30 y=30\n"

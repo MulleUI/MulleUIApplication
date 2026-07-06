@@ -2,22 +2,20 @@
 
 #### 𝄢 MulleUIApplication provides abstract classes like UIApplication and UIEvent
 
-
-# 𝄢 MulleUIApplication
-
-#### 𝄢 MulleUIApplication provides abstract classes like UIApplication and UIEvent
-
 This library lays the ground work for window and event handling. It isn't tied
 to any platform or graphics library. UIWindow is a protocol, that will get
 fleshed out by MulleUIWindow (and MulleSDLWindow).
 
+Though technically dependent on MulleFoundationBase, the conceptual dependency
+is MulleObjCLockingFoundation only. Especially not used are "NSArray" or
+"NSString"
 
 
 
 
-| Release Version                                       | Release Notes
-|-------------------------------------------------------|--------------
-| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/MulleUI/MulleUIApplication.svg?branch=release) [![Build Status](https://github.com/MulleUI/MulleUIApplication/workflows/CI/badge.svg?branch=release)](//github.com/MulleUI/MulleUIApplication/actions) | [RELEASENOTES](RELEASENOTES.md) |
+| Release Version                                       | Release Notes  | AI Documentation
+|-------------------------------------------------------|----------------|---------------
+| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/MulleUI/MulleUIApplication.svg) [![Build Status](https://github.com/MulleUI/MulleUIApplication/workflows/CI/badge.svg)](//github.com/MulleUI/MulleUIApplication/actions) | [RELEASENOTES](RELEASENOTES.md) | [DeepWiki for MulleUIApplication](https://deepwiki.com/MulleUI/MulleUIApplication)
 
 
 
@@ -145,8 +143,6 @@ Add `-isystem src/MulleUI` to your `CFLAGS` and compile all the sources that wer
 
 ## Install
 
-### Install with mulle-sde
-
 Use [mulle-sde](//github.com/mulle-sde) to build and install MulleUIApplication and all dependencies:
 
 ``` sh
@@ -154,13 +150,13 @@ mulle-sde install --prefix /usr/local \
    https://github.com/MulleUI/MulleUIApplication/archive/latest.tar.gz
 ```
 
-### Manual Installation
+### Legacy Installation
 
 Install the requirements:
 
 | Requirements                                 | Description
 |----------------------------------------------|-----------------------
-| [MulleFoundationBase](https://github.com/MulleFoundation/MulleFoundationBase)             | 🧱 MulleFoundationBase amalgamates Foundations projects
+| [MulleObjCTimeFoundation](https://github.com/MulleFoundation/MulleObjCTimeFoundation)             | 💰 MulleObjCTimeFoundation provides time classes
 | [MulleUIBase](https://github.com/MulleUI/MulleUIBase)             | 💺 MulleUIBase adds Objective-C to mulle-geometry and friends
 | [mulle-objc-list](https://github.com/mulle-objc/mulle-objc-list)             | 📒 Lists mulle-objc runtime information contained in executables.
 
@@ -169,9 +165,11 @@ Download the latest [tar](https://github.com/MulleUI/MulleUIApplication/archive/
 Install **MulleUIApplication** into `/usr/local` with [cmake](https://cmake.org):
 
 ``` sh
-cmake -B build \
-      -DCMAKE_INSTALL_PREFIX=/usr/local \
-      -DCMAKE_PREFIX_PATH=/usr/local \
+PREFIX_DIR="/usr/local"
+cmake -B build                               \
+      -DMULLE_SDK_PATH="${PREFIX_DIR}"       \
+      -DCMAKE_INSTALL_PREFIX="${PREFIX_DIR}" \
+      -DCMAKE_PREFIX_PATH="${PREFIX_DIR}"    \
       -DCMAKE_BUILD_TYPE=Release &&
 cmake --build build --config Release &&
 cmake --install build --config Release

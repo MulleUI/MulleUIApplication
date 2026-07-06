@@ -210,6 +210,11 @@
 }
 
 
+- (void) applicationDidChangeWindowCount:(NSUInteger) count
+{
+}
+
+
 - (id) firstResponder
 {
    return( nil);
@@ -223,6 +228,11 @@
 
 
 - (void) setPasteboardCString:(char *) s
+{
+}
+
+
+- (void) os_requestClose
 {
 }
 
