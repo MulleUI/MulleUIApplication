@@ -1,5 +1,5 @@
 # MulleUIApplication Library Documentation for AI
-<!-- Keywords: application, events, responder, abstract, windowing -->
+<!-- Keywords: application, events, responder, control, cursor, gamepad, windowing -->
 
 ## 1. Introduction & Purpose
 
@@ -54,8 +54,9 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
   - `delegate` (assign, main-thread): Optional delegate (unused currently)
   - `returnStatus` (assign, main-thread): Exit code returned by `-runApp`
   - `debuggingFlags` (assign, threadsafe): UIApplicationDebug flags for logging
+  - `styleSheet` (retain, main-thread): Application-level style payload consumed by UIWindow in `-_initWithFrame:`
   - `eventPlayer` (retain, main-thread): Optional UIEventPlayer for event replay
-  - `osKeyWindow` (retain, main-thread): Window receiving ambiguous events
+  - `osKeyWindow` (retain, setter=setOSKeyWindow:, main-thread): Window receiving ambiguous events
 
 #### Lifecycle Functions
 - `+sharedInstance` - Get singleton (creates if needed, sets `UIApp` global)
@@ -105,15 +106,20 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
 - `-removeAllInvocations` - Clear queue (testing only)
 
 #### OS Integration Category (Main Thread Only)
+
+The category `@interface UIApplication( OS) < MulleObjCFuture>` conforms to `MulleObjCFuture`, allowing concrete platforms (GLFW, SDL) to implement these OS integration methods via future protocol resolution at runtime.
+
 - `+os_initialize` / `+os_deinitialize` - Global OS initialization
 - `-os_init` / `-os_finalize` - Instance OS initialization
-- `-os_createStandardCursor:` / `-os_destroyCursor:` - Platform cursor creation
+- `-os_createStandardCursor:` (returns `void *`) / `-os_destroyCursor:` - Platform cursor creation
+- `-os_createCursorWithBitmap:hotSpot:` (returns `void *`) - Platform cursor creation from bitmap
 - `-os_waitEventsWithTimeout:` - Block until event or timeout
 - `-os_pollEvents` - Non-blocking event polling
 - `-os_pollGamepads` - Update gamepad state
 - `-os_sendEmptyEvent` - Wake up event loop (threadsafe)
 
 #### Global Variables and Functions
+- `MULLE_UI_APPLICATION_VERSION` - Library version as `((0 << 20) | (0 << 8) | 1)` (major.minor.patch)
 - `UIApp` - Global singleton pointer set by `+sharedInstance`
 - `UIApplicationRequestRunLoopBreak` - Signal to break run loop (for signal handlers)
 - `UIApplicationMain()` - Standard main function wrapper
@@ -138,7 +144,7 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
 #### `@interface UIEvent`
 - **Purpose:** Base class for all events. Events are pooled and reused by default.
 - **Properties:**
-  - `timestamp` (mulle_absolutetime_t, readonly) - Event creation time relative to execution start
+  - `timestamp` (mulle_absolutetime_t, dynamic, assign, readonly, @optional) - Event creation time relative to execution start. Marked optional in base class; subclasses may override.
 - **Class Methods:**
   - `+reuseEvents` / `+setReuseEvents:` - Control event pooling (disable for leak detection)
   - `+waitForEventsTimeout:` - Wait for OS events with timeout
@@ -154,11 +160,9 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
   - `_location` (CGPoint) - Location in view coordinates (NOT readonly, modified by UIView)
   - `_locationView` (id, not retained) - View for location coordinates
 - **Properties:**
-  - `inputState` (readonly) - Full input state structure
-  - `location` (readonly) - Location in current coordinate system
-  - `locationInWindow` (dynamic, readonly) - Location in window coordinates
-  - `keyModifiers` (dynamic, readonly) - Modifier key flags (shift, ctrl, alt, super)
-  - `buttonStates` (dynamic, readonly) - Mouse button states bitmask
+  - `inputState` (assign, readonly) - Full input state structure
+  - `location` (assign, readonly) - Location in current coordinate system
+  - `timestamp` (mulle_absolutetime_t, dynamic, assign, readonly) - Overrides base @optional, obtained from input state when available
 - **Methods:**
   - `-initWithInputState:` - Initialize with input state
   - `-isInitialEvent` - YES for mouseDown and initial touches
@@ -180,11 +184,14 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
 - **Initializer:** `-initWithInputState:character:`
 
 #### `@interface UIMouseButtonEvent : UIInputEvent`
-- **Purpose:** Mouse button click events.
+- **Purpose:** Mouse button click events. Supports double-click detection with configurable interval.
 - **Properties:**
   - `button` (NSUInteger, readonly) - UIEventMouseButton (Left/Right/Middle)
   - `action` (NSUInteger, readonly) - UIEventButtonAction (Up/Down)
-- **Initializer:** `-initWithInputState:button:action:`
+  - `clickCount` (NSUInteger, readonly) - Number of consecutive clicks (1=click, 2=double-click)
+- **Class Properties:**
+  - `doubleClickInterval` (NSTimeInterval) - Maximum time between clicks to count as double-click (default: 0.5s)
+- **Initializer:** `-initWithInputState:button:action:clickCount:`
 
 #### `@interface UIMouseMotionEvent : UIInputEvent`
 - **Purpose:** Mouse movement events. Subclass UIMouseMotionNonPhysicalEvent for simulated events.
@@ -216,6 +223,8 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
   - `UIWindowResizeEvent` - Window size changed (property: `size`)
   - `UIWindowMoveEvent` - Window position changed (property: `origin`)
   - `UIWindowFramebufferResizeEvent` - Framebuffer size changed (subclass of resize)
+  - `UIWindowFocusGainedEvent` - Window gained keyboard focus
+  - `UIWindowFocusLostEvent` - Window lost keyboard focus
 
 #### `@interface UIScreenEvent : UIEvent`
 - **Purpose:** Screen connect/disconnect events.
@@ -242,7 +251,7 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
 - `UIEventButtonAction` - Up (0), Down (1), Repeat (2)
 - `UIEventKeyModifier` - Shift, Control, Alt, Super, CapsLock, NumLock
 - `UIEventKey` - Extensive enum for physical keys (Space=32, A-Z=65-90, F1-F25=290-314, etc.)
-- `UIWindowEventType` - Close, Refresh, Resize, Move, FramebufferResize
+- `UIWindowEventType` - Close, Refresh, Resize, Move, FramebufferResize, FocusGained, FocusLost
 - `UIScreenEventType` - Connected, Disconnected
 - `UIGamepadEventType` - Connected, Disconnected
 
@@ -255,6 +264,11 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
 - `UIWindowEventTypeUTF8String()` - Window event type to string
 - `UIScreenEventTypeUTF8String()` - Screen event type to string
 - `UIGamepadEventTypeUTF8String()` - Gamepad event type to string
+
+#### Ctrl+Click Emulation
+- **`UIEventCtrlClickEmulatesRightClick`** (BOOL, global) - Emulate right-click when ctrl+left-click. Enabled by default. Set `MULLE_UI_CTRL_CLICK_EMULATES_RIGHT=NO` to disable.
+- **`UIEventMouseButtonWithModifiers(button, *p_keyModifiers)`** - Static inline: remaps Left→Right when ctrl is held (modifies modifiers in-place, returns adjusted button). Parameter types: `(NSUInteger button, NSUInteger *p_keyModifiers)`
+- **`UIEventButtonStatesWithModifiers(buttonStates, *p_keyModifiers)`** - Static inline: remaps Left→Right button states when ctrl is held (modifies buttonStates and modifiers in-place, returns adjusted states). Parameter types: `(NSUInteger buttonStates, NSUInteger *p_keyModifiers)`
 
 ### 3.3. `UIResponder.h`
 
@@ -351,7 +365,7 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
   - `-shouldConsumeMouseEvent:` - Query if event should be consumed
   - `-mouseUp:` - Handle mouse up event
   - `-performClickAndTargetActionCallbacks:fallbackEvent:` - Invoke click/target-action, return fallback if none
-  - `-performClickAndTargetActionCallbacks:` - Invoke callbacks, return nil if none
+  - `-performClickAndTargetActionCallbacks:` - Invoke callbacks, return nil if none (does NOT toggle selected state — the caller must handle that)
 
 #### State Convenience Methods
 - `-isHighlighted` / `-setHighlighted:` - Highlighted state
@@ -360,6 +374,7 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
 - `-mulleToggleSelectedState` - Toggle selected bit
 - `-mulleToggleHighlightedState` - Toggle highlighted bit
 - `-reflectState` - Update reflectedState, returns YES if changed
+- `-reflectStateWithEvent:(UIInputEvent *)` - Reflect state with event context (for subclasses to inspect event during state reflection)
 - `-sendActionOn:` - Configure event mask for action
 
 #### Utility Methods
@@ -418,11 +433,12 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
   - `UIWindowStyleRetainedOnMainThread` (0x200000) - Retained framebuffer on main thread
   - `UIWindowStyleProfileQueue` (0x400000) - Profile queue performance
   - `UIWindowStyleInputPolling` (0x800000) - Poll mouse instead of events
-  - `UIWindowOpenGLCoreProfile` (0x1000000) - OpenGL Core profile
-  - `UIWindowOpenGLForward` (0x4000000) - Forward-compatible OpenGL
-  - `UIWindowOpenGLLibraryFallback` (0x8000000) - Try fallback OpenGL libraries
-  - `UIWindowOpenGLDeprecated` (0x10000000) - Include deprecated OpenGL
-  - `UIWindowNotcursesMouseDisable` (0x20000000) - Disable terminal mouse
+  - `UIWindowStyleNoDelayedShow` (0x1000000) - Do not hide window initially; skip delayed show-after-first-swap
+  - `UIWindowOpenGLCoreProfile` (0x4000000) - OpenGL Core profile
+  - `UIWindowOpenGLForward` (0x10000000) - Forward-compatible OpenGL
+  - `UIWindowOpenGLLibraryFallback` (0x20000000) - Try fallback OpenGL libraries
+  - `UIWindowOpenGLDeprecated` (0x40000000) - Include deprecated OpenGL
+  - `UIWindowNotcursesMouseDisable` (0x80000000) - Disable terminal mouse
 - **Functions:**
   - `UIWindowStyleUTF8String()` - Style flags to string
   - `UIWindowStyleParseUTF8String()` - Parse string to style flags
@@ -433,15 +449,29 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
 - **UIWindowStyleStencilStrokes**: Draws strokes to stencil buffer first for higher quality (performance cost). Ensures strokes appear outside fills.
 - **UIWindowStyleRetained**: Retains rendered framebuffer between frames. Back buffer rendered while front displayed, then quickly copied on refresh. Optimizes for rendering throughput, essential for X11 to avoid black borders during resize.
 
+#### `typedef NS_OPTIONS( NSUInteger, UIWindowDisplayBit)`
+- **Purpose:** Display pipeline bits controlling the render/update cascade: Styling → Layout → Display. Setting a higher stage implies lower stages will also run.
+- **Values:**
+  - `UIWindowDisplayNeedsDisplay` (0x1) - Views push state to layers (alias: `UIWindowDisplayNeedsRedraw`)
+  - `UIWindowDisplayNeedsLayout` (0x2) - Reposition views, cascades to NeedsDisplay
+  - `UIWindowDisplayNeedsStyling` (0x4) - Restyle, cascades to NeedsLayout
+  - `UIWindowDisplayNeedsNextFrame` (0x8) - Schedule next frame at animation rate (alias: `UIWindowDisplayNeedsAnimation`)
+  - `UIWindowDisplayDidAnimate` (0x10000) - Animation changed state, will need next frame
+  - `UIWindowDisplayNeedsMouseEvent` (0x20000) - Layout change needs to retrack mouse
+- **Functions:**
+  - `UIWindowDisplayBitsUTF8String()` - Display bits to string
+
 #### `@protocol UIWindow`
 - **Purpose:** Protocol for window objects managed by UIApplication.
 - **Key Methods:**
   - `-OSWindow` - Return UIOSWindow (threadsafe)
   - `-os_window` - Return platform handle (GLFW/SDL window)
+  - `-os_requestClose` - Forward close request to OSWindow (threadsafe)
   - `-displayFrameIfNeeded:` - Render frame if needed (main-thread-safe)
   - `-syncOSWindowPropertyChangesIfNeeded` - Sync property changes (threadsafe)
   - `-setNeedsRefresh` / `-shouldClose` - Control window state (threadsafe)
   - `-applicationDidAddWindow:` / `-applicationDidRemoveWindow:` - Lifecycle callbacks
+  - `-applicationDidChangeWindowCount:` - Notified when window count changes (e.g., for single-window optimizations)
   - `-firstResponder` - Current first responder
   - `-pasteboardCString` / `-setPasteboardCString:` - Clipboard access
 
@@ -525,6 +555,110 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
 - `UIWindowFrameRateSynced` (-INFINITY) - Match monitor refresh rate
 - `UIScreenAssumedRefreshRate` (1.0/60.0) - Default refresh rate
 - `UIScreenAssumedRefreshRateHz` (60.0) - Default Hz
+
+### 3.8. `UIApplication+UIEvent.h`
+
+#### `@interface UIApplication(UIEvent) <UIEventReceiver>`
+- **Purpose:** Conforms UIApplication to `UIEventReceiver`, enabling it to handle screen and gamepad events directly.
+- **Methods:**
+  - `-handleScreenEvent:` - Process screen connect/disconnect events (main-thread-only)
+  - `-handleGamepadEvent:` - Process gamepad connect/disconnect events (main-thread-only)
+
+### 3.9. `UIEventPlayer.h`
+
+#### `typedef NS_ENUM( NSUInteger, UIEventPlayerStopAction)`
+- **Purpose:** Controls player behavior when encountering a termination script event.
+- **Values:**
+  - `UIEventPlayerTerminatesOnRequestOnly` (0) - Only stop on explicit request
+  - `UIEventPlayerTerminates` (1) - Stop on termination event
+  - `UIEventPlayerIgnoresTerminationScriptEvent` (2) - Ignore termination events
+
+#### `@interface UIEventPlayer : NSObject <UITimerReceiver>`
+- **Purpose:** Loads event scripts from strings/files/FILE streams and replays events at specified timestamps. Used for automated testing, demos, and event replay.
+- **Ivars:**
+  - `_events` (mulle_structarray) - Array of `struct UIScriptedEvent`
+  - `_nextIndex` (NSUInteger) - Cursor into events array
+  - `_startTime` (mulle_absolutetime_t) - Playback start timestamp
+  - `_stopOnInvalidWindowIndex` (BOOL) - Abort on invalid window index (default: YES)
+  - `_currentWindowIndex` (NSUInteger) - Default window for events without explicit window
+- **Properties:**
+  - `debuggingFlags` (assign, threadsafe) - Debug logging control
+  - `stopAction` (assign) - Behavior on termination script event
+- **Loading Methods:**
+  - `-loadScriptWithUTF8String:` - Load from C string
+  - `-loadScriptWithContentsOfFile:` - Load from file path
+  - `-loadScriptWithFILE:` - Load from FILE stream
+- **Playback Control:**
+  - `-startPlayback` - Begin event replay
+  - `-stopPlayback` - Stop event replay
+- **Configuration:**
+  - `-setAbortOnInvalidWindowIndex:` / `-abortOnInvalidWindowIndex` - Control invalid window handling
+- **UITimerReceiver:**
+  - `-timerFired:` - Timer callback to dispatch next scheduled event
+
+### 3.10. `UIKeyboardState.h`
+
+- **Purpose:** Higher-level helpers bridging `UIKeyStates` (from MulleUIBase) with `UIEvent` and `UIOSWindow`.
+- **Functions:**
+  - `UIKeyStatesHandleEvent(state, event)` - Update key state from a `UIKeyboardEvent`
+  - `UIKeyStatesResync(state, osWindow)` - Resync key state with hardware after focus regain (calls `-[UIOSWindow os_pressedKeys:count:]`)
+
+### 3.11. `UIInputState+UTF8String.h`
+
+- **Purpose:** String conversion for debugging.
+- **Function:**
+  - `UIInputStateUTF8String(struct UIInputState *state)` - Convert input state to human-readable C string
+
+### 3.12. `UIFont.h`
+
+#### `@interface UIFont : NSObject`
+- **Purpose:** Lightweight font description (name + point size) that defer resolution to the rendering context. The actual `CGFont` is only available during rendering.
+- **Properties:**
+  - `fontNameUTF8String` (assign, char *) - Font family name (e.g., "Roboto")
+  - `pointSize` (assign, CGFloat) - Font size in points
+- **Factory Methods:**
+  - `+fontWithNameUTF8String:` - Font with default 12pt size
+  - `+fontWithNameUTF8String:size:` - Font with specified size
+  - `+boldSystemFontOfSize:` - Bold variant of system font at given size
+
+### 3.13. `UINullOSWindow.h`
+
+#### `@interface UINullOSWindow : NSObject <UIOSWindow>`
+- **Purpose:** Minimal `UIOSWindow` for testing without creating real OS windows or graphics contexts. Suitable for headless CI/CD pipelines.
+- **Properties:**
+  - `windowEventsReceiver` / `eventsReceiver` - Event routing
+  - `discardEventsMask` - Filter events
+  - `parentWindow` - Owning UIWindow
+  - `antiAliasing` (BOOL, readonly) - Always NO
+  - `windowEventsCallback` / `otherRetainedEventsCallback` - Callbacks
+  - `frameCallback` - Basic rendering callback
+  - `frame` (CGRect) - Window frame
+  - `shareIdentifier` (NSInteger) - Context sharing ID
+  - `rateLimiter` (BOOL) - Rate limiting toggle
+  - `frameRateValue` (mulle_relativetime_t) - Frame duration
+  - `frameRateHzValue` (CGFloat) - Frame rate in Hz
+  - `backend` (UIGraphicsBackend) - Graphics backend
+  - `lastSwapTime` (mulle_absolutetime_t) - Last buffer swap time
+  - `swapInterval` (NSUInteger) - VSync interval (0=off)
+  - `shouldClose` (BOOL) - Close request flag
+  - `cursorPtr` (void *) - Cursor handle
+  - `windowPtr` (void *) - Window handle (NULL for null window)
+- **Initializer:**
+  - `-initWithFrame:titleUTF8String:styleMask:` - Create with frame, title, and style (reduced from full OS window)
+
+### 3.14. `UINullWindow.h`
+
+#### `@interface UINullWindow : NSObject <UIWindow, UIEventReceiver>`
+- **Purpose:** Minimal `UIWindow` wrapping a `UINullOSWindow`. Forwards `UIEventReceiver` protocol methods to the underlying OS window. Suitable for testing event dispatch and application logic.
+- **Properties:**
+  - `rawFrameCallback` (function pointer) - Custom frame rendering callback: `UIWindowDisplayBits (*)(UINullWindow *, id <UIGraphicsContext>, struct CGFrameInfo *, UIWindowDisplayBits)`
+  - `OSWindow` (id <UIOSWindow>, readonly) - Underlying null OS window
+  - `renderGraphicsContext` (id <UIGraphicsContext>, readonly) - Render graphics context
+- **Class Method:**
+  - `+osGraphicsContextClass` - Class to use for graphics context
+- **Initializers:**
+  - `-initWithOSWindow:` - Create wrapping given OS window
+  - `-initWithOSWindow:styleMask:` - Create with style mask
 
 ## 4. Performance Characteristics
 
@@ -961,9 +1095,10 @@ int   main( void)
    // Create mouse button event
    inputState = UIInputStateMake( CGPointMake( 50, 75), 0, UIEventMouseButtonLeft);
    
-   mouseEvent = [[[UIMouseButtonEvent alloc] initWithInputState:&inputState
-                                                         button:UIEventMouseButtonLeft
-                                                         action:UIEventButtonActionDown] autorelease];
+    mouseEvent = [[[UIMouseButtonEvent alloc] initWithInputState:&inputState
+                                                          button:UIEventMouseButtonLeft
+                                                          action:UIEventButtonActionDown
+                                                      clickCount:1] autorelease];
    
    mulle_printf( "\nMouse Event:\n");
    mulle_printf( "  Type: %s\n", UIEventTypeUTF8String( [mouseEvent eventType]));

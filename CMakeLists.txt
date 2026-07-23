@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.15...99.99)
 
-project( MulleUIApplication C)
+project( MulleUIApplication VERSION 0.0.1 LANGUAGES C)
 
 
 ### mulle-sde environment
