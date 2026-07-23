@@ -5,6 +5,27 @@ Use this howto when starting a new MulleUI app or when diagnosing why your app
 does not render as expected. The first question to answer is: **how does your
 window change over time?**
 
+## Understand first
+
+```bash
+mulle-sde api apropos UIApplication
+mulle-sde api apropos UIWindow
+mulle-sde api apropos UIEvent
+mulle-sde code search UIWindowFrameRate
+mulle-sde code search setFrameRate
+```
+
+## Local references
+
+- `src/UIApplication.h` — app lifecycle, window management, timers
+- `src/UIWindowTypes.h` — window style flags, framerate constants, UIWindow protocol
+- `src/UIEvent.h` — event hierarchy and event types
+- `demo/src/main-application-subclass.m` — custom UIApplication subclass
+- `demo/src/main-two-windows.m` — multi-window with framerate control
+- `demo/src/main-window-timer.m` — timer-driven window updates
+- `demo/src/main-gamepad.m` — timer + cursor demo
+- `test/30-window/add-remove.m` — minimal add/remove/terminate contract
+
 ---
 
 ## Step 1 — Pick your app type
@@ -35,8 +56,9 @@ Buttons, forms, dialogs — the window only changes when the user does something
 [window setFrameRate:UIWindowFrameRateAsync];   // explicit, but this is already the default
 ```
 
-Reference demos: `demo/src/main-window-timer.m` (the timer there only changes
-colour state, and it calls `setNeedsDisplay` to request a redraw).
+Reference demos: `demo/src/main-window-timer.m` — the timer only changes colour
+state, and calls `setNeedsDisplay` to request a redraw. `demo/src/main-gamepad.m`
+is also event-driven (cursor changes on timer but rendering only on event).
 
 ---
 
@@ -70,50 +92,44 @@ Diagnostic question when "nothing animates":
 1. What is `[window frameRate]`?
 2. If the answer is `INFINITY`, that is your bug — set it explicitly.
 
-For game development, also see `mulle-sde howto cat mulle-ui-game` which
-covers input handling, drawing patterns, and collision detection.
-
-Reference demos:
-- `demo/src/main-backend-volatile.m` — `#define FRAMERATE 0.5` passed to `setFrameRate:`
-- `demo/src/main-accumulate.m` — `[window setFrameRateHz:60.0]`
-- `demo/src/main-context-retained-keep.m` — `[window setFrameRateHz:FPS]`
+Reference demo: `demo/src/main-two-windows.m` — configures per-window
+framerate (`UIWindowFrameRateUnsynced` with vsync, or `setFrameRateHz:2.0`
+for soft-sync).
 
 ---
 
 ## Framebuffer-callback app (no UIView tree)
 
 You want to draw directly into the framebuffer on every frame without a
-`UIView` hierarchy.
+`UIView` hierarchy. This is done via `UIOSWindow` frame callbacks.
+
+The callback receives `(id <UIOSWindow>, struct UIWindowDisplayBits)`.
+Use `UIWindowStyleNoView` in the style mask to skip UIView creation.
 
 ```objc
-styleMask = UIWindowStyleMaskDefault | UIWindowStyleNoView;
-[window setFrameCallback:display];
-[window setFrameRate:UIWindowFrameRateSynced];   // or explicit Hz
+styleMask = UIWindowStyleNoView;
 ```
 
-The callback receives `(UIPureWindow *, id<UIGraphicsContext>, struct CGFrameInfo *, UIWindowDisplayBits)`.
-
-Reference demos:
-- `demo/src/main-backend.inc` — the canonical callback pattern
-- `demo/src/main-backend-volatile.m` — same with volatile (non-retained) style
+Reference: `src/UIWindowTypes.h` — `UIOSWindowFrameCallback_t` type and
+`UIWindowStyleNoView` flag.
 
 ---
 
 ## Retained / offscreen rendering app
 
 You prebuild textures or draw into an offscreen context before compositing
-into the window.
+into the window. Use `UIWindowStyleRetained` (default) or
+`UIWindowStyleRetainedOnMainThread` for retained framebuffer mode.
 
 ```objc
 styleMask = UIWindowStyleMaskDefault;   // retained mode is the default
-[window activateRenderGraphicsContext];
-// ... draw into offscreen context ...
-[window deactivateRenderGraphicsContextKeepState:YES];
 ```
 
-Reference demos:
-- `demo/src/main-context-retained-keep.m`
-- `demo/src/main-context-nonretained-keep.m`
+The retained buffer copies the frame to the foreground on refresh, avoiding
+redundant redraws. X11 benefits from this to avoid black borders during resize.
+
+Reference: `src/UIWindowTypes.h` for `UIWindowStyleRetained` flag semantics
+and `README.md` for retained-buffer behavior details.
 
 ---
 
@@ -122,10 +138,21 @@ Reference demos:
 | App type | framerate | styleMask | trigger |
 |---|---|---|---|
 | Event-driven | `UIWindowFrameRateAsync` (default) | `UIWindowStyleMaskDefault` | `setNeedsDisplay` on event |
-| Continuous-rendering | `setFrameRateSynced` or explicit Hz | `UIWindowStyleMaskNonRetained` or default | display loop at fixed rate |
+| Continuous-rendering | `setFrameRateSynced` or explicit Hz | `UIWindowStyleMaskDefault` (non-retained recommended for dev) | display loop at fixed rate |
 | Framebuffer callback | `UIWindowFrameRateSynced` or explicit | add `UIWindowStyleNoView` | callback every frame |
-| Retained / offscreen | explicit Hz | `UIWindowStyleMaskDefault` | offscreen draw + composite |
+| Retained / offscreen | explicit Hz | `UIWindowStyleMaskDefault` (retained is default) | offscreen draw + composite |
 
-`UIWindowStyleMaskNonRetained` is recommended for continuous-rendering apps
-during development; it avoids the extra render thread and makes timing problems
-easier to diagnose.
+`UIWindowStyleMaskDefault` includes `UIWindowStyleAntiAlias` and
+`UIWindowStyleRetained` by default. Remove `UIWindowStyleRetained` for
+continuous-rendering during development to avoid the extra render thread
+and make timing problems easier to diagnose.
+
+## Construction checklist
+
+- [ ] `[UIApplication sharedInstance]` called before any window is created
+- [ ] Window created with appropriate `styleMask` and `frameRate`
+- [ ] Window added via `[app addWindow:]` on the **main thread**
+- [ ] Run loop started via `[app runApp]`, `UIApplicationRunWindow()`, or `UIApplicationMain()`
+- [ ] Timers (if used) registered via `[app addTimer:forTimerReceiver:]`
+- [ ] Cursors, pasteboard, fonts set up after app initialization
+- [ ] `requestTerminate` used for cross-thread shutdown; `terminate` for main-thread teardown
