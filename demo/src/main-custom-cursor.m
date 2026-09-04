@@ -16,9 +16,6 @@ int   main( int argc, char *argv[])
    UICursor              *cursor;
    NSUInteger            styleMask;
    struct CGBitmap       bitmap;
-   struct CGBitmap       scaled;
-   struct CGBitmap       *cursorBitmap;
-   struct CGBitmapInfo   info;
 
    app = [UIApplication sharedInstance];
    assert( app);

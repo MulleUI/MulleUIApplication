@@ -1,8 +1,8 @@
 //
-//  UIInputState+UTF8String.m
-//  MulleUIBase
+//  UIInputState+UTF8String.h
+//  MulleUIApplication
 //
-//  Copyright (c) <|YEAR|> Nat! - Mulle kybernetiK.
+//  Copyright (c) 2025 Nat! - Mulle kybernetiK.
 //  All rights reserved.
 //
 //

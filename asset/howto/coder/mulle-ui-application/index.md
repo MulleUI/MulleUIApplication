@@ -65,11 +65,11 @@ invocation = [NSInvocation invocationWithMethodSignature:signature];
 ### Register a timer
 
 ```objc
-timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:0.5
-                                             repeatInterval:0.75
-                                                     target:window
-                                                   selector:@selector( tick:)
-                                                   userInfo:nil
-                                 fireUsesUserInfoAsArgument:NO] autorelease];
+timer = [NSTimer mulleTimerWithRelativeTimeInterval:0.5
+                                     repeatInterval:0.75
+                                             target:window
+                                           selector:@selector( tick:)
+                                           userInfo:nil
+                         fireUsesUserInfoAsArgument:NO];
 [app addTimer:timer forTimerReceiver:window];
 ```

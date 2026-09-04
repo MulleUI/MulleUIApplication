@@ -65,8 +65,7 @@ Window style flags (UIWindowStyle enum) control window behavior and rendering op
 - `-runLoopIteration` - Single event loop iteration (main-thread)
 - `-terminate` - Shutdown all windows and cleanup (main-thread)
 - `-requestTerminate` - Async termination request (threadsafe)
-- `-runWindow:` - Convenience method to run single window (main-thread)
-- `UIApplicationRunWindow()` - C function convenience wrapper
+- `-runWindow:` - Run a single window (main-thread)
 
 #### Window Management (Main Thread Only)
 - `-addWindow:` - Register window with application
@@ -776,7 +775,7 @@ int   main( int argc, char **argv)
                                      styleMask:UIWindowStyleResizable
                                  graphicsHints:0];
    
-   return( UIApplicationRunWindow( window));
+   return( [app runWindow:window]);
 }
 ```
 

@@ -23,7 +23,6 @@ int   main( int argc, char *argv[])
    UIWindow         *window;
    UIApplication    *app;
    NSTimer          *timer;
-   id <UIOSWindow>  osWindow;
    NSUInteger       styleMask;
    
    app = [UIApplication sharedInstance];

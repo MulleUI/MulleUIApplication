@@ -1,6 +1,7 @@
 This library lays the ground work for window and event handling. It isn't tied
-to any platform or graphics library. UIWindow is a protocol, that will get
-fleshed out by MulleUIWindow (and MulleSDLWindow).
+to any platform or graphics library. The `UIApplication` and `UIEvent` base
+classes get fleshed out by MulleUIWindow and the platform wrappers
+(MulleGLFW, MulleSDL).
 
 Though technically dependent on MulleFoundationBase, the conceptual dependency
 is MulleObjCLockingFoundation only. Especially not used are "NSArray" or
