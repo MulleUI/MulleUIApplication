@@ -152,7 +152,7 @@ and make timing problems easier to diagnose.
 - [ ] `[UIApplication sharedInstance]` called before any window is created
 - [ ] Window created with appropriate `styleMask` and `frameRate`
 - [ ] Window added via `[app addWindow:]` on the **main thread**
-- [ ] Run loop started via `[app runApp]`, `UIApplicationRunWindow()`, or `UIApplicationMain()`
+- [ ] Run loop started via `[app runApp]` or `UIApplicationMain()`
 - [ ] Timers (if used) registered via `[app addTimer:forTimerReceiver:]`
 - [ ] Cursors, pasteboard, fonts set up after app initialization
 - [ ] `requestTerminate` used for cross-thread shutdown; `terminate` for main-thread teardown

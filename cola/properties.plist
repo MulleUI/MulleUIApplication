@@ -1,7 +1,7 @@
 {
    project =
    {
-      description="𝄢 MulleUIApplication provides abstract classes like UIApplication and UIEvent";
+      description="🛖 MulleUIApplication provides abstract classes like UIApplication and UIEvent";
       domain="github";
       language="c";
       dialect="objc";
@@ -10,6 +10,7 @@
       repo="MulleUIApplication";
       homepage="https://github.com/MulleUI/MulleUIBase";
       license="UNLICENSED";
+      version="0.1.0";
    };
    dependencies =
    (

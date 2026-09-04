@@ -82,8 +82,6 @@ static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *context)
    CGFloat       diameter;
    CGRect        canvas;
    CGRect        rect;
-   CGPoint       a;
-   CGPoint       b;
    NSUInteger    numberOfFrames;
 
    numberOfFrames = [context numberOfFrames];
@@ -134,7 +132,6 @@ int   main( int argc, char *argv[])
    UIWindow                 *window[ N_WINDOWS];
    UIApplication            *app;
    NSUInteger               i;
-   NSUInteger               n_open;
    id <UIGraphicsContext>   context;
    int                      mode = DISPLAY_MODE;
    NSUInteger               styleMask;

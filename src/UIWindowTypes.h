@@ -1,3 +1,37 @@
+//
+//  UIWindowTypes.h
+//  MulleUIApplication
+//
+//  Copyright (c) 2021 Nat! - Mulle kybernetiK.
+//  All rights reserved.
+//
+//
+//  Redistribution and use in source and binary forms, with or without
+//  modification, are permitted provided that the following conditions are met:
+//
+//  Redistributions of source code must retain the above copyright notice, this
+//  list of conditions and the following disclaimer.
+//
+//  Redistributions in binary form must reproduce the above copyright notice,
+//  this list of conditions and the following disclaimer in the documentation
+//  and/or other materials provided with the distribution.
+//
+//  Neither the name of Mulle kybernetiK nor the names of its contributors
+//  may be used to endorse or promote products derived from this software
+//  without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
 #import "import.h"
 
 //
@@ -443,6 +477,25 @@ typedef struct
                  graphicsHints:(UIOSWindowGraphicsHints) hints
                  sharingWindow:(id <UIOSWindow>) sharingWindow;
 
+//
+// Resolve an intended window styleMask against what this OS window backend can
+// actually honor for the given graphics API (encoded in `hints`). Returns the
+// EFFECTIVE styleMask.
+//
+// This is a static capability resolver: it takes everything it needs as
+// arguments (so it can be called BEFORE a window is created) and does NOT
+// query the live OS — the answer is determined by the backend + graphics API
+// (and platform). It is therefore a class method and carries no `os_` prefix.
+//
+// The returned mask is BINDING: callers MUST use it. Requesting a bit that the
+// backend drops (e.g. UIWindowStyleRetained under Metal/GLFW_NO_API, which has
+// no context sharing for the offscreen->screen blit) and then proceeding as if
+// it were honored is a contract error. The default implementation returns the
+// styleMask unchanged (everything honored).
+//
++ (NSUInteger) effectiveWindowStyleMask:(NSUInteger) styleMask
+                          graphicsHints:(UIOSWindowGraphicsHints) hints;
+
 // a shareID. Windows with sharing contexts have the same shareID
 - (NSInteger) shareID;
 
@@ -490,6 +543,15 @@ typedef struct
 - (BOOL) os_tryActivateGraphicsContext;
 - (void) os_deactivateGraphicsContext;
 - (void) os_swapBuffers;
+
+//
+// The concrete UIGraphicsContext subclass this OS window needs. A GPU-backed
+// OS window returns a drawing context class (e.g. CGContext); a no-backend OS
+// window (UINullOSWindow) returns a no-draw context class (CGNullContext).
+// Implemented as a category in MulleUIOS, where the CG classes are visible.
+// Returns Nil to let the window layer fall back to its class default.
+//
+- (Class) osGraphicsContextClass;
 
 - (void) os_requestClose                          MULLE_OBJC_THREADSAFE_METHOD;
 - (BOOL) os_windowShouldClose                     MULLE_OBJC_THREADSAFE_METHOD;

@@ -103,7 +103,7 @@ int main( void)
 
       mulle_printf( "\nEvents received: %lu (expected 2)\n", [logger eventCount]);
       mulle_printf( "Infinite waits:  %lu (expected 0)\n", gInfiniteWaitCount);
-      mulle_printf( "Timed waits:     %lu\n", gTimedWaitCount);
+      mulle_printf( "Timed waits:     %s\n", gTimedWaitCount >= 3 ? "OK" : "TOO FEW");
 
       if( gInfiniteWaitCount > 0)
          mulle_printf( "RESULT: BUG REPRODUCED - timer starvation confirmed\n");
