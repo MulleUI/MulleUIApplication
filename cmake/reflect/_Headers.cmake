@@ -83,6 +83,5 @@ src/UIWindowTypes.h
 src/generic/import-project.h
 src/reflect/_MulleUIApplication-import-project.h
 src/reflect/_MulleUIApplication-include-project.h
-src/reflect/_MulleUIApplication-versioncheck.h
 )
 
