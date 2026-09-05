@@ -964,6 +964,7 @@ static inline char   *_UIEventKeyUTF8String( NSUInteger key)
 }
 
 
+MULLE_UI_APPLICATION_GLOBAL
 char   *UIEventKeyUTF8String( NSUInteger key);
 
 

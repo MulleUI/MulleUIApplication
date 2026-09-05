@@ -53,6 +53,7 @@
 #define UIWindowFrameRateSynced     -INFINITY  // tied to monitor frame rate (or 1/60.0 if not available)
 
 
+MULLE_UI_APPLICATION_GLOBAL
 char  *UIWindowFrameRateUTF8String( double frameRate);
 
 
