@@ -41,6 +41,7 @@
 #include <ctype.h>
 
 
+MULLE_UI_APPLICATION_GLOBAL_VAR
 BOOL   UIEventCtrlClickEmulatesRightClick;
 
 
