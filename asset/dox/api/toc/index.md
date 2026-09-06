@@ -554,6 +554,7 @@ The category `@interface UIApplication( OS) < MulleObjCFuture>` conforms to `Mul
 - `UIWindowFrameRateSynced` (-INFINITY) - Match monitor refresh rate
 - `UIScreenAssumedRefreshRate` (1.0/60.0) - Default refresh rate
 - `UIScreenAssumedRefreshRateHz` (60.0) - Default Hz
+- `UIWindowFrameRateUTF8String( double frameRate)` - Convert a frame rate double to string; returns the constant names for the three special values (`UIWindowFrameRateUnsynced`, `UIWindowFrameRateAsync`, `UIWindowFrameRateSynced`) or a `"%.4gHz"` string (e.g., `"60Hz"`) via `MulleObjC_asprintf` otherwise
 
 ### 3.8. `UIApplication+UIEvent.h`
 
