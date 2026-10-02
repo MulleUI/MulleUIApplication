@@ -1,8 +1,0 @@
-### You are here
-
-![Overview](overview.dot.svg)
-
-
-MulleUIApplication is based on [MulleObjCLockFoundation](//github.com/MulleFoundation/MulleObjCFoundation).
-Foundation datatypes like `NSString` are not available.
-
