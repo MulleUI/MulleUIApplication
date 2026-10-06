@@ -118,7 +118,7 @@ The category `@interface UIApplication( OS) < MulleObjCFuture>` conforms to `Mul
 - `-os_sendEmptyEvent` - Wake up event loop (threadsafe)
 
 #### Global Variables and Functions
-- `MULLE_UI_APPLICATION_VERSION` - Library version as `((0 << 20) | (0 << 8) | 1)` (major.minor.patch)
+- `MULLE_UI_APPLICATION_VERSION` - Library version as `((0UL << 20) | (1 << 8) | 1)` (major.minor.patch)
 - `UIApp` - Global singleton pointer set by `+sharedInstance`
 - `UIApplicationRequestRunLoopBreak` - Signal to break run loop (for signal handlers)
 - `UIApplicationMain()` - Standard main function wrapper

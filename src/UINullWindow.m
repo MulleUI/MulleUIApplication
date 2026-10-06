@@ -126,6 +126,7 @@
 - (void) dealloc
 {
    [_OSWindow release];
+   [_renderGraphicsContext release];
    [super dealloc];
 }
 
